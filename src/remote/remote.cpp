@@ -129,24 +129,6 @@ void setup() {
         0);  /* Core where the task should run */
     #endif
 
-// ****************************************LIGHT IMPLEMENTATION*****************************
-
-//    #ifdef ESP32
-//        xTaskCreatePinnedToCore(
-//        vibeTask,   /* Function to implement the task */
-//        "vibeTask", /* Name of the task */
-//        1000,      /* Stack size in words */
-//        NULL,       /* Task input parameter */
-//        configMAX_PRIORITIES - 2,  /* Priority of the task. 0 is slower */
-//        NULL,       /* Task handle. */
-//        1);  /* Core where the task should run */
-//    #endif
-//
-//    debug("** Esk8-remote transmitter **");
-
-//  #endif
-
-// ****************************************LIGHT IMPLEMENTATION*****************************
 
 }
 
@@ -158,44 +140,6 @@ void coreTask( void * pvParameters ) {
     }
 }
 #endif
-
-
-// ****************************************LIGHT IMPLEMENTATION*****************************
-//#ifdef ESP32
-
-//#ifndef FREERTOS_CONFIG_H
-//#define FREERTOS_CONFIG_H
-//#define INCLUDE_vTaskDelay
-
-
-/*
-void vibeTask( void * pvParameters ) {
-
-        digitalWrite(PIN_VIBRO, HIGH);
-        vTaskDelay(50);
-        digitalWrite(PIN_VIBRO, LOW);
-        vTaskDelay(30);
-        digitalWrite(PIN_VIBRO, HIGH);
-        vTaskDelay(50);
-        digitalWrite(PIN_VIBRO, LOW);
-        vTaskDelay(30);
-        digitalWrite(PIN_VIBRO, HIGH);
-        vTaskDelay(50);
-        digitalWrite(PIN_VIBRO, LOW);
-
-        //vTaskDelete(&TaskHandle1);
-        vTaskDelete(NULL);
-
-        //break;
-
-    //vTaskDelete(&TaskHandle1);
-
-}
-*/
-
-//#endif
-// ****************************************LIGHT IMPLEMENTATION*****************************
-
 
 
 

@@ -84,7 +84,6 @@ enum ui_page {
   PAGE_MENU,
   PAGE_MAX,
   PAGE_DEBUG,
-  //PAGE_LIGHT_SWITCH
 } page = PAGE_MAIN;
 
 // Battery monitoring
@@ -135,9 +134,9 @@ int cruiseThrottle;
 
 bool requestUpdate = false; //when drawSettingsMenu() sets flag requestUpdate=TRUE : Next run of prepatePacket() function catches requestUpdate=TRUE flag -> next packet sent to receiver is a SET_STATE = UPDATE request. Possible only under AppState=MENU
 
-// flag for LIGHT switch
+// flag for LIGHT switch (same method)
 bool requestSwitchLight = false;
-uint8_t ROADLIGHT_BRIGHTNESS = 0;
+uint8_t ROADLIGHT_BRIGHTNESS = 0; //let's implement a PWM modulation and a brightness setting within the remote menu
 
 // menu
 enum menu_page {
@@ -293,7 +292,6 @@ void updateMainDisplay();
 void vibrate(int ms);
 
 void vibe(int vibeMode);
-void drawLightPage();
-void switchLightOn();
-void switchLightOff();
-//void vibeTask(void * pvParameters );
+void drawLightPage();//test
+//void switchLightOn();
+//void switchLightOff();
