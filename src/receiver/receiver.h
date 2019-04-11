@@ -73,6 +73,8 @@ String updateStatus;
 
 unsigned long lastBrakeTime;
 
+//ROADLIGHT_SETTINGS
+uint8_t ROADLIGHT_BRIGHTNESS = 0;
 
 #ifdef RECEIVER_SCREEN
 const GFXfont* fontDigital = &Segment13pt7b;  // speed, distance, ...
@@ -115,3 +117,9 @@ void updateEEPROMSettings();
 
 
 void updateSetting(uint8_t setting, uint64_t value);
+
+//void drawLightPage();
+void switchLightOn();
+void switchLightOff();
+
+void vibrate(int ms);

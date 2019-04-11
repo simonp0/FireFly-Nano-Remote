@@ -14,11 +14,13 @@
 
 // Pin definitions
 #define LED           25   // LED on board
-#define PIN_BUTTON    12
+#define PIN_PWRBUTTON 12
 #define PIN_TRIGGER   32
 #define ADC_THROTTLE  ADC1_GPIO38_CHANNEL // ADC1_CHANNEL_2
 
 #define PIN_BATTERY   13
+
+//#define PIN_LIGHT      //LED lights control PIN
 
 #define HAS_BUTTON (0) // button "PRG" on board
 
