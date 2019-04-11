@@ -156,8 +156,8 @@ float batteryPackPercentage( float voltage ) {
         state = UPDATE;
 
         // replace this with your WiFi network credentials
-        const char* ssid = "belair2"; // e.g. "FBI Surveillance Van #34";
-        const char* password = "11wifipepin"; // e.g. "12345678";
+        const char* ssid = "home1123"; // e.g. "FBI Surveillance Van #34";
+        const char* password = "sweethom38767"; // e.g. "12345678";
 
         wifiStatus = "Connecting:";
         updateStatus = String(ssid);
