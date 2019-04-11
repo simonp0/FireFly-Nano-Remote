@@ -53,13 +53,16 @@ void setup(){ //runs once after powerOn
     pinMode(LED, OUTPUT);
 
 // ****************************************LIGHT IMPLEMENTATION*****************************
-pinMode(PIN_PWRBUTTON, OUTPUT);
+
+pinMode(PIN_PWRBUTTON, OUTPUT); //this pin is free on the receiver
 digitalWrite(PIN_PWRBUTTON, LOW);
 
 #ifdef PIN_VIBRO
-    pinMode(PIN_VIBRO, OUTPUT);
+    pinMode(PIN_VIBRO, OUTPUT);  //this pin is free on the receiver
     digitalWrite(PIN_VIBRO, LOW);
 #endif
+
+
 // ****************************************LIGHT IMPLEMENTATION*****************************
 
     // 10 seconds average
@@ -156,7 +159,7 @@ float batteryPackPercentage( float voltage ) {
         state = UPDATE;
 
         // replace this with your WiFi network credentials
-        const char* ssid = "home1123"; // e.g. "FBI Surveillance Van #34";
+        const char* ssid = "home11"; // e.g. "FBI Surveillance Van #34";
         const char* password = "sweethom38767"; // e.g. "12345678";
 
         wifiStatus = "Connecting:";
