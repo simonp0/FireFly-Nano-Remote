@@ -1,15 +1,16 @@
 
 #include "remote.h"
-
-// define display
 Adafruit_SSD1306 display(DISPLAY_RST);
-
 Smoothed <double> batterySensor;
-
 
 
 //TaskHandle_t TaskHandle1;
 // Adafruit_SSD1306 display(64, 128, &Wire, DISPLAY_RST, 700000, 700000);
+
+
+// -------useful things--------
+//#include <array>
+#define ARRAYLEN(ar) (sizeof(ar) / sizeof(ar[0]))
 
 
 /************ Radio Setup ***************/
@@ -1069,7 +1070,7 @@ void updateMainDisplay(){   //LOOP() task on core 1 runs thins function continuo
                         drawDebugPage();
                     break;
 
-//                    case PAGE_LIGHT_SWITCH:
+//                    case PAGE_LIGHT_SETTINGS:
                         //drawLightPage();
                         //drawDebugPage();
 //                    break;
@@ -1294,34 +1295,34 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs thins function continuo
     int lastMenuIndex = round(currentMenu);
     int nextMenuIndex = lastMenuIndex;
 
-    // todo: wheel control
-    if (position < default_throttle - 15) {
-        if (currentMenu < subMenus-1) currentMenu += 0.25;
-    }
-    if (position > default_throttle + 15) {
-        if (currentMenu > 0) currentMenu -= 0.25;
-    }
-
-    nextMenuIndex = round(currentMenu);
-    if (lastMenuIndex != nextMenuIndex){vibe(0);}   //short vibration each time we change the selected menu item
-
 
     switch (menuPage) {
 
         case MENU_MAIN:
+            // --------- mainMenu wheel control navigation---------------------
+            if (position < default_throttle - 15) {
+                if (currentMenu < ARRAYLEN(MENUS)-1){currentMenu += 0.25;}
+            }
+            if (position > default_throttle + 15) {
+                if (currentMenu > 0){currentMenu -= 0.25;}
+            }
+            nextMenuIndex = round(currentMenu);
+            if (lastMenuIndex != nextMenuIndex){vibe(0);}   //short vibration each time we change the selected menu item
+            // --------------------------------------------------
+
             //header
             drawString("- Menu -", -1, y, fontDesc);
             y += 20;
-            for (int i = 0; i < mainMenus; i++) {
+            for (int i = 0; i < (ARRAYLEN(MENUS)); i++) {
                 drawString(MENUS[i][0], -1, y, fontDesc);
                 // draw cursor
                 if (i == round(currentMenu)){
-                    drawFrame(0, y-10, 64, 14);
+                        drawFrame(0, y-10, 64, 14);
                 }
-                lastMenuIndex = nextMenuIndex;
-
+                //lastMenuIndex = nextMenuIndex;
                 y += 16;
             }
+            //drawString(".", -1, y, fontDesc);
 
             if (pressed(PIN_TRIGGER)) {
                 menuPage = MENU_SUB;
@@ -1333,10 +1334,21 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs thins function continuo
         break;
 
         case MENU_SUB:
+            // --------- subMenus wheel control navigation---------------------
+            if (position < default_throttle - 15) {
+                if (currentMenu < ARRAYLEN(MENUS[subMenu])-2){currentMenu += 0.25;}
+            }
+            if (position > default_throttle + 15) {
+                if (currentMenu > 0) currentMenu -= 0.25;
+            }
+            nextMenuIndex = round(currentMenu);
+            if (lastMenuIndex != nextMenuIndex){vibe(0);}   //short vibration each time we change the selected menu item
+            // --------------------------------------------------
+
             // header
             drawString("- " + MENUS[subMenu][0] + " -", -1, y, fontDesc);
             y += 20;
-            for (int i = 0; i < subMenus-1; i++) {
+            for (int i = 0; i < ARRAYLEN(MENUS[subMenu]) -1; i++) {
                 drawString(MENUS[subMenu][i+1], -1, y, fontDesc);
                 // draw cursor
                 if (i == round(currentMenu)) {
@@ -1344,6 +1356,7 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs thins function continuo
                 }
                 y += 16;
             }
+            drawString("- - - -", -1, y, fontDesc);
 
             if (pressed(PIN_TRIGGER)) {
                 menuPage = MENU_ITEM;

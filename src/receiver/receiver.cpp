@@ -126,10 +126,8 @@ bool isMoving() {
   return telemetry.getSpeed() != 0; // moving in any direction
 }
 
-/*
-   Calculate the battery level of the board based on the telemetry voltage
-*/
-float batteryPackPercentage( float voltage ) {
+
+float batteryPackPercentage( float voltage ) { // Calculate the battery level of the board based on the telemetry voltage
 
   float maxCellVoltage = 4.2;
   float minCellVoltage;
@@ -350,7 +348,7 @@ float batteryPackPercentage( float voltage ) {
 
 
 void loop() { // CORE 1 task launcher - UART data exchange with VESC
-              // function LOOP() function runs continuously !
+              // function LOOP() runs continuously !
 
     // get telemetry;
     getUartData(); // every 250 ms ?

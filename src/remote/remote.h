@@ -84,6 +84,7 @@ enum ui_page {
   PAGE_MENU,
   PAGE_MAX,
   PAGE_DEBUG,
+//  PAGE_LIGHT_SETTINGS,
 } page = PAGE_MAIN;
 
 // Battery monitoring
@@ -146,14 +147,18 @@ enum menu_page {
 } menuPage = MENU_MAIN;
 
 
+
+//int thisArraySize =0;
+//size_t sizeArray;
+
 const byte subMenus = 7;
 const byte mainMenus = 4;
 
 String MENUS[mainMenus][subMenus] = {
-    { "Info", "Debug", "TestDebug", "Specs", "", "", "" },
-    { "Remote", "Calibrate", "Pair", "Auto off", "", "", "" },
-    { "Board", "WIFIupdate",  "Max Speed", "Range", "Cells", "Battery", "Motor" },
-    { "Lights", "Switch ON", "Switch OFF", "Settings", "", "", "" }
+    { "Info", "Debug", "TestDebug", "Specs"},
+    { "Remote", "Calibrate", "Pair", "Auto off", "", ""},
+    { "Board", "WIFIupdate",  "Max Speed", "Range", "Cells", "Battery"},
+    { "Lights", "Switch ON", "Switch OFF"}
   };
 
 enum menu_main { MENU_INFO, MENU_REMOTE, MENU_BOARD, MENU_LIGHT };
@@ -165,6 +170,8 @@ enum menu_light { SWITCH_LIGHT_ON, SWITCH_LIGHT_OFF, ROADLIGHT_SETTINGS };
 float currentMenu = 0;
 int subMenu = 0;
 int subMenuItem = 0;
+
+//int currentMenuLength =0;
 
 // set idle mode after using menu
 bool menuWasUsed = false;
