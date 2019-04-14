@@ -171,8 +171,6 @@ float currentMenu = 0;
 int subMenu = 0;
 int subMenuItem = 0;
 
-//int currentMenuLength =0;
-
 // set idle mode after using menu
 bool menuWasUsed = false;
 

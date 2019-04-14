@@ -4,10 +4,12 @@
 #include <Arduino.h>
 #include <datatypes.h>
 
+// ********** OPTIONAL FEATURES ***********************************************
 //#define FAKE_UART // Comment out after pairing the remote and connecting VESC
 //#define DEBUG // Uncomment DEBUG if you need to debug the remote
-
 //const uint32_t boardAddress = 0xA9BF713C;
+#define ROADLIGHT_CONNECTED //FRONT LIGHT and BACKLIGHT option. Reconfigure 2 pins on the receiver side for FRONTLIGHT and BACKLIGHT
+// ********** * * * * * * * * * ***********************************************
 
 const COMM_PACKET_ID VESC_COMMAND = COMM_GET_VALUES; // VESC
 // const COMM_PACKET_ID VESC_COMMAND = COMM_GET_UNITY_VALUES; // Enertion Unity

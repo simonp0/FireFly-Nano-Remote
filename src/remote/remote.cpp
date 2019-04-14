@@ -1308,7 +1308,7 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs thins function continuo
             }
             nextMenuIndex = round(currentMenu);
             if (lastMenuIndex != nextMenuIndex){vibe(0);}   //short vibration each time we change the selected menu item
-            // --------------------------------------------------
+            // ----------------------------------------------------------------
 
             //header
             drawString("- Menu -", -1, y, fontDesc);
@@ -1343,7 +1343,7 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs thins function continuo
             }
             nextMenuIndex = round(currentMenu);
             if (lastMenuIndex != nextMenuIndex){vibe(0);}   //short vibration each time we change the selected menu item
-            // --------------------------------------------------
+            // ----------------------------------------------------------------
 
             // header
             drawString("- " + MENUS[subMenu][0] + " -", -1, y, fontDesc);

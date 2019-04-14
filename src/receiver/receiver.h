@@ -73,8 +73,6 @@ String updateStatus;
 
 unsigned long lastBrakeTime;
 
-//ROADLIGHT_SETTINGS
-uint8_t ROADLIGHT_BRIGHTNESS = 0;
 
 #ifdef RECEIVER_SCREEN
 const GFXfont* fontDigital = &Segment13pt7b;  // speed, distance, ...
@@ -114,12 +112,22 @@ void speedControl(uint16_t throttle , bool trigger );
 String uint64ToAddress(uint64_t number);
 String uint64ToString(uint64_t number);
 void updateEEPROMSettings();
-
-
 void updateSetting(uint8_t setting, uint64_t value);
 
-//void drawLightPage();
-void switchLightOn();
-void switchLightOff();
 
-void vibrate(int ms);
+// *******************   LED LIGHT IMPLEMENTATION - Receiver *************
+
+// we have PIN_FRONTLIGHT attributed on what is PIN_VIBRO on the remote control side
+// we have PIN_BACKLIGHT attributed on what is PIN_PWRBUTTON on the remote control side
+#ifdef ROADLIGHT_CONNECTED
+    uint8_t ROADLIGHT_BRIGHTNESS = 0;
+    void switchLightOn();
+    void switchLightOff();
+    void brakeLight(int ms);
+    //void drawLightPage();
+#endif
+
+// *******************   LED LIGHT IMPLEMENTATION - Receiver *************
+
+
+//void vibrate(int ms); //wtf?

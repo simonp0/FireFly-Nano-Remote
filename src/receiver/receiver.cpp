@@ -53,13 +53,11 @@ void setup(){ //runs once after powerOn
     pinMode(LED, OUTPUT);
 
 // ****************************************LIGHT IMPLEMENTATION*****************************
-
-pinMode(PIN_PWRBUTTON, OUTPUT); //this pin is free on the receiver
-digitalWrite(PIN_PWRBUTTON, LOW);
-
-#ifdef PIN_VIBRO
-    pinMode(PIN_VIBRO, OUTPUT);  //this pin is free on the receiver
-    digitalWrite(PIN_VIBRO, LOW);
+#ifdef ROADLIGHT_CONNECTED
+    pinMode(PIN_BACKLIGHT, OUTPUT); //this pin is free on the receiver
+    digitalWrite(PIN_BACKLIGHT, LOW);
+    pinMode(PIN_FRONTLIGHT, OUTPUT);  //this pin is free on the receiver
+    digitalWrite(PIN_FRONTLIGHT, LOW);
 #endif
 
 
@@ -307,8 +305,8 @@ float batteryPackPercentage( float voltage ) { // Calculate the battery level of
             display.setCursor(0, 10);
             display.print("No UART data");
 // ****************************************LIGHT IMPLEMENTATION*****************************
-            display.print(" Vp" + String(digitalRead(PIN_VIBRO)) );
-            display.print(" Lp" + String(digitalRead(PIN_PWRBUTTON)) );
+            display.print(" Vp" + String(digitalRead(PIN_FRONTLIGHT)) );
+            display.print(" Lp" + String(digitalRead(PIN_BACKLIGHT)) );
 // ****************************************LIGHT IMPLEMENTATION*****************************
 
             // remote info
@@ -646,6 +644,7 @@ void radioExchange(){   //receive packet, execute SET_ or GET_ request, send ans
                 break;
 
 // ****************************************LIGHT IMPLEMENTATION*****************************
+            #ifdef ROADLIGHT_CONNECTED
                 case SET_LIGHT:
                     // vibrate(2000); WE CANNOT DELAY THIS FUNCTION OR IT GENERATES A DISCONNECTION
                     // SOLUTION : CREATE A SEPARATE TASK!
@@ -657,16 +656,17 @@ void radioExchange(){   //receive packet, execute SET_ or GET_ request, send ans
                             //switchLightOn();
                             //vibrate(1000);
                               //display.clearDisplay();
-                            digitalWrite(PIN_PWRBUTTON, HIGH);
-                            digitalWrite(PIN_VIBRO, HIGH);
+                            digitalWrite(PIN_BACKLIGHT, HIGH);
+                            digitalWrite(PIN_FRONTLIGHT, HIGH);
                         break;
                         case LOW:
                             //switchLightOff();
-                            digitalWrite(PIN_PWRBUTTON, LOW);
-                            digitalWrite(PIN_VIBRO, LOW);
+                            digitalWrite(PIN_BACKLIGHT, LOW);
+                            digitalWrite(PIN_FRONTLIGHT, LOW);
                         break;
                     }
                 break;
+            #endif
 // ****************************************LIGHT IMPLEMENTATION*****************************
 
             }
@@ -1147,23 +1147,26 @@ bool inRange(int val, int minimum, int maximum){ //checks if value is within MIN
 
 // ****************************************LIGHT IMPLEMENTATION*****************************
 //void drawLightPage(); // uint8_t lightBrightnessValue
-void switchLightOn(){
-    #ifdef PIN_PWRBUTTON
-        digitalWrite(PIN_PWRBUTTON, HIGH);
-    #endif
-}
+#ifdef ROADLIGHT_CONNECTED
+    void switchLightOn(){
+            digitalWrite(PIN_BACKLIGHT, HIGH);
+    }
 
-void switchLightOff(){
-    #ifdef PIN_PWRBUTTON
-        digitalWrite(PIN_PWRBUTTON, LOW);
-    #endif
-}
+    void switchLightOff(){
+            digitalWrite(PIN_BACKLIGHT, LOW);
+    }
 
+    void brakeLight(int ms){
+        // activate BACKLIGHT flashing sequence when the receiver switches into BRAKING mode
+    }
+#endif
+
+/*
 void vibrate(int ms) {
-  #ifdef PIN_VIBRO
-    digitalWrite(PIN_VIBRO, HIGH);
+  #ifdef PIN_FRONTLIGHT
+    digitalWrite(PIN_FRONTLIGHT, HIGH);
     delay(ms);
-    digitalWrite(PIN_VIBRO, LOW);
+    digitalWrite(PIN_FRONTLIGHT, LOW);
   #endif
-}
+}*/
 // ****************************************LIGHT IMPLEMENTATION*****************************
