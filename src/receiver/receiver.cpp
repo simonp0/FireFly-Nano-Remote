@@ -36,38 +36,34 @@ uint8_t statusCode = 0;
 bool statusLedState = false;
 
 unsigned long statusCycleTime, previousStatusMillis, currentMillis, startCycleMillis = 0;
-
 unsigned long lastDelay;
 
 // Initiate VescUart class for UART communication
 
 void setup(){ //runs once after powerOn
-    // wait for VESC?
-    delay(1000);
+    delay(1000);    // wait for VESC?
     Serial.begin(115200);
     // while (!Serial) {}; // wait for serial port to connect. Needed for native USB port only
     debug("Receiver");
     //loadEEPROMSettings();
     setDefaultEEPROMSettings();
     calculateRatios();
-    pinMode(LED, OUTPUT);
+    pinMode(LED, OUTPUT); //LED onBoard
 
-// ****************************************LIGHT IMPLEMENTATION*****************************
+
+// ******** LED LIGHT IMPLEMENTATION ********
 #ifdef ROADLIGHT_CONNECTED
-    pinMode(PIN_BACKLIGHT, OUTPUT); //this pin is free on the receiver
-    digitalWrite(PIN_BACKLIGHT, LOW);
-    pinMode(PIN_FRONTLIGHT, OUTPUT);  //this pin is free on the receiver
-    digitalWrite(PIN_FRONTLIGHT, LOW);
+    ledcSetup(led_pwm_channel_frontLight, led_pwm_frequency, led_pwm_resolution); // configure LED PWM functionalitites
+    ledcAttachPin(PIN_FRONTLIGHT, led_pwm_channel_frontLight); // attach the channel to the GPIO to be controlled
+    ledcSetup(led_pwm_channel_backLight, led_pwm_frequency, led_pwm_resolution); // configure LED PWM functionalitites
+    ledcAttachPin(PIN_BACKLIGHT, led_pwm_channel_backLight); // attach the channel to the GPIO to be controlled
+    myRoadLightState = OFF; //default setting when switching on the board
 #endif
+// ******** LED LIGHT IMPLEMENTATION ********
 
 
-// ****************************************LIGHT IMPLEMENTATION*****************************
-
-    // 10 seconds average
-    batterySensor.begin(SMOOTHED_EXPONENTIAL, 10);
-
-    // 1 sec average
-    motorCurrent.begin(SMOOTHED_AVERAGE, 2);
+    batterySensor.begin(SMOOTHED_EXPONENTIAL, 10);     // 10 seconds average
+    motorCurrent.begin(SMOOTHED_AVERAGE, 2);    // 1 sec average
     motorCurrent.add(0);
 
     UART.setTimeout(UART_TIMEOUT);
@@ -346,11 +342,9 @@ float batteryPackPercentage( float voltage ) { // Calculate the battery level of
 
 
 void loop() { // CORE 1 task launcher - UART data exchange with VESC
-              // function LOOP() runs continuously !
-
+              // function LOOP() starts just after setup() & runs continuously !
     // get telemetry;
     getUartData(); // every 250 ms ?
-
     #ifdef ARDUINO_SAMD_ZERO
         radioExchange();
         stateMachine();
@@ -378,7 +372,7 @@ void loop() { // CORE 1 task launcher - UART data exchange with VESC
 #endif //endifdef
 
 
-void pairingRequest() {
+void pairingRequest() { // TODO
   // safety checks
   #ifdef FAKE_UART
     setState(PAIRING);
@@ -386,7 +380,6 @@ void pairingRequest() {
   #endif
   // todo: confirm pairing
 }
-
 
 bool receiveData(){ // copies buffer data into remPacket
     // copies buffer data into remPacket
@@ -597,11 +590,9 @@ void setState(AppState newState) { //called by the stateMachine()
   state = newState;
 }
 
-void radioExchange(){   //receive packet, execute SET_ or GET_ request, send answer
-//radioExchange() is executed by CORE 0 task via coreTask() function
-
-// controlStatusLed();
-
+void radioExchange() {   //receive packet, execute SET_ or GET_ request, send answer
+    //radioExchange() is executed by CORE 0 task via coreTask() function
+    // controlStatusLed();
     /* Begin listen for transmission */
     if ( dataAvailable() ) {
 
@@ -643,33 +634,23 @@ void radioExchange(){   //receive packet, execute SET_ or GET_ request, send ans
                     response = CONFIG;
                 break;
 
-// ****************************************LIGHT IMPLEMENTATION*****************************
-            #ifdef ROADLIGHT_CONNECTED
+            #ifdef ROADLIGHT_CONNECTED  // ************* LED LIGHT IMPLEMENTATION*********************
                 case SET_LIGHT:
-                    // vibrate(2000); WE CANNOT DELAY THIS FUNCTION OR IT GENERATES A DISCONNECTION
-                    // SOLUTION : CREATE A SEPARATE TASK!
+                    // vibrate(2000); TODO : launch via an independant task to avoid introducing any delay here
                     response = ACK_ONLY;
                     // display.clearDisplay();
                     switch (remPacket.data) {
                         case HIGH:
-                            //ROADLIGHT_BRIGHTNESS = remPacket.data;
-                            //switchLightOn();
-                            //vibrate(1000);
-                              //display.clearDisplay();
-                            digitalWrite(PIN_BACKLIGHT, HIGH);
-                            digitalWrite(PIN_FRONTLIGHT, HIGH);
+                            switchLightOn();
                         break;
                         case LOW:
-                            //switchLightOff();
-                            digitalWrite(PIN_BACKLIGHT, LOW);
-                            digitalWrite(PIN_FRONTLIGHT, LOW);
+                            switchLightOff();
                         break;
                     }
                 break;
             #endif
-// ****************************************LIGHT IMPLEMENTATION*****************************
 
-            }
+            } // end switch
 
             // send config after power on
             if (justStarted) response = CONFIG;
@@ -698,9 +679,7 @@ void radioExchange(){   //receive packet, execute SET_ or GET_ request, send ans
             }
 
         } else receivedData = false;
-
-    }
-/* End listen for transmission */
+    }   // End if( dataAvailable() ) - Stop listening for transmission
 
 } //END radioExchange() function
 
@@ -785,6 +764,7 @@ void stateMachine() { // handle auto-stop, endless mode, etc...
         // use last throttle
         throttle = lastThrottle;
       }
+
       break;
 
     case STOPPING: // emergency brake when remote has disconnected
@@ -817,6 +797,8 @@ void stateMachine() { // handle auto-stop, endless mode, etc...
 
       // release brakes after a few seconds
       if (secondsSince(lastBrakeTime) > AUTO_BRAKE_RELEASE) setState(IDLE);
+
+
       break;
 
     case UPDATE:
@@ -910,9 +892,14 @@ void setThrottle(uint16_t value){
     //    digitalWrite(throttlePin, HIGH);
     //    delayMicroseconds(map(throttle, 0, 255, 1000, 2000) );
     //    digitalWrite(throttlePin, LOW);
-
     // remember throttle for smooth auto stop
     lastThrottle = throttle;
+
+    #ifdef ROADLIGHT_CONNECTED
+            updateBrakeLight();
+    #endif
+
+
 }
 
 void setCruise(uint8_t speed) {
@@ -924,7 +911,6 @@ void setCruise(uint8_t speed) {
     UART.setNunchuckValues();
     #endif
 }
-
 
 /* void speedControl( uint16_t throttle , bool trigger ){ TODO
    // Kill switch
@@ -1039,7 +1025,7 @@ void getUartData(){ //reads VESC data via UART and stores values in telemetry pa
       // returnData.inpVoltage     = 0.0;
       // returnData.rpm            = 0;
       // returnData.tachometerAbs  = 0;
-      debug("No UART data received!");
+      debug("No UART dXXa received!");
     }
   }
 }
@@ -1147,26 +1133,52 @@ bool inRange(int val, int minimum, int maximum){ //checks if value is within MIN
 
 // ****************************************LIGHT IMPLEMENTATION*****************************
 //void drawLightPage(); // uint8_t lightBrightnessValue
+
+
 #ifdef ROADLIGHT_CONNECTED
     void switchLightOn(){
-            digitalWrite(PIN_BACKLIGHT, HIGH);
+        ledcWrite(led_pwm_channel_frontLight, dutyCycle_frontLightOn);
+        ledcWrite(led_pwm_channel_backLight, dutyCycle_backLightOn);
+        myRoadLightState = ON;
     }
 
     void switchLightOff(){
-            digitalWrite(PIN_BACKLIGHT, LOW);
+        ledcWrite(led_pwm_channel_frontLight, dutyCycle_lightOff);
+        ledcWrite(led_pwm_channel_backLight, dutyCycle_lightOff);
+        myRoadLightState = OFF;
     }
 
-    void brakeLight(int ms){
-        // activate BACKLIGHT flashing sequence when the receiver switches into BRAKING mode
+    void updateBrakeLight(){   // activate BACKLIGHT flashing sequence from setThrottle() function
+        switch(myRoadLightState){
+            case OFF:
+                emitBrakeLightPulse(dutyCycle_lightOff); //activate brakeLight flashes while OFF in between
+            break;
+
+            case ON:
+                emitBrakeLightPulse(dutyCycle_backLightOn); //activate brakeLight flashes while ON (normal brightness) in between
+            break;
+        }
     }
+
+    void emitBrakeLightPulse(uint_fast32_t dutyCycle_returnToNormal){    //emits a brakeLight flash and go back to the previous state
+        uint8_t pwm_channel = led_pwm_channel_backLight;
+        uint_fast32_t returnDutyCycle = dutyCycle_returnToNormal;
+        uint_fast32_t flashDutyCycle = dutyCycle_brakeLight;
+
+            if (millisSince(lastBrakeLightPulse) >= brakeLightPulseInterval) {    // check when was the last brake flash triggered
+                if(lastThrottle<default_throttle){
+                    lastBrakeLightPulse = millis(); //reset coounter
+                    ledcWrite(pwm_channel, flashDutyCycle);     //emit a new flash
+                }
+            }
+            else{ //during a brakeLightPulse emission
+                if(millisSince(lastBrakeLightPulse) >= brakeLightPulseDuration){ // check if the flash has been ON long enough
+                            ledcWrite(pwm_channel, returnDutyCycle); // go back to previous state
+                }
+            }
+    }
+
 #endif
 
-/*
-void vibrate(int ms) {
-  #ifdef PIN_FRONTLIGHT
-    digitalWrite(PIN_FRONTLIGHT, HIGH);
-    delay(ms);
-    digitalWrite(PIN_FRONTLIGHT, LOW);
-  #endif
-}*/
+
 // ****************************************LIGHT IMPLEMENTATION*****************************

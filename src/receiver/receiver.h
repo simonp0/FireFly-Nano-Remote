@@ -7,6 +7,8 @@
 #include "utils.h"
 #include "VescUart.h"
 
+//#include <analogWrite.h>
+
 #ifdef RECEIVER_SCREEN
   #include <Adafruit_GFX.h>
   #include "Adafruit_SSD1306.h"
@@ -119,15 +121,39 @@ void updateSetting(uint8_t setting, uint64_t value);
 
 // we have PIN_FRONTLIGHT attributed on what is PIN_VIBRO on the remote control side
 // we have PIN_BACKLIGHT attributed on what is PIN_PWRBUTTON on the remote control side
+
 #ifdef ROADLIGHT_CONNECTED
-    uint8_t ROADLIGHT_BRIGHTNESS = 0;
+
+    enum RoadLightState{
+        OFF,
+        ON,
+        WARNING,
+        DISCO // yes baby !
+    };
+
+    RoadLightState myRoadLightState = OFF; //default value on startupTime
+
+    const double led_pwm_frequency = 5000;
+    const uint8_t led_pwm_channel_frontLight = 0; //GPIO channel to use
+    const uint8_t led_pwm_channel_backLight = 1; //GPIO channel to use
+    const uint8_t led_pwm_resolution = 8;
+
+    uint_fast32_t dutyCycle_lightOff = 0;
+    uint_fast32_t dutyCycle_frontLightOn = 155;   //TODO : value can be changed via the remote menu
+    uint_fast32_t dutyCycle_backLightOn = 155;    //TODO : value can be changed via the remote menu
+    uint_fast32_t dutyCycle_brakeLight = 255;   //TODO : value can be changed via the remote menu
+
+    unsigned long lastBrakeLightPulse;
+    unsigned long brakeLightPulseInterval = 100; //ms between each brakeLightPulse initiation
+    unsigned long brakeLightPulseDuration = 50; //ms TBD
+
+    //uint8_t ROADLIGHT_BRIGHTNESS = 0;
     void switchLightOn();
     void switchLightOff();
-    void brakeLight(int ms);
+    void updateBrakeLight();
+    void emitBrakeLightPulse(uint_fast32_t value);
     //void drawLightPage();
+
 #endif
 
 // *******************   LED LIGHT IMPLEMENTATION - Receiver *************
-
-
-//void vibrate(int ms); //wtf?
