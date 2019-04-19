@@ -797,8 +797,9 @@ void prepatePacket() {
                 //xTaskCreate(vibeTask, "vibeTask", 100, NULL, 2, &TaskHandle1);
                 debug("requestSwitchLight");
                 remPacket.command = SET_LIGHT;
-                if (ROADLIGHT_BRIGHTNESS==0){remPacket.data = LOW;}
-                else{remPacket.data = HIGH;}
+//                if (ROADLIGHT_MODE==0){remPacket.data = LOW;}
+//                else{remPacket.data = HIGH;}
+                remPacket.data = ROADLIGHT_MODE;
                 requestSwitchLight = false;
                 break;
             }
@@ -1393,16 +1394,21 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs thins function continuo
                             //requestSwitchLight = true; //flag signaling a LIGHT command for the next remotePacket sent
                             case SWITCH_LIGHT_ON:
                                 requestSwitchLight = true;
-                                ROADLIGHT_BRIGHTNESS = 1;
+                                ROADLIGHT_MODE = 1;
                                 backToMainMenu();
                             break;
                             case SWITCH_LIGHT_OFF:
                                 requestSwitchLight = true;
-                                ROADLIGHT_BRIGHTNESS = 0;
+                                ROADLIGHT_MODE = 0;
                                 //drawDebugPage();
                                 backToMainMenu();
                             break;
+                            case SWITCH_LIGHT_BRAKES_ONLY:
+                                requestSwitchLight = true;
+                                ROADLIGHT_MODE = 2;
+                                backToMainMenu();
                             case ROADLIGHT_SETTINGS:
+                                drawLightPage();
                                 //backToMainMenu(); //nothing, we want to display drawLightPage()
                             break;
                         }
@@ -1442,10 +1448,13 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs thins function continuo
                 case MENU_LIGHT: //if we want to display a specific page and stay on it
                     switch (subMenuItem){
                         case SWITCH_LIGHT_ON:
-                            //drawLightPage(); //backToMainmenu() ^^ prevents anything to be executed here
+                            //nothing to display
                         break;
                         case SWITCH_LIGHT_OFF:
-                            //drawDebugPage();
+                            //nothing to display
+                        break;
+                        case SWITCH_LIGHT_BRAKES_ONLY:
+                            //nothing to display
                         break;
                         case ROADLIGHT_SETTINGS:
                             drawLightPage();
@@ -1493,6 +1502,55 @@ void drawLightPage(){
     drawStringCenter(String(lastRssi, 0), " db", y);
     //y += 25;
     //drawStringCenter(String(readThrottlePosition()), String(hallValue), y);
+
+    /*
+
+      int padding = 10;
+      int tick = 5;
+      int w = display.width() - padding*2;
+
+      int position = readThrottlePosition();
+
+      switch (calibrationStage) {
+      case CALIBRATE_CENTER:
+
+        tempSettings.centerHallValue = hallValue;
+        tempSettings.minHallValue = hallValue - 100;
+        tempSettings.maxHallValue = hallValue + 100;
+        calibrationStage = CALIBRATE_MAX;
+        break;
+
+      case CALIBRATE_MAX:
+        if (hallValue > tempSettings.maxHallValue) {
+          tempSettings.maxHallValue = hallValue;
+        } else if (hallValue < tempSettings.minHallValue) {
+          calibrationStage = CALIBRATE_MIN;
+        }
+        break;
+
+      case CALIBRATE_MIN:
+        if (hallValue < tempSettings.minHallValue) {
+          tempSettings.minHallValue = hallValue;
+        } else if (hallValue == tempSettings.centerHallValue) {
+          calibrationStage = CALIBRATE_STOP;
+        }
+        break;
+
+      case CALIBRATE_STOP:
+
+        if (pressed(PIN_TRIGGER)) {
+          // apply calibration values
+          settings.centerHallValue = tempSettings.centerHallValue;
+          settings.minHallValue = tempSettings.minHallValue;
+          settings.maxHallValue = tempSettings.maxHallValue;
+
+          backToMainMenu();
+          display.setRotation(DISPLAY_ROTATION);
+          saveSettings();
+
+          return;
+        }
+        */
 
 
 }// ****************************************LIGHT IMPLEMENTATION*****************************

@@ -127,29 +127,30 @@ void updateSetting(uint8_t setting, uint64_t value);
     enum RoadLightState{
         OFF,
         ON,
-        WARNING,
+        BRAKES_ONLY,
         DISCO // yes baby !
     };
 
     RoadLightState myRoadLightState = OFF; //default value on startupTime
 
-    const double led_pwm_frequency = 5000;
+    const double led_pwm_frequency = 100;
     const uint8_t led_pwm_channel_frontLight = 0; //GPIO channel to use
     const uint8_t led_pwm_channel_backLight = 1; //GPIO channel to use
     const uint8_t led_pwm_resolution = 8;
 
     uint_fast32_t dutyCycle_lightOff = 0;
-    uint_fast32_t dutyCycle_frontLightOn = 155;   //TODO : value can be changed via the remote menu
-    uint_fast32_t dutyCycle_backLightOn = 155;    //TODO : value can be changed via the remote menu
+    uint_fast32_t dutyCycle_frontLightOn = 90;   //TODO : value can be changed via the remote menu
+    uint_fast32_t dutyCycle_backLightOn = 90;    //TODO : value can be changed via the remote menu
     uint_fast32_t dutyCycle_brakeLight = 255;   //TODO : value can be changed via the remote menu
 
     unsigned long lastBrakeLightPulse;
     unsigned long brakeLightPulseInterval = 100; //ms between each brakeLightPulse initiation
     unsigned long brakeLightPulseDuration = 50; //ms TBD
 
-    //uint8_t ROADLIGHT_BRIGHTNESS = 0;
+    //uint8_t ROADLIGHT_MODE = 0;
     void switchLightOn();
     void switchLightOff();
+    void switchLightBrakesOnly();
     void updateBrakeLight();
     void emitBrakeLightPulse(uint_fast32_t value);
     //void drawLightPage();

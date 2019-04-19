@@ -85,6 +85,7 @@ enum ui_page {
   PAGE_MAX,
   PAGE_DEBUG,
   PAGE_LIGHT_SETTINGS,
+
 } page = PAGE_MAIN;
 
 // Battery monitoring
@@ -155,14 +156,14 @@ String MENUS[mainMenus][subMenus] = {
     { "Info", "Debug", "TestDebug", "Specs"},
     { "Remote", "Calibrate", "Pair", "Auto off", "", ""},
     { "Board", "WIFIupdate",  "Max Speed", "Range", "Cells", "Battery"},
-    { "Lights", "Switch ON", "Switch OFF"}
+    { "Lights", "Switch ON", "Switch OFF", "Brake Only", "Settings"}
   };
 
 enum menu_main { MENU_INFO, MENU_REMOTE, MENU_BOARD, MENU_LIGHT };
 enum menu_info { INFO_DEBUG };
 enum menu_remote { REMOTE_CALIBRATE, REMOTE_PAIR, REMOTE_SLEEP_TIMER };
 enum menu_board { BOARD_UPDATE };
-enum menu_light { SWITCH_LIGHT_ON, SWITCH_LIGHT_OFF, ROADLIGHT_SETTINGS };
+enum menu_light { SWITCH_LIGHT_ON, SWITCH_LIGHT_OFF, SWITCH_LIGHT_BRAKES_ONLY, ROADLIGHT_SETTINGS };
 
 float currentMenu = 0;
 int subMenu = 0;
@@ -300,9 +301,9 @@ void vibe(int vibeMode); //vibrations combos
 // flag for LIGHT switch (same method)
 
 bool requestSwitchLight = false;
-uint8_t ROADLIGHT_BRIGHTNESS = 0; //let's implement a PWM modulation and a brightness setting within the remote menu
+uint8_t ROADLIGHT_MODE = 0;
 void drawLightPage();//test
 
-//void switchLightOn();
+//void switchLightOn(); //on receiver side only.
 //void switchLightOff();
 // ****************************************LIGHT IMPLEMENTATION*****************************

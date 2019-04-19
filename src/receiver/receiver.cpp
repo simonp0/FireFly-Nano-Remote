@@ -301,8 +301,8 @@ float batteryPackPercentage( float voltage ) { // Calculate the battery level of
             display.setCursor(0, 10);
             display.print("No UART data");
 // ****************************************LIGHT IMPLEMENTATION*****************************
-            display.print(" Vp" + String(digitalRead(PIN_FRONTLIGHT)) );
-            display.print(" Lp" + String(digitalRead(PIN_BACKLIGHT)) );
+        //    display.print(" Vp" + String(digitalRead(PIN_FRONTLIGHT)) );
+        //    display.print(" Lp" + String(digitalRead(PIN_BACKLIGHT)) );
 // ****************************************LIGHT IMPLEMENTATION*****************************
 
             // remote info
@@ -640,11 +640,14 @@ void radioExchange() {   //receive packet, execute SET_ or GET_ request, send an
                     response = ACK_ONLY;
                     // display.clearDisplay();
                     switch (remPacket.data) {
-                        case HIGH:
+                        case 1:
                             switchLightOn();
                         break;
-                        case LOW:
+                        case 0:
                             switchLightOff();
+                        break;
+                        case 2:  //brake only mode
+                            switchLightBrakesOnly();
                         break;
                     }
                 break;
@@ -1148,14 +1151,27 @@ bool inRange(int val, int minimum, int maximum){ //checks if value is within MIN
         myRoadLightState = OFF;
     }
 
+    void switchLightBrakesOnly(){
+        ledcWrite(led_pwm_channel_frontLight, dutyCycle_lightOff);
+        ledcWrite(led_pwm_channel_backLight, dutyCycle_lightOff);
+        myRoadLightState = BRAKES_ONLY;
+    }
+
+
     void updateBrakeLight(){   // activate BACKLIGHT flashing sequence from setThrottle() function
         switch(myRoadLightState){
             case OFF:
-                emitBrakeLightPulse(dutyCycle_lightOff); //activate brakeLight flashes while OFF in between
+                // do nothing
+                delay(1);
+                //emitBrakeLightPulse(dutyCycle_lightOff); //activate brakeLight flashes while OFF in between
             break;
 
             case ON:
                 emitBrakeLightPulse(dutyCycle_backLightOn); //activate brakeLight flashes while ON (normal brightness) in between
+            break;
+
+            case BRAKES_ONLY:
+                emitBrakeLightPulse(dutyCycle_lightOff); //activate brakeLight flashes while OFF in between
             break;
         }
     }
@@ -1166,7 +1182,7 @@ bool inRange(int val, int minimum, int maximum){ //checks if value is within MIN
         uint_fast32_t flashDutyCycle = dutyCycle_brakeLight;
 
             if (millisSince(lastBrakeLightPulse) >= brakeLightPulseInterval) {    // check when was the last brake flash triggered
-                if(lastThrottle<default_throttle){
+                if(lastThrottle<(default_throttle*0.75)){
                     lastBrakeLightPulse = millis(); //reset coounter
                     ledcWrite(pwm_channel, flashDutyCycle);     //emit a new flash
                 }
@@ -1175,6 +1191,11 @@ bool inRange(int val, int minimum, int maximum){ //checks if value is within MIN
                 if(millisSince(lastBrakeLightPulse) >= brakeLightPulseDuration){ // check if the flash has been ON long enough
                             ledcWrite(pwm_channel, returnDutyCycle); // go back to previous state
                 }
+            }
+             //debug unexpected state
+            if(lastThrottle >= (default_throttle*0.98)){ //debug unexpected state
+                lastBrakeLightPulse = millis(); //reset coounter
+                ledcWrite(pwm_channel, returnDutyCycle);     //emit a new flash
             }
     }
 

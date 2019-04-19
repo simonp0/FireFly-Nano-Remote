@@ -5,11 +5,13 @@
 #include <datatypes.h>
 
 // ********** OPTIONAL FEATURES ***********************************************
+
 //#define FAKE_UART // Comment out after pairing the remote and connecting VESC
 //#define DEBUG // Uncomment DEBUG if you need to debug the remote
 //const uint32_t boardAddress = 0xA9BF713C;
 //#include <analogWrite.h>
 #define ROADLIGHT_CONNECTED //FRONT LIGHT and BACKLIGHT option. Reconfigure 2 pins on the receiver side for FRONTLIGHT and BACKLIGHT
+
 // ********** * * * * * * * * * ***********************************************
 
 const COMM_PACKET_ID VESC_COMMAND = COMM_GET_VALUES; // VESC
@@ -72,7 +74,7 @@ const int MOTOR_PULLEY = 1;
 //adding LIGHT modes...
 //const int LIGHT_OFF = 0;
 //const int LIGHT_ON = 1;
-//uint8_t ROADLIGHT_BRIGHTNESS = 255; has to be declared in REMOTE.CPP
+//uint8_t ROADLIGHT_MODE = 1,2,3 ; has to be declared in REMOTE.CPP
 
 
 #define VERSION 2
