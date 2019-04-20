@@ -133,7 +133,7 @@ void updateSetting(uint8_t setting, uint64_t value);
 
     RoadLightState myRoadLightState = OFF; //default value on startupTime
 
-    const double led_pwm_frequency = 100;
+    const double led_pwm_frequency = 200;
     const uint8_t led_pwm_channel_frontLight = 0; //GPIO channel to use
     const uint8_t led_pwm_channel_backLight = 1; //GPIO channel to use
     const uint8_t led_pwm_resolution = 8;
