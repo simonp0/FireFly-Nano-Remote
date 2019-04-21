@@ -46,8 +46,8 @@ const int UART_SPEED = 115200;
 
 
 const uint16_t uartPullInterval = 150;
-const int UART_TIMEOUT = 10; // 10ms for 115200 bauds, 100ms for 9600 bauds
-const int REMOTE_RX_TIMEOUT = 20; // ms
+const int UART_TIMEOUT = 15; // 10ms for 115200 bauds, 100ms for 9600 bauds
+const int REMOTE_RX_TIMEOUT = 25; // ms (was 20)
 
 const int REMOTE_LOCK_TIMEOUT = 10; // seconds to lock throttle when idle
 const int REMOTE_SLEEP_TIMEOUT = 180; // seconds to go to sleep mode
@@ -66,15 +66,10 @@ const int MAX_SPEED = 30;       // KM/H
 const int MAX_RANGE = 30;       // KM
 const int BATTERY_CELLS = 10;
 const int BATTERY_TYPE = 0;     // 0: LI-ION | 1: LIPO
-const int MOTOR_POLES = 22;
-const int WHEEL_DIAMETER = 90;
+const int MOTOR_POLES = 24;
+const int WHEEL_DIAMETER = 100;
 const int WHEEL_PULLEY = 1;
 const int MOTOR_PULLEY = 1;
-
-//adding LIGHT modes...
-//const int LIGHT_OFF = 0;
-//const int LIGHT_ON = 1;
-//uint8_t ROADLIGHT_MODE = 1,2,3 ; has to be declared in REMOTE.CPP
 
 
 #define VERSION 2

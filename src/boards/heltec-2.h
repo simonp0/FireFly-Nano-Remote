@@ -23,7 +23,6 @@
 
 #define PIN_BATTERY   13
 
-//#define PIN_LIGHT     //LED lights control PIN
 
 #define HAS_BUTTON (0) // button "PRG" on board
 

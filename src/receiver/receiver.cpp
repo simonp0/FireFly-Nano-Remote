@@ -42,7 +42,7 @@ unsigned long lastDelay;
 
 void setup(){ //runs once after powerOn
     delay(1000);    // wait for VESC?
-    Serial.begin(115200);
+    Serial.begin(115200);//was 9600
     // while (!Serial) {}; // wait for serial port to connect. Needed for native USB port only
     debug("Receiver");
     //loadEEPROMSettings();
@@ -151,7 +151,7 @@ float batteryPackPercentage( float voltage ) { // Calculate the battery level of
         state = UPDATE;
 
         // replace this with your WiFi network credentials
-        const char* ssid = "internet"; // e.g. "FBI Surveillance Van #34";
+        const char* ssid = "sk8"; // e.g. "FBI Surveillance Van #34";
         const char* password = "12345678"; // e.g. "12345678";
 
         wifiStatus = "Connecting:";
@@ -366,7 +366,7 @@ void loop() { // CORE 1 task launcher - UART data exchange with VESC
         while (true) {  //while loop that runs continuously !
             radioExchange();
             stateMachine();
-            vTaskDelay(1);
+            vTaskDelay(1);//was 1
         }
     }
 #endif //endifdef
@@ -1162,7 +1162,9 @@ bool inRange(int val, int minimum, int maximum){ //checks if value is within MIN
         switch(myRoadLightState){
             case OFF:
                 // do nothing
-                delay(1);
+                //delay(1);
+                //vTaskDelay(10 / portTICK_PERIOD_MS); //delay specified in milliseconds instead of ticks
+
                 //emitBrakeLightPulse(dutyCycle_lightOff); //activate brakeLight flashes while OFF in between
             break;
 

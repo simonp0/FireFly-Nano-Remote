@@ -19,7 +19,7 @@
   #include <LoRa.h>
   #include <driver/adc.h>
 
-  // brownout
+   // brownout
   #include <driver/rtc_cntl.h>
   #include <driver/rtc_io.h>
   #include <soc/rtc_cntl_reg.h>
@@ -90,16 +90,18 @@ enum ui_page {
 
 // Battery monitoring
 const float minVoltage = 3.3; // min voltage with vibro motor
-const float maxVoltage = 4.2;
+const float maxVoltage = 4.05; //Heltec_Lora32_v2 stops charging around here..
 const float refVoltage = 3.3; // Feather double-100K resistor divider
 
 unsigned long lastBatterySample = 0; // smooth remote voltage
+
+
 
 // Hall Effect throttle
 uint16_t hallValue;
 float throttle;
 
-const uint8_t hallNoiseMargin = 8;
+const uint8_t hallNoiseMargin = 5;
 byte hallCenterMargin = 0;
 
 AppState state = CONNECTING;
