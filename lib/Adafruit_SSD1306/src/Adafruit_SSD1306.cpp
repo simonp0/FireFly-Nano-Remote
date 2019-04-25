@@ -166,7 +166,7 @@ void Adafruit_SSD1306::begin(uint8_t vccstate, uint8_t i2caddr) {
   else
   {
     // I2C Init
-    Wire.begin(DISPLAY_SDA, DISPLAY_SCL);
+    Wire.begin(SDA_OLED, SCL_OLED);
     // Let's use ~700khz if ESP8266 is in 160Mhz mode
     // this will be limited to ~400khz if the ESP8266 in 80Mhz mode.
     Wire.setClock(700000);

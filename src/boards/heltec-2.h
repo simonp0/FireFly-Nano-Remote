@@ -13,14 +13,13 @@
 //
 
 // Pin definitions
-#define LED           25   // LED on board
 #define PIN_BUTTON    12
 #define PIN_TRIGGER   32
 #define ADC_THROTTLE  ADC1_GPIO38_CHANNEL // ADC1_CHANNEL_2
 
 #define PIN_BATTERY   13
 
-#define HAS_BUTTON (0) // button "PRG" on board
+#define HAS_BUTTON KEY_BUILTIN // button "PRG" on board
 
 #define PIN_VIBRO     17
 
@@ -30,19 +29,7 @@
 
 #define BATTERY_PROBE ADC2_CHANNEL_4 // uses GPIO7
 #define BATT_FACTOR 2 // voltage divider 100k/100k on board
-#define VEXT 21
-
-// Pins for I2C interface of OLED Display
-#define DISPLAY_SDA 4
-#define DISPLAY_SCL 15
-#define DISPLAY_RST 16
 
 // Pins for LORA chip SPI interface, reset line and interrupt lines
-#define RF_SCK  5
-#define RF_CS   18
-#define RF_MISO 19
-#define RF_MOSI 27
-#define RF_RST  23
-#define RF_DI0  26
-#define RF_DI1  33
-#define RF_DI2  32
+// #define RF_RST  23 // RST_LoRa = 14;
+// #define RF_DI2  32 // DIO2 = 34
