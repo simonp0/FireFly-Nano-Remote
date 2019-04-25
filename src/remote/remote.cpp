@@ -1,6 +1,8 @@
 
 #include "remote.h"
-Adafruit_SSD1306 display(DISPLAY_RST);
+// define display
+Adafruit_SSD1306 display(RST_OLED);
+
 Smoothed <double> batterySensor;
 
 
@@ -82,6 +84,7 @@ void setup() {
     // while (!Serial) { ; }
 
     loadSettings();
+
 
     #ifdef PIN_VIBRO
         pinMode(PIN_VIBRO, OUTPUT);
@@ -380,14 +383,14 @@ void sleep() {  // manages the remote POWER ON / POWER OFF via PWR_BUTTON
     delay(100);
 
     // setup the peripherals state in deep sleep
-    pinMode(DISPLAY_SCL, INPUT);
-    pinMode(DISPLAY_RST,INPUT);
+    pinMode(SCL_OLED, INPUT);
+    pinMode(RST_OLED, INPUT);
 
     // rtc_gpio_hold_en((gpio_num_t)RF_MOSI);
     // rtc_gpio_hold_en((gpio_num_t)RF_RST);
     // 20k pull-up resistors on Mosi, Miso, SS and CLK
 
-    gpio_num_t gpio_num = (gpio_num_t)RF_RST;
+    gpio_num_t gpio_num = (gpio_num_t)RST_LoRa; // RF_RST;
     rtc_gpio_set_direction(gpio_num, RTC_GPIO_MODE_INPUT_ONLY);
     rtc_gpio_pulldown_en(gpio_num);
     rtc_gpio_pullup_dis(gpio_num);
@@ -399,19 +402,19 @@ void sleep() {  // manages the remote POWER ON / POWER OFF via PWR_BUTTON
     // rtc_gpio_pullup_dis(gpio_num);
     // rtc_gpio_hold_en(gpio_num);
 
-    pinMode(PIN_VIBRO, INPUT); //
+    pinMode(PIN_VIBRO, INPUT);
 
-    pinMode(RF_MISO, INPUT);
-    pinMode(RF_DI0, INPUT);
-    pinMode(RF_MOSI, INPUT);
+    pinMode(MISO, INPUT);
+    pinMode(DIO0, INPUT);
+    pinMode(MOSI, INPUT);
 
-    pinMode(RF_SCK, INPUT);
-    pinMode(14,INPUT);
-    pinMode(RF_CS, INPUT);
+    pinMode(SCK, INPUT);
+    pinMode(RST_LoRa, INPUT);
+    pinMode(SS, INPUT);
 
     // disable battery probe
-  	pinMode(VEXT, OUTPUT);
-  	digitalWrite(VEXT, HIGH);
+  	pinMode(Vext, OUTPUT);
+  	digitalWrite(Vext, HIGH);
 
     // Enter sleep mode and wait for interrupt
     esp_deep_sleep_start();
@@ -1787,7 +1790,7 @@ void drawMainPage() {
     }
 
     // max distance
-    int range = 30;
+    int range = boardConfig.maxRange;
     if (value > range) {range = value;}
 
     drawString(String(range), 52, 118, fontPico);
