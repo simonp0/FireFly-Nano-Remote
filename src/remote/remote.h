@@ -19,7 +19,7 @@
   #include <LoRa.h>
   #include <driver/adc.h>
 
-  // brownout
+   // brownout
   #include <driver/rtc_cntl.h>
   #include <driver/rtc_io.h>
   #include <soc/rtc_cntl_reg.h>
@@ -32,8 +32,8 @@
   #include <nvs_flash.h>
   #include <Preferences.h>
 
-  const int MIN_HALL = 350;
-  const int CENTER_HALL = 755;
+  const int MIN_HALL = 250;
+  const int CENTER_HALL = 750;
   const int MAX_HALL = 1023;
 
   static intr_handle_t s_rtc_isr_handle;
@@ -83,21 +83,25 @@ enum ui_page {
   PAGE_EXT,   // current / settings
   PAGE_MENU,
   PAGE_MAX,
-  PAGE_DEBUG
+  PAGE_DEBUG,
+  PAGE_LIGHT_SETTINGS,
+
 } page = PAGE_MAIN;
 
 // Battery monitoring
 const float minVoltage = 3.3; // min voltage with vibro motor
-const float maxVoltage = 4.2;
+const float maxVoltage = 4.05; //Heltec_Lora32_v2 stops charging around here..
 const float refVoltage = 3.3; // Feather double-100K resistor divider
 
 unsigned long lastBatterySample = 0; // smooth remote voltage
+
+
 
 // Hall Effect throttle
 uint16_t hallValue;
 float throttle;
 
-const uint8_t hallNoiseMargin = 8;
+const uint8_t hallNoiseMargin = 5;
 byte hallCenterMargin = 0;
 
 AppState state = CONNECTING;
@@ -132,7 +136,8 @@ float cruiseSpeed = 0;
 int cruiseStartThrottle;
 int cruiseThrottle;
 
-bool requestUpdate = false;
+bool requestUpdate = false; //when drawSettingsMenu() sets flag requestUpdate=TRUE : Next run of prepatePacket() function catches requestUpdate=TRUE flag -> next packet sent to receiver is a SET_STATE = UPDATE request. Possible only under AppState=MENU
+
 
 // menu
 enum menu_page {
@@ -142,20 +147,25 @@ enum menu_page {
 } menuPage = MENU_MAIN;
 
 
+
+//int thisArraySize =0;
+//size_t sizeArray;
+
 const byte subMenus = 7;
-const byte mainMenus = 3;
+const byte mainMenus = 4;
 
 String MENUS[mainMenus][subMenus] = {
-    { "Info", "Debug", "", "", "", "", "" },
-    { "Remote", "Calibrate", "Pair", "Auto off", "", "", "" },
-    { "Board", "Update",  "Max Speed", "Range", "Cells", "Battery", "Motor" }
+    { "Info", "Debug", "TestDebug", "Specs"},
+    { "Remote", "Calibrate", "Pair", "Auto off", "", ""},
+    { "Board", "WIFIupdate",  "Max Speed", "Range", "Cells", "Battery"},
+    { "Lights", "Switch ON", "Switch OFF", "Brake Only", "Settings"}
   };
 
-enum menu_main { MENU_INFO, MENU_REMOTE, MENU_BOARD };
+enum menu_main { MENU_INFO, MENU_REMOTE, MENU_BOARD, MENU_LIGHT };
 enum menu_info { INFO_DEBUG };
 enum menu_remote { REMOTE_CALIBRATE, REMOTE_PAIR, REMOTE_SLEEP_TIMER };
 enum menu_board { BOARD_UPDATE };
-
+enum menu_light { SWITCH_LIGHT_ON, SWITCH_LIGHT_OFF, SWITCH_LIGHT_BRAKES_ONLY, ROADLIGHT_SETTINGS };
 
 float currentMenu = 0;
 int subMenu = 0;
@@ -198,6 +208,11 @@ boolean longHoldEventPast = false;// whether or not the long hold event happened
 
 // icons
 const unsigned char logo[] PROGMEM = {
+ /* 0xff, 0xff, 0xff, 0x80, 0x00, 0x03, 0x80, 0x00, 0x05, 0x80, 0x00, 0x09, 0x80, 0x00, 0x11, 0x80,
+	0x00, 0x21, 0x80, 0x00, 0x41, 0x80, 0x00, 0x81, 0x80, 0x01, 0x01, 0x80, 0x02, 0x01, 0x80, 0x04,
+	0x01, 0xbf, 0xfb, 0xfd, 0x80, 0x00, 0x01, 0x80, 0x00, 0x01, 0x80, 0x00, 0x01, 0x80, 0x00, 0x01,
+	0x80, 0x00, 0x01, 0x80, 0x00, 0x01, 0x80, 0x00, 0x01, 0x80, 0x00, 0x01, 0x80, 0x00, 0x01, 0x80,
+	0x00, 0x01, 0x80, 0x00, 0x01, 0xff, 0xff, 0xff*/
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x7e, 0x00, 0x80, 0x3c, 0x01,
   0xe0, 0x00, 0x07, 0x70, 0x18, 0x0e, 0x30, 0x18, 0x0c, 0x98, 0x99, 0x19,
   0x80, 0xff, 0x01, 0x04, 0xc3, 0x20, 0x0c, 0x99, 0x30, 0xec, 0xa5, 0x37,
@@ -280,3 +295,17 @@ bool triggerActive();
 bool triggerActiveSafe();
 void updateMainDisplay();
 void vibrate(int ms);
+
+void vibe(int vibeMode); //vibrations combos
+
+
+// ****************************************LIGHT IMPLEMENTATION*****************************
+// flag for LIGHT switch (same method)
+
+bool requestSwitchLight = false;
+uint8_t ROADLIGHT_MODE = 0;
+void drawLightPage();//test
+
+//void switchLightOn(); //on receiver side only.
+//void switchLightOff();
+// ****************************************LIGHT IMPLEMENTATION*****************************
