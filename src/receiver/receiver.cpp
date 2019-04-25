@@ -51,7 +51,7 @@ void setup(){ //runs once after powerOn
     pinMode(LED, OUTPUT); //LED onBoard
 
 
-// ******** LED LIGHT IMPLEMENTATION ********
+// ******** LED ROADLIGHTS  -   PWM channels initialisation  ********
 #ifdef ROADLIGHT_CONNECTED
     ledcSetup(led_pwm_channel_frontLight, led_pwm_frequency, led_pwm_resolution); // configure LED PWM functionalitites
     ledcAttachPin(PIN_FRONTLIGHT, led_pwm_channel_frontLight); // attach the channel to the GPIO to be controlled
@@ -59,7 +59,7 @@ void setup(){ //runs once after powerOn
     ledcAttachPin(PIN_BACKLIGHT, led_pwm_channel_backLight); // attach the channel to the GPIO to be controlled
     myRoadLightState = OFF; //default setting when switching on the board
 #endif
-// ******** LED LIGHT IMPLEMENTATION ********
+// ******** LED ROADLIGHTS IMPLEMENTATION ********
 
 
     batterySensor.begin(SMOOTHED_EXPONENTIAL, 10);     // 10 seconds average
@@ -634,7 +634,7 @@ void radioExchange() {   //receive packet, execute SET_ or GET_ request, send an
                     response = CONFIG;
                 break;
 
-            #ifdef ROADLIGHT_CONNECTED  // ************* LED LIGHT IMPLEMENTATION*********************
+            #ifdef ROADLIGHT_CONNECTED  // ************* LED ROADLIGHTS  -  execute command coming from the RemotePacket  *********************
                 case SET_LIGHT:
                     // vibrate(2000); TODO : launch via an independant task to avoid introducing any delay here
                     response = ACK_ONLY;
@@ -879,10 +879,47 @@ void setCruise ( bool cruise, uint16_t setPoint ){
     // }
   }
 } */
+uint16_t ackmaniacHysteresis(uint16_t value){
+    //remapping function using Ackmaniac's algo
+
+/*
+    uint8_t throttleToApply = 127;
+
+        if ( !isTelemetryLost() ) {
+        //    if (millisSince(telemetryTime) < 1000) {  //telemetry is fresh -> max reactivity
+
+                float thisBoardMaxSpeed = 30; //boardConfig.getMaxSpeed();
+                float mySpeed = 0; // telemetry.getSpeed();
+
+    //            int throttleNewZero = constrain(map(mySpeed, 0, thisBoardMaxSpeed, 128, 255),128,255);
+    //            throttleToApply = constrain(map(throttle, 128, 255, throttleNewZero, 255),130,255);
+                int throttleNewZero = map(mySpeed, 0, thisBoardMaxSpeed, 128, 255);
+                throttleToApply = map(throttle, 128, 255, throttleNewZero, 255);
+                //for current mode !
+
+    //            if(mySpeed < 10) throttleToApply = value;
+            //    else throttleToApply=170;
+            //    telemetry.getInputCurrent()
+            //    telemetry.getSpeed()
+            //    telemetry.distance
+            //    telemetry.inputCurrent //battery
+            //    telemetry.motorCurrent //motor
+            //    telemetry
+            //    }
+            //    else { //telemetry is lagging -> slower smoothed adjustments
+                //}
+        }
+
+
+*/
+    uint16_t ackValue = value; //TODO mapping function
+    return ackValue;
+}
 
 void setThrottle(uint16_t value){
     // update display
-    throttle = value;
+//    throttle = value;
+    throttle = ackmaniacHysteresis(value);
 
     // UART
     #ifndef FAKE_UART
@@ -891,10 +928,14 @@ void setThrottle(uint16_t value){
     UART.nunchuck.lowerButton = false;
     UART.setNunchuckValues();
     #endif
+
+
     // PPM
     //    digitalWrite(throttlePin, HIGH);
     //    delayMicroseconds(map(throttle, 0, 255, 1000, 2000) );
     //    digitalWrite(throttlePin, LOW);
+
+
     // remember throttle for smooth auto stop
     lastThrottle = throttle;
 
@@ -991,7 +1032,8 @@ void getUartData(){ //reads VESC data via UART and stores values in telemetry pa
     #endif
 
     // Only get what we need
-    if ( UART.getVescValues(VESC_COMMAND) ) {
+    if ( UART.getVescValues(VESC_COMMAND) ) { //const COMM_PACKET_ID VESC_COMMAND = COMM_GET_VALUES; // VESC command to read buffer's current state and store it into a "dataPackage data" from VescUart.h
+
       // float dutyCycleNow;
       // float ampHours;
       // float ampHoursCharged;
@@ -1052,7 +1094,7 @@ String uint64ToAddress(uint64_t number){ //STRING to HEX address conversion
 }
 
 // SETTINGS functions
-void setDefaultEEPROMSettings(){ //Stores board config variables into boardConfig. packet and calls updateEEPROMSettings()
+void setDefaultEEPROMSettings(){ //Stores board config variables into boardConfig.packet and calls updateEEPROMSettings()
 
   boardID = CPU::getID();
   Serial.println("Board ID: " + String(boardID, HEX));
@@ -1134,74 +1176,69 @@ bool inRange(int val, int minimum, int maximum){ //checks if value is within MIN
   return ((minimum <= val) && (val <= maximum));
 }
 
-// ****************************************LIGHT IMPLEMENTATION*****************************
+
+
+// ****************************************  LED ROADLIGHTS IMPLEMENTATION  *****************************
 //void drawLightPage(); // uint8_t lightBrightnessValue
 
 
-#ifdef ROADLIGHT_CONNECTED
-    void switchLightOn(){
+#ifdef ROADLIGHT_CONNECTED  // ************* LED ROADLIGHTS  -  functions  available *********************
+    void switchLightOn(){   // executed from RemotePacket command
         ledcWrite(led_pwm_channel_frontLight, dutyCycle_frontLightOn);
         ledcWrite(led_pwm_channel_backLight, dutyCycle_backLightOn);
         myRoadLightState = ON;
     }
 
-    void switchLightOff(){
+    void switchLightOff(){  // executed from RemotePacket command
         ledcWrite(led_pwm_channel_frontLight, dutyCycle_lightOff);
         ledcWrite(led_pwm_channel_backLight, dutyCycle_lightOff);
         myRoadLightState = OFF;
     }
 
-    void switchLightBrakesOnly(){
+    void switchLightBrakesOnly(){   // executed from RemotePacket command
         ledcWrite(led_pwm_channel_frontLight, dutyCycle_lightOff);
         ledcWrite(led_pwm_channel_backLight, dutyCycle_lightOff);
         myRoadLightState = BRAKES_ONLY;
     }
 
 
-    void updateBrakeLight(){   // activate BACKLIGHT flashing sequence from setThrottle() function
+    void updateBrakeLight(){   // activates BACKLIGHT flashing sequence from setThrottle() function if Throttle is in braking position
         switch(myRoadLightState){
-            case OFF:
-                // do nothing
-                //delay(1);
-                //vTaskDelay(10 / portTICK_PERIOD_MS); //delay specified in milliseconds instead of ticks
-
-                //emitBrakeLightPulse(dutyCycle_lightOff); //activate brakeLight flashes while OFF in between
+            case OFF:   // do nothing
             break;
-
-            case ON:
-                emitBrakeLightPulse(dutyCycle_backLightOn); //activate brakeLight flashes while ON (normal brightness) in between
+            case ON:    // emit a brakeLight flash then go back to BACKLIGHT normal brightness
+                emitBrakeLightPulse(dutyCycle_backLightOn);
             break;
-
-            case BRAKES_ONLY:
-                emitBrakeLightPulse(dutyCycle_lightOff); //activate brakeLight flashes while OFF in between
+            case BRAKES_ONLY:   //emit a brakeLight flash then go back to OFF
+                emitBrakeLightPulse(dutyCycle_lightOff);
             break;
         }
     }
 
-    void emitBrakeLightPulse(uint_fast32_t dutyCycle_returnToNormal){    //emits a brakeLight flash and go back to the previous state
+    void emitBrakeLightPulse(uint_fast32_t dutyCycle_returnToNormal){    //emits a brakeLight flash and go back to the previous roadlight state
         uint8_t pwm_channel = led_pwm_channel_backLight;
         uint_fast32_t returnDutyCycle = dutyCycle_returnToNormal;
         uint_fast32_t flashDutyCycle = dutyCycle_brakeLight;
 
             if (millisSince(lastBrakeLightPulse) >= brakeLightPulseInterval) {    // check when was the last brake flash triggered
-                if(lastThrottle<(default_throttle*0.75)){
+                if(lastThrottle<(default_throttle*0.75)){   //we don't flash the BRAKELIGHT on very small braking force
                     lastBrakeLightPulse = millis(); //reset coounter
                     ledcWrite(pwm_channel, flashDutyCycle);     //emit a new flash
                 }
             }
             else{ //during a brakeLightPulse emission
-                if(millisSince(lastBrakeLightPulse) >= brakeLightPulseDuration){ // check if the flash has been ON long enough
+                if(millisSince(lastBrakeLightPulse) >= brakeLightPulseDuration){ // check if the flash has been ON long enough to be terminated
                             ledcWrite(pwm_channel, returnDutyCycle); // go back to previous state
                 }
             }
              //debug unexpected state
-            if(lastThrottle >= (default_throttle*0.98)){ //debug unexpected state
+            if(lastThrottle >= (default_throttle)){ //debug unexpected state where brakelight is stuck on FLASH brightness after throttle is back in positive throttle values
                 lastBrakeLightPulse = millis(); //reset coounter
-                ledcWrite(pwm_channel, returnDutyCycle);     //emit a new flash
+                ledcWrite(pwm_channel, returnDutyCycle);     //back to previous state
             }
     }
 
 #endif
 
 
-// ****************************************LIGHT IMPLEMENTATION*****************************
+// **************************************** LED ROADLIGHTS  -  IMPLEMENTATION*****************************

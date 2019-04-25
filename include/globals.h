@@ -10,6 +10,7 @@
 //#define DEBUG // Uncomment DEBUG if you need to debug the remote
 //const uint32_t boardAddress = 0xA9BF713C;
 //#include <analogWrite.h>
+
 #define ROADLIGHT_CONNECTED //FRONT LIGHT and BACKLIGHT option. Reconfigure 2 pins on the receiver side for FRONTLIGHT and BACKLIGHT
 
 // ********** * * * * * * * * * ***********************************************
@@ -66,8 +67,8 @@ const int MAX_SPEED = 30;       // KM/H
 const int MAX_RANGE = 30;       // KM
 const int BATTERY_CELLS = 10;
 const int BATTERY_TYPE = 0;     // 0: LI-ION | 1: LIPO
-const int MOTOR_POLES = 24;
-const int WHEEL_DIAMETER = 100;
+const int MOTOR_POLES = 20;
+const int WHEEL_DIAMETER = 105;
 const int WHEEL_PULLEY = 1;
 const int MOTOR_PULLEY = 1;
 

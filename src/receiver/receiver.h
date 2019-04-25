@@ -117,23 +117,22 @@ void updateEEPROMSettings();
 void updateSetting(uint8_t setting, uint64_t value);
 
 
-// *******************   LED LIGHT IMPLEMENTATION - Receiver *************
-
-// we have PIN_FRONTLIGHT attributed on what is PIN_VIBRO on the remote control side
-// we have PIN_BACKLIGHT attributed on what is PIN_PWRBUTTON on the remote control side
+// *******************   LED ROADLIGHTS  -  Receiver    *************
+    // we have PIN_FRONTLIGHT attributed on the pin used for PIN_VIBRO on the remote control side
+    // we have PIN_BACKLIGHT attributed on the pin used for PIN_PWRBUTTON on the remote control side
 
 #ifdef ROADLIGHT_CONNECTED
 
-    enum RoadLightState{
+    enum RoadLightState{    // All possible ROADLIGHTS modes
         OFF,
         ON,
         BRAKES_ONLY,
         DISCO // yes baby !
     };
 
-    RoadLightState myRoadLightState = OFF; //default value on startupTime
+    RoadLightState myRoadLightState = OFF; //default mode after startup
 
-    const double led_pwm_frequency = 200;
+    const double led_pwm_frequency = 200;   //msec  -  around 30-50 for a perceivable flashy effect - over 100 for perfectly smooth aspect
     const uint8_t led_pwm_channel_frontLight = 0; //GPIO channel to use
     const uint8_t led_pwm_channel_backLight = 1; //GPIO channel to use
     const uint8_t led_pwm_resolution = 8;
@@ -141,11 +140,11 @@ void updateSetting(uint8_t setting, uint64_t value);
     uint_fast32_t dutyCycle_lightOff = 0;
     uint_fast32_t dutyCycle_frontLightOn = 90;   //TODO : value can be changed via the remote menu
     uint_fast32_t dutyCycle_backLightOn = 90;    //TODO : value can be changed via the remote menu
-    uint_fast32_t dutyCycle_brakeLight = 255;   //TODO : value can be changed via the remote menu
+    uint_fast32_t dutyCycle_brakeLight = 255;   //TODO : value can be changed via the remote menu (optional)
 
     unsigned long lastBrakeLightPulse;
-    unsigned long brakeLightPulseInterval = 100; //ms between each brakeLightPulse initiation
-    unsigned long brakeLightPulseDuration = 50; //ms TBD
+    unsigned long brakeLightPulseInterval = 100; // msec waiting delay between each brakeLightPulse initiation
+    unsigned long brakeLightPulseDuration = 50; //  msec
 
     //uint8_t ROADLIGHT_MODE = 0;
     void switchLightOn();
@@ -155,6 +154,4 @@ void updateSetting(uint8_t setting, uint64_t value);
     void emitBrakeLightPulse(uint_fast32_t value);
     //void drawLightPage();
 
-#endif
-
-// *******************   LED LIGHT IMPLEMENTATION - Receiver *************
+#endif  // *******************  LED ROADLIGHTS  -  Receiver    *************

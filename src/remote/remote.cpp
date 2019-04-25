@@ -137,12 +137,7 @@ void setup() {
 void coreTask( void * pvParameters ) {
     while (1) {
         radioLoop();
-        // -- POWER MANAGEMENT --
-        //  esp_deep_sleep_enable_timer_wakeup(1);
-        //  esp_deep_sleep_start();
-        vTaskDelay(10);//was 1
-        //vTaskDelay(25 / portTICK_PERIOD_MS); //delay specified in milliseconds instead of ticks
-        // -- ----- ---------- --
+        vTaskDelay(1);
     }
 }
 #endif
@@ -161,18 +156,9 @@ void loop() { // core 1
   // Call function to update display
   if (displayOn) updateMainDisplay();
 
-  // -- POWER MANAGEMENT --
-  //delay(10);
+  // -- delay --
   //vTaskDelay(20); //delays the function for 20 ticks
-  //esp_deep_sleep_enable_timer_wakeup(1000000); //microseconds? //set a timer that will start when the remote goes to sleep and wake it up after the specified delay
-  //esp_deep_sleep_start();
-
   vTaskDelay(10 / portTICK_PERIOD_MS);  //delay specified in milliseconds instead of ticks
-  //0.4w -> 0.27
-  // 20 -->100
-  //setup() 10->15
-  // -- ----- ---------- --
-
 }
 
 void radioLoop() {  //Calculate THROTTLE and transmit a packet - every 50ms
