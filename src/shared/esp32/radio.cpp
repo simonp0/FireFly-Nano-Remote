@@ -12,14 +12,14 @@
 void initRadio() {
 
   // reset radio
-  pinMode(RF_RST, OUTPUT);
+  pinMode(RST_LoRa, OUTPUT);
 
-  digitalWrite(RF_RST, LOW);
+  digitalWrite(RST_LoRa, LOW);
   delay(10);
-  digitalWrite(RF_RST, HIGH);
+  digitalWrite(RST_LoRa, HIGH);
 
-  SPI.begin (RF_SCK, RF_MISO, RF_MOSI, RF_CS);
-  LoRa.setPins (RF_CS, RF_RST, RF_DI0);
+  SPI.begin (SCK, MISO, MOSI, SS);
+  LoRa.setPins (SS, RST_LoRa, DIO0);
 
   LoRa.setSPIFrequency(10E6);
 
