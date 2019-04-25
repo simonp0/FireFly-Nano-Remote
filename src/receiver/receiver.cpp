@@ -20,11 +20,10 @@
 #endif
 
 #ifdef RECEIVER_SCREEN
-  Adafruit_SSD1306 display(DISPLAY_RST);
+  Adafruit_SSD1306 display(RST_OLED);
 #endif
 
 Smoothed <double> batterySensor;
-
 Smoothed <double> motorCurrent;
 
 #include "radio.h"
@@ -37,82 +36,111 @@ uint8_t statusCode = 0;
 bool statusLedState = false;
 
 unsigned long statusCycleTime, previousStatusMillis, currentMillis, startCycleMillis = 0;
-
 unsigned long lastDelay;
 
 // Initiate VescUart class for UART communication
 
-void setup()
-{
-  // wait for VESC?
-  delay(1000);
+void setup(){ //runs once after powerOn
+<<<<<<< HEAD
+    // wait for VESC?
+    delay(1000);
+    Serial.begin(115200);
+=======
+    delay(1000);    // wait for VESC?
+    Serial.begin(115200);//was 9600
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
+    // while (!Serial) {}; // wait for serial port to connect. Needed for native USB port only
+    debug("Receiver");
+    //loadEEPROMSettings();
+    setDefaultEEPROMSettings();
+    calculateRatios();
+<<<<<<< HEAD
+    pinMode(LED, OUTPUT);
 
-  Serial.begin(115200);
+// ****************************************LIGHT IMPLEMENTATION*****************************
+pinMode(PIN_PWRBUTTON, OUTPUT);
+digitalWrite(PIN_PWRBUTTON, LOW);
 
-  // while (!Serial) {}; // wait for serial port to connect. Needed for native USB port only
+#ifdef PIN_VIBRO
+    pinMode(PIN_VIBRO, OUTPUT);
+    digitalWrite(PIN_VIBRO, LOW);
+#endif
+// ****************************************LIGHT IMPLEMENTATION*****************************
 
-  debug("Receiver");
+    // 10 seconds average
+    batterySensor.begin(SMOOTHED_EXPONENTIAL, 10);
 
-  //loadEEPROMSettings();
-  setDefaultEEPROMSettings();
+    // 1 sec average
+    motorCurrent.begin(SMOOTHED_AVERAGE, 2);
+=======
+    pinMode(LED, OUTPUT); //LED onBoard
 
-  calculateRatios();
 
-  pinMode(LED, OUTPUT);
+// ******** LED LIGHT IMPLEMENTATION ********
+#ifdef ROADLIGHT_CONNECTED
+    ledcSetup(led_pwm_channel_frontLight, led_pwm_frequency, led_pwm_resolution); // configure LED PWM functionalitites
+    ledcAttachPin(PIN_FRONTLIGHT, led_pwm_channel_frontLight); // attach the channel to the GPIO to be controlled
+    ledcSetup(led_pwm_channel_backLight, led_pwm_frequency, led_pwm_resolution); // configure LED PWM functionalitites
+    ledcAttachPin(PIN_BACKLIGHT, led_pwm_channel_backLight); // attach the channel to the GPIO to be controlled
+    myRoadLightState = OFF; //default setting when switching on the board
+#endif
+// ******** LED LIGHT IMPLEMENTATION ********
 
-  // 10 seconds average
-  batterySensor.begin(SMOOTHED_EXPONENTIAL, 10);
 
-  // 1 sec average
-  motorCurrent.begin(SMOOTHED_AVERAGE, 2);
-  motorCurrent.add(0);
+    batterySensor.begin(SMOOTHED_EXPONENTIAL, 10);     // 10 seconds average
+    motorCurrent.begin(SMOOTHED_AVERAGE, 2);    // 1 sec average
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
+    motorCurrent.add(0);
 
-  UART.setTimeout(UART_TIMEOUT);
+    UART.setTimeout(UART_TIMEOUT);
 
-  #ifdef ARDUINO_SAMD_FEATHER_M0
+    #ifdef ARDUINO_SAMD_FEATHER_M0
+        #ifndef FAKE_UART
+            UART.setSerialPort(&Serial1);
 
-    #ifndef FAKE_UART
-      UART.setSerialPort(&Serial1);
-      Serial1.begin(UART_SPEED);
+        Serial1.begin(UART_SPEED);
     #endif
 
     initRadio(radio);
 
-  #elif ESP32
+    #elif ESP32
+        #ifndef FAKE_UART
+            UART.setSerialPort(&MySerial);
+            MySerial.begin(UART_SPEED, SERIAL_8N1, RX, TX);
+        #endif
 
-    #ifndef FAKE_UART
-      UART.setSerialPort(&MySerial);
-      MySerial.begin(UART_SPEED, SERIAL_8N1, RX, TX);
+        initRadio();
+
+        xTaskCreatePinnedToCore( //coreTask on core 0
+            coreTask,   /* Function to implement the task */
+            "coreTask", /* Name of the task */
+            10000,      /* Stack size in words */
+            NULL,       /* Task input parameter */
+            configMAX_PRIORITIES - 1,          /* Priority of the task */
+            NULL,       /* Task handle. */
+            0);         /* Core where the task should run */
     #endif
 
-    initRadio();
+    debug("Setup complete - begin listening");
 
-    xTaskCreatePinnedToCore(
-          coreTask,   /* Function to implement the task */
-          "coreTask", /* Name of the task */
-          10000,      /* Stack size in words */
-          NULL,       /* Task input parameter */
-          configMAX_PRIORITIES - 1,          /* Priority of the task */
-          NULL,       /* Task handle. */
-          0);         /* Core where the task should run */
+<<<<<<< HEAD
+    #ifdef VEXT // power on display
+        pinMode(VEXT, OUTPUT);
+        digitalWrite(VEXT, LOW);
+    #endif
+=======
+   pinMode(Vext, OUTPUT);
+    digitalWrite(Vext, LOW);
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
 
-  #endif
-
-  debug("Setup complete - begin listening");
-
-  #ifdef VEXT // power on display
-    pinMode(VEXT, OUTPUT);
-    digitalWrite(VEXT, LOW);
-  #endif
-
-  #ifdef RECEIVER_SCREEN
-    display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
-    display.powerOn();
-  #endif
+    #ifdef RECEIVER_SCREEN
+        display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+        display.powerOn();
+    #endif
 }
 
 bool isTelemetryLost() {
-  return telemetryTime !=0 // telemetry was active
+    return telemetryTime !=0 // telemetry was active
     && secondsSince(telemetryTime) > 1; // not received recently
 }
 
@@ -120,14 +148,11 @@ bool isTelemetryLost() {
 bool isMoving() {
 
   if (isTelemetryLost()) return true; // assume movement for safety
-
   return telemetry.getSpeed() != 0; // moving in any direction
 }
 
-/*
-   Calculate the battery level of the board based on the telemetry voltage
-*/
-float batteryPackPercentage( float voltage ) {
+
+float batteryPackPercentage( float voltage ) { // Calculate the battery level of the board based on the telemetry voltage
 
   float maxCellVoltage = 4.2;
   float minCellVoltage;
@@ -149,290 +174,414 @@ float batteryPackPercentage( float voltage ) {
   return percentage;
 }
 
-#ifdef RECEIVER_SCREEN
-bool prepareUpdate() {
+#ifdef RECEIVER_SCREEN  //Receiver WIFI UPDATE and OLED display functions
+    bool prepareUpdate() { //receiver with screen -> WIFI UPDATE mode functions
+<<<<<<< HEAD
 
-  // safety checks
-  if (isMoving()) return false;
+        // safety checks
+        if (isMoving()) return false;
+        state = UPDATE;
 
-  state = UPDATE;
+        // replace this with your WiFi network credentials
+        const char* ssid = "belair2"; // e.g. "FBI Surveillance Van #34";
+        const char* password = "11wifipepin"; // e.g. "12345678";
 
-  // replace this with your WiFi network credentials
-  const char* ssid = WIFI_NETWORK; // e.g. "FBI Surveillance Van #34";
-  const char* password = WIFI_PASSWORD; // e.g. "12345678";
+        wifiStatus = "Connecting:";
+        updateStatus = String(ssid);
 
-  wifiStatus = "Connecting:";
-  updateStatus = String(ssid);
+        WiFi.mode(WIFI_STA);
+        WiFi.begin(ssid, password);
 
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
-  while (WiFi.waitForConnectResult() != WL_CONNECTED) {
-    debug("Connection Failed!");
-    delay(3000);
-    // ESP.restart();
-    return false;
-  }
+        while (WiFi.waitForConnectResult() != WL_CONNECTED) {
+            debug("Connection Failed!");
+            delay(3000);
+            // ESP.restart();
+            return false;
+        }
 
-  // Port defaults to 3232
-  // ArduinoOTA.setPort(3232);
+        // Port defaults to 3232
+        // ArduinoOTA.setPort(3232);
 
-  // Hostname defaults to esp3232-[MAC]
-  // ArduinoOTA.setHostname("myesp32");
+        // Hostname defaults to esp3232-[MAC]
+        // ArduinoOTA.setHostname("myesp32");
 
-  // No authentication by default
-  // ArduinoOTA.setPassword("admin");
+        // No authentication by default
+        // ArduinoOTA.setPassword("admin");
 
-  // Password can be set with it's md5 value as well
-  // MD5(admin) = 21232f297a57a5a743894a0e4a801fc3
-  // ArduinoOTA.setPasswordHash("21232f297a57a5a743894a0e4a801fc3");
+        // Password can be set with it's md5 value as well
+        // MD5(admin) = 21232f297a57a5a743894a0e4a801fc3
+        // ArduinoOTA.setPasswordHash("21232f297a57a5a743894a0e4a801fc3");
 
 
-  ArduinoOTA
-    .onStart([]() {
-      String type;
-      if (ArduinoOTA.getCommand() == U_FLASH)
-        type = "sketch";
-      else // U_SPIFFS
-        type = "filesystem";
+        ArduinoOTA  .onStart([]() {
+                        String type;
+                        if (ArduinoOTA.getCommand() == U_FLASH)
+                        type = "sketch";
+                        else // U_SPIFFS
+                        type = "filesystem";
+                        // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
+                        updateStatus = "Start updating " + type;
+                        })
+                    .onEnd([]() {
+                        Serial.println("\nEnd");
+                        })
+                    .onProgress([](unsigned int progress, unsigned int total) {
+                        updateStatus = "Progress: " + String(progress / (total / 100), 0) + "%";
+                        Serial.println(updateStatus);
+                        })
+                    .onError([](ota_error_t error) {
+                        Serial.printf("Error[%u]: ", error);
+                        if (error == OTA_AUTH_ERROR) updateStatus = "Auth Failed";
+                        else if (error == OTA_BEGIN_ERROR) updateStatus = "Begin Failed";
+                        else if (error == OTA_CONNECT_ERROR) updateStatus = "Connect Failed";
+                        else if (error == OTA_RECEIVE_ERROR) updateStatus = "Receive Failed";
+                        else if (error == OTA_END_ERROR) updateStatus = "End Failed";
+                        });
 
-      // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
-      updateStatus = "Start updating " + type;
-    })
-    .onEnd([]() {
-      Serial.println("\nEnd");
-    })
-    .onProgress([](unsigned int progress, unsigned int total) {
-      updateStatus = "Progress: " + String(progress / (total / 100), 0) + "%";
-      Serial.println(updateStatus);
-    })
-    .onError([](ota_error_t error) {
-      Serial.printf("Error[%u]: ", error);
-      if (error == OTA_AUTH_ERROR) updateStatus = "Auth Failed";
-      else if (error == OTA_BEGIN_ERROR) updateStatus = "Begin Failed";
-      else if (error == OTA_CONNECT_ERROR) updateStatus = "Connect Failed";
-      else if (error == OTA_RECEIVE_ERROR) updateStatus = "Receive Failed";
-      else if (error == OTA_END_ERROR) updateStatus = "End Failed";
-    });
+        ArduinoOTA.begin();
+        wifiStatus = "IP: " + WiFi.localIP().toString();
+        updateStatus = "Waiting...";
+    }
+    int getStringWidth(String s) { //OLED text display function
+        int16_t x1, y1;
+        uint16_t w1, h1;
+        display.getTextBounds(s, 0, 0, &x1, &y1, &w1, &h1);
+        return w1;
+    }
+    void drawString(String string, int x, int y, const GFXfont *font) {  //OLED text display function
+        display.setFont(font);
+        display.setCursor(x, y);
+        display.print(string);
+    }
+    void drawStringCentered(String string, int x, int y, const GFXfont *font) {   //OLED text display function
+        display.setFont(font);
+        x = x - getStringWidth(string) / 2;
+        drawString(string, x, y, font);
+    }
+    String getState() {  //OLED text display function
+        switch (state) {
+            case IDLE: return "Idle";
+            case CONNECTED: return "Normal";  // dB?
+            case STOPPING: return "Stopping";
+            case STOPPED: return "Stopped";
+            case PUSHING: return "Pushing";
+            case ENDLESS: return "Cruise";
+            case UPDATE: return "Update";
+        }
+    }
+    void updateScreen() { //OLED refresh display function
 
-  ArduinoOTA.begin();
+        display.clearDisplay();
 
-  wifiStatus = "IP: " + WiFi.localIP().toString();
-  updateStatus = "Waiting...";
-}
+        switch (state) {
 
-int getStringWidth(String s) {
+            case IDLE:
+                drawBattery();
+            break;
 
-  int16_t x1, y1;
-  uint16_t w1, h1;
+            case ENDLESS:
+                display.setTextColor(WHITE);
+                display.setFont(fontDigital);
+                display.setCursor(0, 20);
+                display.println("CUR: " + String(telemetry.getMotorCurrent(), 1) + " A");
+                display.println("SPD: " + String(telemetry.getSpeed(),1));
+            break;
 
-  display.getTextBounds(s, 0, 0, &x1, &y1, &w1, &h1);
-  return w1;
-}
+=======
 
-void drawString(String string, int x, int y, const GFXfont *font) {
+        // safety checks
+        if (isMoving()) return false;
+        state = UPDATE;
 
-  display.setFont(font);
+        // replace this with your WiFi network credentials
+        const char* ssid = "sk8"; // e.g. "FBI Surveillance Van #34";
+        const char* password = "12345678"; // e.g. "12345678";
 
-  display.setCursor(x, y);
-  display.print(string);
-}
+        wifiStatus = "Connecting:";
+        updateStatus = String(ssid);
 
-void drawStringCentered(String string, int x, int y, const GFXfont *font) {
-  display.setFont(font);
-  x = x - getStringWidth(string) / 2;
-  drawString(string, x, y, font);
-}
+        WiFi.mode(WIFI_STA);
+        WiFi.begin(ssid, password);
 
-String getState() {
-  switch (state) {
-    case IDLE: return "Idle";
-    case CONNECTED: return "Normal";  // dB?
-    case STOPPING: return "Stopping";
-    case STOPPED: return "Stopped";
-    case PUSHING: return "Pushing";
-    case ENDLESS: return "Cruise";
-    case UPDATE: return "Update";
-  }
-}
+        while (WiFi.waitForConnectResult() != WL_CONNECTED) {
+            debug("Connection Failed!");
+            delay(3000);
+            // ESP.restart();
+            return false;
+        }
 
-void updateScreen() {
+        // Port defaults to 3232
+        // ArduinoOTA.setPort(3232);
 
-  display.clearDisplay();
+        // Hostname defaults to esp3232-[MAC]
+        // ArduinoOTA.setHostname("myesp32");
 
-  switch (state) {
+        // No authentication by default
+        // ArduinoOTA.setPassword("admin");
 
-    case IDLE:
-      drawBattery();
-      break;
+        // Password can be set with it's md5 value as well
+        // MD5(admin) = 21232f297a57a5a743894a0e4a801fc3
+        // ArduinoOTA.setPasswordHash("21232f297a57a5a743894a0e4a801fc3");
 
-    case ENDLESS:
-      display.setTextColor(WHITE);
-      display.setFont(fontDigital);
 
-      display.setCursor(0, 20);
-      display.println("CUR: " + String(telemetry.getMotorCurrent(), 1) + " A");
-      display.println("SPD: " + String(telemetry.getSpeed(),1));
-      break;
+        ArduinoOTA  .onStart([]() {
+                        String type;
+                        if (ArduinoOTA.getCommand() == U_FLASH)
+                        type = "sketch";
+                        else // U_SPIFFS
+                        type = "filesystem";
+                        // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
+                        updateStatus = "Start updating " + type;
+                        })
+                    .onEnd([]() {
+                        Serial.println("\nEnd");
+                        })
+                    .onProgress([](unsigned int progress, unsigned int total) {
+                        updateStatus = "Progress: " + String(progress / (total / 100), 0) + "%";
+                        Serial.println(updateStatus);
+                        })
+                    .onError([](ota_error_t error) {
+                        Serial.printf("Error[%u]: ", error);
+                        if (error == OTA_AUTH_ERROR) updateStatus = "Auth Failed";
+                        else if (error == OTA_BEGIN_ERROR) updateStatus = "Begin Failed";
+                        else if (error == OTA_CONNECT_ERROR) updateStatus = "Connect Failed";
+                        else if (error == OTA_RECEIVE_ERROR) updateStatus = "Receive Failed";
+                        else if (error == OTA_END_ERROR) updateStatus = "End Failed";
+                        });
 
-    case UPDATE:
-      display.setTextColor(WHITE);
-      display.setFont(fontDesc);
+        ArduinoOTA.begin();
+        wifiStatus = "IP: " + WiFi.localIP().toString();
+        updateStatus = "Waiting...";
+    }
+    int getStringWidth(String s) { //OLED text display function
+        int16_t x1, y1;
+        uint16_t w1, h1;
+        display.getTextBounds(s, 0, 0, &x1, &y1, &w1, &h1);
+        return w1;
+    }
+    void drawString(String string, int x, int y, const GFXfont *font) {  //OLED text display function
+        display.setFont(font);
+        display.setCursor(x, y);
+        display.print(string);
+    }
+    void drawStringCentered(String string, int x, int y, const GFXfont *font) {   //OLED text display function
+        display.setFont(font);
+        x = x - getStringWidth(string) / 2;
+        drawString(string, x, y, font);
+    }
+    String getState() {  //OLED text display function
+        switch (state) {
+            case IDLE: return "Idle";
+            case CONNECTED: return "Normal";  // dB?
+            case STOPPING: return "Stopping";
+            case STOPPED: return "Stopped";
+            case PUSHING: return "Pushing";
+            case ENDLESS: return "Cruise";
+            case UPDATE: return "Update";
+        }
+    }
+    void updateScreen() { //OLED refresh display function
 
-      display.setCursor(0, 12);
+        display.clearDisplay();
 
-      display.println(wifiStatus);
-      display.println(updateStatus);
-      break;
+        switch (state) {
 
-    default:
-      if (throttle == default_throttle && !isMoving()) {
-        drawBattery();
-      } else { // riding
+            case IDLE:
+                drawBattery();
+            break;
+
+            case ENDLESS:
+                display.setTextColor(WHITE);
+                display.setFont(fontDigital);
+                display.setCursor(0, 20);
+                display.println("CUR: " + String(telemetry.getMotorCurrent(), 1) + " A");
+                display.println("SPD: " + String(telemetry.getSpeed(),1));
+            break;
+
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
+            case UPDATE:
+                display.setTextColor(WHITE);
+                display.setFont(fontDesc);
+                display.setCursor(0, 12);
+                display.println(wifiStatus);
+                display.println(updateStatus);
+            break;
+
+            default:
+                if (throttle == default_throttle && !isMoving()) {
+                    drawBattery();
+                }
+                else { // riding
+                    display.setTextColor(WHITE);
+                    display.setFont(fontDigital);
+                    display.setCursor(0, 20);
+                    display.println("THR: " + String(map(throttle, 0, 255, -100, 100)) + "%");
+                    display.println("SPD: " + String(telemetry.getSpeed(),1) + " k");
+                }
+            break;
+        }
+
+        // ---- status ----
         display.setTextColor(WHITE);
-        display.setFont(fontDigital);
+        String s = getState() + "  " +
+        String(telemetry.getVoltage(), 1) + "v  " +
+        String(telemetry.getDistance(), 1) + "km";
 
-        display.setCursor(0, 20);
-        display.println("THR: " + String(map(throttle, 0, 255, -100, 100)) + "%");
-        display.println("SPD: " + String(telemetry.getSpeed(),1) + " k");
-      }
-      break;
-  }
+        #ifdef FAKE_UART
+            s = "Board ID: " + String(boardID, HEX);
+        #endif
 
-  // ---- status ----
-  display.setTextColor(WHITE);
+        drawStringCentered(s, 64, 62, fontDesc);
 
-  String s = getState() + "  " +
-    String(telemetry.getVoltage(), 1) + "v  " +
-    String(telemetry.getDistance(), 1) + "km";
+        display.display();
 
-  #ifdef FAKE_UART
-    s = "Board ID: " + String(boardID, HEX);
-  #endif
+    }//end updateScreen()
+    void drawBattery() {  //OLED battery display function
 
-  drawStringCentered(s, 64, 62, fontDesc);
+        display.setTextColor(WHITE);
+        if (telemetry.getVoltage() == 0) {
+            // no uart connection
+            display.setFont();
+            display.setCursor(0, 10);
+            display.print("No UART data");
+// ****************************************LIGHT IMPLEMENTATION*****************************
+<<<<<<< HEAD
+            display.print(" Vp" + String(digitalRead(PIN_VIBRO)) );
+            display.print(" Lp" + String(digitalRead(PIN_PWRBUTTON)) );
+=======
+        //    display.print(" Vp" + String(digitalRead(PIN_FRONTLIGHT)) );
+        //    display.print(" Lp" + String(digitalRead(PIN_BACKLIGHT)) );
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
+// ****************************************LIGHT IMPLEMENTATION*****************************
 
-  display.display();
+            // remote info
+            display.setCursor(0, 25);
+            if (!connected)
+                display.print("Remote not connected");
+            else
+                display.print("Signal: " + String(lastRssi, 0) + " dB");
+            //    display.setCursor(0, 40);
+            //    display.print("Delay: " + String(lastDelay));
+        return;
+        }
+<<<<<<< HEAD
+
+        // --- battery ----
+        int w = 120; int h = 46;
+        display.drawRect(0, 0, w, h, WHITE);
+        display.drawRect(1, 1, w-2, h-2, WHITE);
+        display.fillRect(w, 10, 6, h-10-10, WHITE);
+
+        // fill
+        float pc = batteryPackPercentage(telemetry.getVoltage());
+        int x = w * pc / 100-8;
+        display.fillRect(4, 4, x, h-8, WHITE);
+
+        // % value
+        if (pc > 50) { // left side
+            display.setTextColor(BLACK);
+            drawStringCentered(String(pc, 0) + "%", x/2 + 4, 31, fontBig);
+        }
+        else { // right side
+            display.setTextColor(WHITE);
+            drawStringCentered(String(pc, 0) + "%", x + (w - x) / 2, 31, fontBig);
+        }
+
+    }//end drawBattery()
+#endif //END #IFDEF RECEIVER_SCREEN
+
+
+void loop() { // CORE 1 task launcher - UART data exchange with VESC
+              // function LOOP() function runs continuously !
+
+    // get telemetry;
+    getUartData(); // every 250 ms ?
+
+=======
+
+        // --- battery ----
+        int w = 120; int h = 46;
+        display.drawRect(0, 0, w, h, WHITE);
+        display.drawRect(1, 1, w-2, h-2, WHITE);
+        display.fillRect(w, 10, 6, h-10-10, WHITE);
+
+        // fill
+        float pc = batteryPackPercentage(telemetry.getVoltage());
+        int x = w * pc / 100-8;
+        display.fillRect(4, 4, x, h-8, WHITE);
+
+        // % value
+        if (pc > 50) { // left side
+            display.setTextColor(BLACK);
+            drawStringCentered(String(pc, 0) + "%", x/2 + 4, 31, fontBig);
+        }
+        else { // right side
+            display.setTextColor(WHITE);
+            drawStringCentered(String(pc, 0) + "%", x + (w - x) / 2, 31, fontBig);
+        }
+
+    }//end drawBattery()
+#endif //END #IFDEF RECEIVER_SCREEN
+
+
+void loop() { // CORE 1 task launcher - UART data exchange with VESC
+              // function LOOP() starts just after setup() & runs continuously !
+    // get telemetry;
+    getUartData(); // every 250 ms ?
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
+    #ifdef ARDUINO_SAMD_ZERO
+        radioExchange();
+        stateMachine();
+    #elif RECEIVER_SCREEN //refresh receiver OLED screen
+        if (state == UPDATE) {ArduinoOTA.handle();
+        }
+        updateScreen(); // 25 ms
+        vTaskDelay(1);
+    #endif
 }
 
-void drawBattery() {
 
-  display.setTextColor(WHITE);
+#ifdef ESP32   // CORE 0 task launcher - radioExchange & stateMachine
+    void coreTask( void * pvParameters ){  // core 0
+        String taskMessage = "radio task running on core ";
+        taskMessage = taskMessage + xPortGetCoreID();
+        Serial.println(taskMessage);
 
-
-  if (telemetry.getVoltage() == 0) {
-
-    // no uart connection
-    display.setFont();
-    display.setCursor(0, 10);
-    display.print("No UART data");
-
-    // remote info
-    display.setCursor(0, 25);
-    if (!connected)
-      display.print("Remote not connected");
-    else
-      display.print("Signal: " + String(lastRssi, 0) + " dB");
-
-//    display.setCursor(0, 40);
-//    display.print("Delay: " + String(lastDelay));
-
-    return;
-  }
-
-  // --- battery ----
-  int w = 120; int h = 46;
-  display.drawRect(0, 0, w, h, WHITE);
-  display.drawRect(1, 1, w-2, h-2, WHITE);
-
-  display.fillRect(w, 10, 6, h-10-10, WHITE);
-
-  // fill
-  float pc = batteryPackPercentage(telemetry.getVoltage());
-  int x = w * pc / 100-8;
-  display.fillRect(4, 4, x, h-8, WHITE);
-
-  // % value
-  if (pc > 50) { // left side
-    display.setTextColor(BLACK);
-    drawStringCentered(String(pc, 0) + "%", x/2 + 4, 31, fontBig);
-  } else { // right side
-    display.setTextColor(WHITE);
-    drawStringCentered(String(pc, 0) + "%", x + (w - x) / 2, 31, fontBig);
-  }
-
-}
-#endif // RECEIVER_SCREEN
-
-void loop() // core 1
-{
-  // get telemetry;
-  getUartData(); // every 250  ms
-
-  #ifdef ARDUINO_SAMD_ZERO
-    radioExchange();
-    stateMachine();
-
-  #elif RECEIVER_SCREEN
-    if (state == UPDATE) ArduinoOTA.handle();
-    updateScreen(); // 25 ms
-    vTaskDelay(1);
-  #endif
-
-  #ifdef BLUETOOTH
-
-  if (deviceConnected) {
-
-    // get response
-    if (MySerial.available()) {
-
-      uint8_t payload[256];
-      size_t sz = UART.receiveUartMessageRaw(payload);
-
-      // for (int i = 0; i < sz; i++) {
-      //   line3 += String(payload[i], HEX) + " ";
-      // }
-
-      // send response
-      pTxCharacteristic->setValue(payload, sz);
-      pTxCharacteristic->notify();
+        while (true) {  //while loop that runs continuously !
+            radioExchange();
+            stateMachine();
+<<<<<<< HEAD
+            vTaskDelay(1);
+=======
+            vTaskDelay(1);//was 1
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
+        }
     }
+#endif //endifdef
 
-    delay(1); // bluetooth stack will go into congestion, if too many packets are sent
-  }
-  #endif
 
-}
-
-#ifdef ESP32
-  void coreTask( void * pvParameters ){  // core 0
-
-    String taskMessage = "radio task running on core ";
-    taskMessage = taskMessage + xPortGetCoreID();
-    Serial.println(taskMessage);
-
-    while (true) {
-      radioExchange();
-      stateMachine();
-      vTaskDelay(1);
-    }
-  }
-#endif
-
+<<<<<<< HEAD
 void pairingRequest() {
-
+=======
+void pairingRequest() { // TODO
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
   // safety checks
-
   #ifdef FAKE_UART
     setState(PAIRING);
     return;
   #endif
-
   // todo: confirm pairing
-
 }
 
-bool receiveData() {
+<<<<<<< HEAD
 
+=======
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
+bool receiveData(){ // copies buffer data into remPacket
+    // copies buffer data into remPacket
+    // Reads the received packet in memory buffer, checks if size & CRC is correct
+    // Process packet - copy buffer in "remPacket" - check VERSION and boardAddress
+    // returns TRUE if valid remPacket has been made available
   uint8_t len = sizeof(RemotePacket) + CRC_SIZE; // 9
   uint8_t buf[len];
 
@@ -474,7 +623,7 @@ bool receiveData() {
 
   // address check
   #ifdef FAKE_UART
-    // accept any address
+    // accept any address ***********************************************************************************************************
   #else
     if (remPacket.address != boardID) {
       // pairing request?
@@ -494,10 +643,10 @@ bool receiveData() {
 
   return true;
 
-    // signalStrength = constrain(map(radio.lastRssi(), -77, -35, 0, 100), 0, 100);
+  // signalStrength = constrain(map(radio.lastRssi(), -77, -35, 0, 100), 0, 100);
 }
 
-bool sendPacket(const void * packet, uint8_t len) {
+bool sendPacket(const void * packet, uint8_t len) { //sends any data packet passed in parameter to paired device - returns TRUE if sent
 
   // calc crc
   uint8_t crc = CRC8(packet, len);
@@ -530,7 +679,7 @@ bool sendPacket(const void * packet, uint8_t len) {
   return sent;
 }
 
-bool sendData(uint8_t response) {
+bool sendData(uint8_t response) { //Answers to (response) type by sending the corresponding data packet ACK_ONLY, TELEMETRY, CONFIG, BOARD_ID
 
   // send packet
   switch (response) {
@@ -578,7 +727,7 @@ bool sendData(uint8_t response) {
   return false;
 }
 
-bool dataAvailable() {
+bool dataAvailable() { //Returns TRUE when a valid packet has been received in buffer
 
   #ifdef ARDUINO_SAMD_ZERO
 
@@ -592,7 +741,7 @@ bool dataAvailable() {
   #endif
 }
 
-void setState(AppState newState) {
+void setState(AppState newState) { //called by the stateMachine()
 
   switch (newState) {
 
@@ -637,83 +786,147 @@ void setState(AppState newState) {
   state = newState;
 }
 
-void radioExchange() {
+<<<<<<< HEAD
+void radioExchange(){   //receive packet, execute SET_ or GET_ request, send answer
+//radioExchange() is executed by CORE 0 task via coreTask() function
 
-  // controlStatusLed();
+// controlStatusLed();
 
-  /* Begin listen for transmission */
-  if ( dataAvailable() ) {
+=======
+void radioExchange() {   //receive packet, execute SET_ or GET_ request, send answer
+    //radioExchange() is executed by CORE 0 task via coreTask() function
+    // controlStatusLed();
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
+    /* Begin listen for transmission */
+    if ( dataAvailable() ) {
 
-    // led on
-    digitalWrite(LED, HIGH);
-
-    if (receiveData()) {
-
-      receivedData = true;
-
-      // debug( "New package: command " + String(remPacket.command) + ", data " + String(remPacket.data) + ", counter " + String(remPacket.counter) );
-
-      // Send acknowledgement
-      uint8_t response = ACK_ONLY;
-
-      switch (remPacket.command) {
-        case SET_THROTTLE:
-        case SET_CRUISE:
-          setState(CONNECTED); // keep connection
-          if (telemetryUpdated) { response = TELEMETRY; }
-          break;
-
-        case SET_STATE:
-          switch (remPacket.data) {
-            case UPDATE:
-              #ifdef ESP32
-              prepareUpdate();
-              #endif
-              break;
-            case PAIRING:
-              pairingRequest();
-              // request confirmed?
-              if (state == PAIRING) response = BOARD_ID;
-              break;
-          }
-          break;
-
-        case GET_CONFIG: response = CONFIG; break;
-
-      }
-
-      // send config after power on
-      if (justStarted) response = CONFIG;
-
-      // // allow remote to receive
-      // delay(5);
-
-      if (sendData(response)) {
         // led on
-        digitalWrite(LED, LOW);
-        // debug("Sent response");
-      }
+        digitalWrite(LED, HIGH);
 
-      // control
-      switch (remPacket.command) {
-        case SET_THROTTLE: // control VESC speed
-          // ignore during auto-stop/update/...
-          if (state == CONNECTED) {
-            setThrottle(remPacket.data);
-          }
-          break;
+        if (receiveData()) {
 
-        case SET_CRUISE:
-          setCruise(remPacket.data);
-          break;
-      }
+            receivedData = true;
 
-    } else receivedData = false;
+            // debug( "New package: command " + String(remPacket.command) + ", data " + String(remPacket.data) + ", counter " + String(remPacket.counter) );
 
-  }
-  /* End listen for transmission */
+            // Send acknowledgement
+            uint8_t response = ACK_ONLY;
 
-}
+            switch (remPacket.command) {
+                case SET_THROTTLE:
+                case SET_CRUISE:
+                    setState(CONNECTED); // keep connection
+                    if (telemetryUpdated) { response = TELEMETRY; }
+                break;
+
+                case SET_STATE:
+                    switch (remPacket.data) {
+                        case UPDATE:
+                            #ifdef ESP32
+                            prepareUpdate();
+                            #endif
+                        break;
+                        case PAIRING:
+                            pairingRequest();
+                            // request confirmed?
+                            if (state == PAIRING) response = BOARD_ID;
+                        break;
+                    }
+                break;
+
+                case GET_CONFIG:
+                    response = CONFIG;
+                break;
+
+<<<<<<< HEAD
+// ****************************************LIGHT IMPLEMENTATION*****************************
+                case SET_LIGHT:
+                    // vibrate(2000); WE CANNOT DELAY THIS FUNCTION OR IT GENERATES A DISCONNECTION
+                    // SOLUTION : CREATE A SEPARATE TASK!
+                    response = ACK_ONLY;
+                    // display.clearDisplay();
+                    switch (remPacket.data) {
+                        case HIGH:
+                            //ROADLIGHT_BRIGHTNESS = remPacket.data;
+                            //switchLightOn();
+                            //vibrate(1000);
+                              //display.clearDisplay();
+                            digitalWrite(PIN_PWRBUTTON, HIGH);
+                            digitalWrite(PIN_VIBRO, HIGH);
+                        break;
+                        case LOW:
+                            //switchLightOff();
+                            digitalWrite(PIN_PWRBUTTON, LOW);
+                            digitalWrite(PIN_VIBRO, LOW);
+                        break;
+                    }
+                break;
+// ****************************************LIGHT IMPLEMENTATION*****************************
+
+            }
+=======
+            #ifdef ROADLIGHT_CONNECTED  // ************* LED LIGHT IMPLEMENTATION*********************
+                case SET_LIGHT:
+                    // vibrate(2000); TODO : launch via an independant task to avoid introducing any delay here
+                    response = ACK_ONLY;
+                    // display.clearDisplay();
+                    switch (remPacket.data) {
+                        case 1:
+                            switchLightOn();
+                        break;
+                        case 0:
+                            switchLightOff();
+                        break;
+                        case 2:  //brake only mode
+                            switchLightBrakesOnly();
+                        break;
+                    }
+                break;
+            #endif
+
+            } // end switch
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
+
+            // send config after power on
+            if (justStarted) response = CONFIG;
+
+            // // allow remote to receive
+            // delay(5);
+
+            if (sendData(response)) {
+            // led on
+                digitalWrite(LED, LOW);
+            // debug("Sent response");
+            }
+
+            // control
+            switch (remPacket.command) {
+                case SET_THROTTLE: // control VESC speed
+                // ignore during auto-stop/update/...
+                    if (state == CONNECTED) {
+                        setThrottle(remPacket.data);
+                    }
+                break;
+
+                case SET_CRUISE:
+                    setCruise(remPacket.data);
+                break;
+            }
+
+        } else receivedData = false;
+<<<<<<< HEAD
+
+    }
+/* End listen for transmission */
+
+} //END radioExchange() function
+
+=======
+    }   // End if( dataAvailable() ) - Stop listening for transmission
+
+} //END radioExchange() function
+
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
 
 void autoCruise(uint8_t speed) {
 
@@ -723,6 +936,7 @@ void autoCruise(uint8_t speed) {
     setCruise(speed);
   }
 }
+
 
 void stateMachine() { // handle auto-stop, endless mode, etc...
 
@@ -794,6 +1008,7 @@ void stateMachine() { // handle auto-stop, endless mode, etc...
         // use last throttle
         throttle = lastThrottle;
       }
+
       break;
 
     case STOPPING: // emergency brake when remote has disconnected
@@ -826,6 +1041,8 @@ void stateMachine() { // handle auto-stop, endless mode, etc...
 
       // release brakes after a few seconds
       if (secondsSince(lastBrakeTime) > AUTO_BRAKE_RELEASE) setState(IDLE);
+
+
       break;
 
     case UPDATE:
@@ -835,7 +1052,7 @@ void stateMachine() { // handle auto-stop, endless mode, etc...
 }
 
 
-void setStatus(uint8_t code){
+void setStatus(uint8_t code){ //TODO
 
   short cycle = 0;
 
@@ -854,27 +1071,23 @@ void setStatus(uint8_t code){
 }
 
 
-// Update a single setting value
-void updateSetting( uint8_t setting, uint64_t value)
-{
-  // Map remote setting indexes to receiver settings
-  switch( setting ){
-    case 0: setting = 0; break;  // TriggerMode
-    case 7: setting = 1; break;  // ControlMode
-    case 11: setting = 2; break; // Address
-  }
+void updateSetting( uint8_t setting, uint64_t value){  // Update a single setting value
+    // Map remote setting indexes to receiver settings
+    switch( setting ){
+        case 0: setting = 0; break;  // TriggerMode
+        case 7: setting = 1; break;  // ControlMode
+        case 11: setting = 2; break; // Address
+    }
 
-  setSettingValue( setting, value);
-
-  updateEEPROMSettings();
-
-  // The address has changed, we need to reinitiate the receiver module
-  if(setting == 2) {
-    // initRadio(radio);
-  }
+    setSettingValue( setting, value);
+    updateEEPROMSettings();
+    // The address has changed, we need to reinitiate the receiver module
+    if(setting == 2) {
+        // initRadio(radio);
+    }
 }
 
-/*
+/*TODO setCruise
 void setCruise ( bool cruise, uint16_t setPoint ){
   if( rxSettings.controlMode == 0 ){
 
@@ -908,8 +1121,7 @@ void setCruise ( bool cruise, uint16_t setPoint ){
   }
 } */
 
-void setThrottle(uint16_t value)
-{
+void setThrottle(uint16_t value){
     // update display
     throttle = value;
 
@@ -924,13 +1136,17 @@ void setThrottle(uint16_t value)
     //    digitalWrite(throttlePin, HIGH);
     //    delayMicroseconds(map(throttle, 0, 255, 1000, 2000) );
     //    digitalWrite(throttlePin, LOW);
-
     // remember throttle for smooth auto stop
     lastThrottle = throttle;
+
+    #ifdef ROADLIGHT_CONNECTED
+            updateBrakeLight();
+    #endif
+
+
 }
 
 void setCruise(uint8_t speed) {
-
     // UART
     #ifndef FAKE_UART
     UART.nunchuck.valueY = 127;
@@ -940,41 +1156,42 @@ void setCruise(uint8_t speed) {
     #endif
 }
 
-// void speedControl( uint16_t throttle , bool trigger )
-// {
-//   // Kill switch
-//   if( rxSettings.triggerMode == 0 ){
-//     if ( trigger == true || throttle < 127 ){
-//       setThrottle( throttle );
-//     }
-//     else{
-//       setThrottle( default_throttle );
-//     }
-//   }
-//
-//   // Cruise control
-//   else if( rxSettings.triggerMode == 1 ){
-//     if( trigger == true ){
-//
-//       if( cruising == false ){
-//         cruiseThrottle = throttle;
-//         cruiseRPM = returnData.rpm;
-//         cruising = true;
-//       }
-//
-//       setCruise( true, cruiseThrottle );
-//
-//     }else{
-//       cruising = false;
-//       setThrottle( throttle );
-//     }
-//   }
-// }
+<<<<<<< HEAD
 
-/*
-   Update values used to calculate speed and distance travelled.
+=======
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
+/* void speedControl( uint16_t throttle , bool trigger ){ TODO
+   // Kill switch
+   if( rxSettings.triggerMode == 0 ){
+     if ( trigger == true || throttle < 127 ){
+       setThrottle( throttle );
+     }
+     else{
+       setThrottle( default_throttle );
+     }
+   }
+
+   // Cruise control
+   else if( rxSettings.triggerMode == 1 ){
+     if( trigger == true ){
+
+       if( cruising == false ){
+         cruiseThrottle = throttle;
+         cruiseRPM = returnData.rpm;
+         cruising = true;
+       }
+
+       setCruise( true, cruiseThrottle );
+
+     }else{
+       cruising = false;
+       setThrottle( throttle );
+     }
+   }
+ }
 */
-void calculateRatios() {
+
+void calculateRatios() { //   Update values used to calculate speed and distance travelled.
   // Gearing ratio
   gearRatio = (float)boardConfig.motorPulley / (float)boardConfig.wheelPulley;
   // ERPM to Km/h
@@ -983,8 +1200,7 @@ void calculateRatios() {
   ratioPulseDistance = (gearRatio * (float)boardConfig.wheelDiameter * 3.14156) / (((float)boardConfig.motorPoles * 3) * 1E6);
 }
 
-// rpm to km/h
-float rpm2speed(long rpm) {
+float rpm2speed(long rpm) { // rpm to km/h
   return abs(ratioRpmSpeed * rpm);
 }
 
@@ -998,8 +1214,7 @@ float tach2dist(long tachometer) {
   return ratioPulseDistance * tachometer;
 }
 
-void getUartData()
-{
+void getUartData(){ //reads VESC data via UART and stores values in telemetry packet
   if (millisSince(lastUartPull) >= uartPullInterval) {
 
     lastUartPull = millis();
@@ -1046,7 +1261,7 @@ void getUartData()
       telemetry.tempMotor = round(UART.data.tempMotor);
       if (telemetry.tempMotor > 160) telemetry.tempMotor = 0; // no sensor
 
-      // safety check
+      // safety check (erroneous value?)
       if (telemetry.getSpeed() > 100) return;
 
       lastDelay = millis() - lastUartPull;
@@ -1058,13 +1273,12 @@ void getUartData()
       // returnData.inpVoltage     = 0.0;
       // returnData.rpm            = 0;
       // returnData.tachometerAbs  = 0;
-      debug("No UART data received!");
+      debug("No UART dXXa received!");
     }
   }
 }
 
-String uint64ToString(uint64_t number)
-{
+String uint64ToString(uint64_t number){ //STRING to INTEGER conversion
   unsigned long part1 = (unsigned long)((number >> 32)); // Bitwise Right Shift
   unsigned long part2 = (unsigned long)((number));
 
@@ -1075,17 +1289,15 @@ String uint64ToString(uint64_t number)
   return String(part1, DEC) + String(part2, DEC);
 }
 
-String uint64ToAddress(uint64_t number)
-{
+String uint64ToAddress(uint64_t number){ //STRING to HEX address conversion
   unsigned long part1 = (unsigned long)((number >> 32)); // Bitwise Right Shift
   unsigned long part2 = (unsigned long)((number));
 
   return String(part1, HEX) + String(part2, HEX);
 }
 
-// Settings functions
-void setDefaultEEPROMSettings()
-{
+// SETTINGS functions
+void setDefaultEEPROMSettings(){ //Stores board config variables into boardConfig. packet and calls updateEEPROMSettings()
 
   boardID = CPU::getID();
   Serial.println("Board ID: " + String(boardID, HEX));
@@ -1102,8 +1314,7 @@ void setDefaultEEPROMSettings()
   updateEEPROMSettings();
 }
 
-void loadEEPROMSettings()
-{
+void loadEEPROMSettings(){ //TODO
   bool rewriteSettings = false;
 
   // Load settings from EEPROM to custom struct
@@ -1139,15 +1350,11 @@ void loadEEPROMSettings()
   // debug("Settings loaded");
 }
 
-// Write settings to the EEPROM
-void updateEEPROMSettings()
-{
+void updateEEPROMSettings(){ //TODO    // Write settings to the EEPROM
 //  EEPROM.put(0, rxSettings);
 }
 
-// Set a value of a specific setting by index.
-void setSettingValue(int index, uint64_t value)
-{
+void setSettingValue(int index, uint64_t value){ //TODO     // Set a value of a specific setting by index.
   // switch (index) {
   //   case 0: rxSettings.triggerMode = value; break;
   //   case 1: rxSettings.controlMode = value; break;
@@ -1157,9 +1364,7 @@ void setSettingValue(int index, uint64_t value)
   // }
 }
 
-// Get settings value by index (usefull when iterating through settings).
-int getSettingValue(uint8_t index)
-{
+int getSettingValue(uint8_t index){//TODO     // Get settings value by index (usefull when iterating through settings).
   // int value;
   // switch (index) {
   //   case 0: value = rxSettings.triggerMode; break;
@@ -1170,7 +1375,100 @@ int getSettingValue(uint8_t index)
   // return value;
 }
 
-bool inRange(int val, int minimum, int maximum)
-{
+bool inRange(int val, int minimum, int maximum){ //checks if value is within MIN - MAX range
   return ((minimum <= val) && (val <= maximum));
 }
+
+// ****************************************LIGHT IMPLEMENTATION*****************************
+//void drawLightPage(); // uint8_t lightBrightnessValue
+<<<<<<< HEAD
+void switchLightOn(){
+    #ifdef PIN_PWRBUTTON
+        digitalWrite(PIN_PWRBUTTON, HIGH);
+    #endif
+}
+
+void switchLightOff(){
+    #ifdef PIN_PWRBUTTON
+        digitalWrite(PIN_PWRBUTTON, LOW);
+    #endif
+}
+
+void vibrate(int ms) {
+  #ifdef PIN_VIBRO
+    digitalWrite(PIN_VIBRO, HIGH);
+    delay(ms);
+    digitalWrite(PIN_VIBRO, LOW);
+  #endif
+}
+=======
+
+
+#ifdef ROADLIGHT_CONNECTED
+    void switchLightOn(){
+        ledcWrite(led_pwm_channel_frontLight, dutyCycle_frontLightOn);
+        ledcWrite(led_pwm_channel_backLight, dutyCycle_backLightOn);
+        myRoadLightState = ON;
+    }
+
+    void switchLightOff(){
+        ledcWrite(led_pwm_channel_frontLight, dutyCycle_lightOff);
+        ledcWrite(led_pwm_channel_backLight, dutyCycle_lightOff);
+        myRoadLightState = OFF;
+    }
+
+    void switchLightBrakesOnly(){
+        ledcWrite(led_pwm_channel_frontLight, dutyCycle_lightOff);
+        ledcWrite(led_pwm_channel_backLight, dutyCycle_lightOff);
+        myRoadLightState = BRAKES_ONLY;
+    }
+
+
+    void updateBrakeLight(){   // activate BACKLIGHT flashing sequence from setThrottle() function
+        switch(myRoadLightState){
+            case OFF:
+                // do nothing
+                //delay(1);
+                //vTaskDelay(10 / portTICK_PERIOD_MS); //delay specified in milliseconds instead of ticks
+
+                //emitBrakeLightPulse(dutyCycle_lightOff); //activate brakeLight flashes while OFF in between
+            break;
+
+            case ON:
+                emitBrakeLightPulse(dutyCycle_backLightOn); //activate brakeLight flashes while ON (normal brightness) in between
+            break;
+
+            case BRAKES_ONLY:
+                emitBrakeLightPulse(dutyCycle_lightOff); //activate brakeLight flashes while OFF in between
+            break;
+        }
+    }
+
+    void emitBrakeLightPulse(uint_fast32_t dutyCycle_returnToNormal){    //emits a brakeLight flash and go back to the previous state
+        uint8_t pwm_channel = led_pwm_channel_backLight;
+        uint_fast32_t returnDutyCycle = dutyCycle_returnToNormal;
+        uint_fast32_t flashDutyCycle = dutyCycle_brakeLight;
+
+            if (millisSince(lastBrakeLightPulse) >= brakeLightPulseInterval) {    // check when was the last brake flash triggered
+                if(lastThrottle<(default_throttle*0.75)){
+                    lastBrakeLightPulse = millis(); //reset coounter
+                    ledcWrite(pwm_channel, flashDutyCycle);     //emit a new flash
+                }
+            }
+            else{ //during a brakeLightPulse emission
+                if(millisSince(lastBrakeLightPulse) >= brakeLightPulseDuration){ // check if the flash has been ON long enough
+                            ledcWrite(pwm_channel, returnDutyCycle); // go back to previous state
+                }
+            }
+             //debug unexpected state
+            if(lastThrottle >= (default_throttle*0.98)){ //debug unexpected state
+                lastBrakeLightPulse = millis(); //reset coounter
+                ledcWrite(pwm_channel, returnDutyCycle);     //emit a new flash
+            }
+    }
+
+#endif
+
+
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
+// ****************************************LIGHT IMPLEMENTATION*****************************

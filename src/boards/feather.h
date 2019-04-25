@@ -20,9 +20,9 @@
 #define DISPLAY_ROTATION_90 0
 
 // Pins for I2C interface of OLED Display
-#define DISPLAY_SDA   4
-#define DISPLAY_SCL   15
-#define DISPLAY_RST   16
+#define SDA_OLED   4
+#define SCL_OLED   15
+#define RST_OLED   16
 
 // Pins for LORA chip SPI interface, reset line and interrupt lines
 #define RF_SCK  5

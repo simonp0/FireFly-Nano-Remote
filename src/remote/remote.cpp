@@ -1,13 +1,27 @@
 
 #include "remote.h"
-
 // define display
-Adafruit_SSD1306 display(DISPLAY_RST);
+Adafruit_SSD1306 display(RST_OLED);
 
 Smoothed <double> batterySensor;
 
+
+<<<<<<< HEAD
+
+=======
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
+//TaskHandle_t TaskHandle1;
 // Adafruit_SSD1306 display(64, 128, &Wire, DISPLAY_RST, 700000, 700000);
 
+
+<<<<<<< HEAD
+=======
+// -------useful things--------
+//#include <array>
+#define ARRAYLEN(ar) (sizeof(ar) / sizeof(ar[0]))
+
+
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
 /************ Radio Setup ***************/
 #define drawVLine(x, y, l) display.drawLine (x, y, x, y + l, WHITE); // display.drawVerticalLine (x, y, l);
 #define drawHLine(x, y, l)  display.drawLine (x, y, x + l, y, WHITE);
@@ -34,8 +48,7 @@ Smoothed <double> batterySensor;
 #include "radio.h"
 
 #ifdef ESP32
-static void rtc_isr(void* arg)
-{
+static void rtc_isr(void* arg){
     uint32_t status = REG_READ(RTC_CNTL_INT_ST_REG);
     if (status & RTC_CNTL_BROWN_OUT_INT_ENA_M) {
 
@@ -69,74 +82,163 @@ void brownoutInit() {
 
 void setup() {
 
-  startupTime = millis();
+    startupTime = millis();
 
-  #ifdef DEBUG
-    Serial.begin(115200);
-  #endif
-
-  // while (!Serial) { ; }
-
-  loadSettings();
-
-  #ifdef PIN_VIBRO
-    pinMode(PIN_VIBRO, OUTPUT);
-    digitalWrite(PIN_VIBRO, LOW);
-  #endif
-  #ifdef PIN_BATTERY
-    pinMode(PIN_BATTERY, INPUT);
-    #ifdef ESP32
-      // enable battery probe
-      pinMode(VEXT, OUTPUT);
-      digitalWrite(VEXT, LOW);
-      adcAttachPin(PIN_BATTERY);
-      // analogSetClockDiv(255);
+    #ifdef DEBUG
+        Serial.begin(115200);
     #endif
-  #endif
 
-  pinMode(PIN_TRIGGER, INPUT_PULLUP);
-  pinMode(PIN_BUTTON, INPUT_PULLUP);
-  pinMode(LED, OUTPUT);
+    // while (!Serial) { ; }
 
-  digitalWrite(LED, LOW);
+    loadSettings();
 
-  #ifdef ARDUINO_SAMD_ZERO // Feather M0 w/Radio
-    initRadio(radio);
-    // config throttle
-    pinMode(PIN_THROTTLE, INPUT);
-  #elif ESP32
-    brownoutInit(); // avoid low voltage boot loop
-    initRadio();
-    // config throttle
-    adc1_config_width(ADC_WIDTH_BIT_10);
-    adc1_config_channel_atten(ADC_THROTTLE, ADC_ATTEN_DB_2_5);
-  #endif
+<<<<<<< HEAD
+=======
 
-  // 10 seconds average
-  batterySensor.begin(SMOOTHED_AVERAGE, 10);
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
+    #ifdef PIN_VIBRO
+        pinMode(PIN_VIBRO, OUTPUT);
+        digitalWrite(PIN_VIBRO, LOW);
+    #endif
+    #ifdef PIN_BATTERY
+        pinMode(PIN_BATTERY, INPUT);
+        #ifdef ESP32
+            // enable battery probe
+            pinMode(VEXT, OUTPUT);
+            digitalWrite(VEXT, LOW);
+            adcAttachPin(PIN_BATTERY);
+            // analogSetClockDiv(255);
+        #endif
+    #endif
 
-  #ifdef ESP32
-    xTaskCreatePinnedToCore(
-      coreTask,   /* Function to implement the task */
-      "coreTask", /* Name of the task */
-      10000,      /* Stack size in words */
-      NULL,       /* Task input parameter */
-      configMAX_PRIORITIES - 1,  /* Priority of the task. 0 is slower */
-      NULL,       /* Task handle. */
-      0);  /* Core where the task should run */
-  #endif
+    pinMode(PIN_TRIGGER, INPUT_PULLUP);
+    pinMode(PIN_PWRBUTTON, INPUT_PULLUP);
+    pinMode(LED, OUTPUT);
 
-  debug("** Esk8-remote transmitter **");
+    digitalWrite(LED, LOW);
+
+    #ifdef ARDUINO_SAMD_ZERO // Feather M0 w/Radio
+        initRadio(radio);
+        // config throttle
+        pinMode(PIN_THROTTLE, INPUT);
+    #elif ESP32
+        brownoutInit(); // avoid low voltage boot loop
+        initRadio();
+        // config throttle
+        adc1_config_width(ADC_WIDTH_BIT_10);
+        adc1_config_channel_atten(ADC_THROTTLE, ADC_ATTEN_DB_2_5);
+    #endif
+
+    // 10 seconds average
+    batterySensor.begin(SMOOTHED_AVERAGE, 10);
+<<<<<<< HEAD
+
+    #ifdef ESP32
+        xTaskCreatePinnedToCore(
+        coreTask,   /* Function to implement the task */
+        "coreTask", /* Name of the task */
+        10000,      /* Stack size in words */
+        NULL,       /* Task input parameter */
+        configMAX_PRIORITIES - 1,  /* Priority of the task. 0 is slower */
+        NULL,       /* Task handle. */
+        0);  /* Core where the task should run */
+    #endif
+
+// ****************************************LIGHT IMPLEMENTATION*****************************
+
+//    #ifdef ESP32
+//        xTaskCreatePinnedToCore(
+//        vibeTask,   /* Function to implement the task */
+//        "vibeTask", /* Name of the task */
+//        1000,      /* Stack size in words */
+//        NULL,       /* Task input parameter */
+//        configMAX_PRIORITIES - 2,  /* Priority of the task. 0 is slower */
+//        NULL,       /* Task handle. */
+//        1);  /* Core where the task should run */
+//    #endif
+//
+//    debug("** Esk8-remote transmitter **");
+
+//  #endif
+
+// ****************************************LIGHT IMPLEMENTATION*****************************
+=======
+
+    #ifdef ESP32
+        xTaskCreatePinnedToCore(
+        coreTask,   /* Function to implement the task */
+        "coreTask", /* Name of the task */
+        10000,      /* Stack size in words */
+        NULL,       /* Task input parameter */
+        configMAX_PRIORITIES - 1,  /* Priority of the task. 0 is slower */
+        NULL,       /* Task handle. */
+        0);  /* Core where the task should run */
+    #endif
+
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
+
 }
 
 #ifdef ESP32 // core 0
-  void coreTask( void * pvParameters ) {
+void coreTask( void * pvParameters ) {
     while (1) {
-      radioLoop();
-      vTaskDelay(1);
+        radioLoop();
+<<<<<<< HEAD
+        vTaskDelay(1);//was 1
+=======
+        // -- POWER MANAGEMENT --
+        //  esp_deep_sleep_enable_timer_wakeup(1);
+        //  esp_deep_sleep_start();
+        vTaskDelay(10);//was 1
+        //vTaskDelay(25 / portTICK_PERIOD_MS); //delay specified in milliseconds instead of ticks
+        // -- ----- ---------- --
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
     }
-  }
+}
 #endif
+
+
+<<<<<<< HEAD
+// ****************************************LIGHT IMPLEMENTATION*****************************
+//#ifdef ESP32
+
+//#ifndef FREERTOS_CONFIG_H
+//#define FREERTOS_CONFIG_H
+//#define INCLUDE_vTaskDelay
+
+
+/*
+void vibeTask( void * pvParameters ) {
+
+        digitalWrite(PIN_VIBRO, HIGH);
+        vTaskDelay(50);
+        digitalWrite(PIN_VIBRO, LOW);
+        vTaskDelay(30);
+        digitalWrite(PIN_VIBRO, HIGH);
+        vTaskDelay(50);
+        digitalWrite(PIN_VIBRO, LOW);
+        vTaskDelay(30);
+        digitalWrite(PIN_VIBRO, HIGH);
+        vTaskDelay(50);
+        digitalWrite(PIN_VIBRO, LOW);
+
+        //vTaskDelete(&TaskHandle1);
+        vTaskDelete(NULL);
+
+        //break;
+
+    //vTaskDelete(&TaskHandle1);
+
+}
+*/
+
+//#endif
+// ****************************************LIGHT IMPLEMENTATION*****************************
+
+
+
+=======
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
 
 void loop() { // core 1
 
@@ -149,9 +251,22 @@ void loop() { // core 1
 
   // Call function to update display
   if (displayOn) updateMainDisplay();
+
+  // -- POWER MANAGEMENT --
+  //delay(10);
+  //vTaskDelay(20); //delays the function for 20 ticks
+  //esp_deep_sleep_enable_timer_wakeup(1000000); //microseconds? //set a timer that will start when the remote goes to sleep and wake it up after the specified delay
+  //esp_deep_sleep_start();
+
+  vTaskDelay(10 / portTICK_PERIOD_MS);  //delay specified in milliseconds instead of ticks
+  //0.4w -> 0.27
+  // 20 -->100
+  //setup() 10->15
+  // -- ----- ---------- --
+
 }
 
-void radioLoop() {
+void radioLoop() {  //Calculate THROTTLE and transmit a packet - every 50ms
   // Transmit once every 50 millisecond
   if (millisSince(lastTransmission) < 50) return;
 
@@ -162,7 +277,7 @@ void radioLoop() {
   transmitToReceiver();
 }
 
-void checkBatteryLevel() {
+void checkBatteryLevel() { //manages OLED display depending on remote battery Level and update smoothed battery value with batterySensor.add(voltage);
 
   batteryLevel = getBatteryLevel();
 
@@ -278,14 +393,14 @@ void calculateThrottle() {
 
 void isr() { } // Interrupt Service Routine
 
-void handleButtons() {
+void handleButtons() { //executes action depending on PWR_BUTTON state ( CLICK - DBL_CLICK - HOLD - LONG_HOLD )
 
-  switch (checkButton()) {
+  switch (checkButton()) { //checks what PWR_BUTTON is doing and return it's state ( CLICK - DBL_CLICK - HOLD - LONG_HOLD )
 
   case CLICK:
     keepAlive();
 
-    switch (state) {
+    switch (state) { //state is an AppState() type - (Remote control state)
       case CONNECTING:
         state = PAIRING; // switch to pairing
         break;
@@ -322,20 +437,19 @@ void handleButtons() {
 
 }
 
-void sleep()
-{
+void sleep() {  // manages the remote POWER ON / POWER OFF via PWR_BUTTON
   if (power == false) { return; }
 
   // turn off screen
   display.powerOff();
-  digitalWrite(LED, LOW);
+  digitalWrite(LED, LOW); //write on LED PIN
 
   power = false;
 
   #ifdef ARDUINO_SAMD_ZERO
 
     // interrupt
-    attachInterrupt (digitalPinToInterrupt(PIN_BUTTON), isr, LOW);  // attach interrupt handler
+    attachInterrupt (digitalPinToInterrupt(PIN_PWRBUTTON), isr, LOW);  // attach interrupt handler
 
     radio.sleep();
 
@@ -353,16 +467,16 @@ void sleep()
 
   #elif ESP32
 
-    // wait for button release
-    while (pressed(PIN_BUTTON)) vTaskDelay(10);
+    // wait for button release ( vTaskDelay (ms) from ESP32 )
+    while (pressed(PIN_PWRBUTTON)) vTaskDelay(10);
 
     // keep RTC on
     esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
-    gpio_pullup_en((gpio_num_t)PIN_BUTTON);
-    gpio_pulldown_dis((gpio_num_t)PIN_BUTTON);
+    gpio_pullup_en((gpio_num_t)PIN_PWRBUTTON);
+    gpio_pulldown_dis((gpio_num_t)PIN_PWRBUTTON);
 
     // wake up when the top button is pressed
-    const uint64_t ext_wakeup_pin_1_mask = 1ULL << PIN_BUTTON;
+    const uint64_t ext_wakeup_pin_1_mask = 1ULL << PIN_PWRBUTTON;
     esp_sleep_enable_ext1_wakeup(ext_wakeup_pin_1_mask, ESP_EXT1_WAKEUP_ALL_LOW);
 
     // turn off radio
@@ -371,14 +485,14 @@ void sleep()
     delay(100);
 
     // setup the peripherals state in deep sleep
-    pinMode(DISPLAY_SCL, INPUT);
-    pinMode(DISPLAY_RST,INPUT);
+    pinMode(SCL_OLED, INPUT);
+    pinMode(RST_OLED, INPUT);
 
     // rtc_gpio_hold_en((gpio_num_t)RF_MOSI);
     // rtc_gpio_hold_en((gpio_num_t)RF_RST);
     // 20k pull-up resistors on Mosi, Miso, SS and CLK
 
-    gpio_num_t gpio_num = (gpio_num_t)RF_RST;
+    gpio_num_t gpio_num = (gpio_num_t)RST_LoRa; // RF_RST;
     rtc_gpio_set_direction(gpio_num, RTC_GPIO_MODE_INPUT_ONLY);
     rtc_gpio_pulldown_en(gpio_num);
     rtc_gpio_pullup_dis(gpio_num);
@@ -390,19 +504,19 @@ void sleep()
     // rtc_gpio_pullup_dis(gpio_num);
     // rtc_gpio_hold_en(gpio_num);
 
-    pinMode(PIN_VIBRO, INPUT); //
+    pinMode(PIN_VIBRO, INPUT);
 
-    pinMode(RF_MISO, INPUT);
-    pinMode(RF_DI0, INPUT);
-    pinMode(RF_MOSI, INPUT);
+    pinMode(MISO, INPUT);
+    pinMode(DIO0, INPUT);
+    pinMode(MOSI, INPUT);
 
-    pinMode(RF_SCK, INPUT);
-    pinMode(14,INPUT);
-    pinMode(RF_CS, INPUT);
+    pinMode(SCK, INPUT);
+    pinMode(RST_LoRa, INPUT);
+    pinMode(SS, INPUT);
 
     // disable battery probe
-  	pinMode(VEXT, OUTPUT);
-  	digitalWrite(VEXT, HIGH);
+  	pinMode(Vext, OUTPUT);
+  	digitalWrite(Vext, HIGH);
 
     // Enter sleep mode and wait for interrupt
     esp_deep_sleep_start();
@@ -412,7 +526,7 @@ void sleep()
 
   // After waking the code continues
   // to execute from this point.
-  detachInterrupt(digitalPinToInterrupt(PIN_BUTTON));
+  detachInterrupt(digitalPinToInterrupt(PIN_PWRBUTTON));
 
   #ifdef ARDUINO_SAMD_ZERO
     SCB->SCR &= ~SCB_SCR_SLEEPDEEP_Msk;
@@ -428,9 +542,12 @@ void sleep()
   needConfig = true;
 
   keepAlive();
+
+//end of sleep() function
 }
 
-/*
+
+/* TODO sleep2() function
 void sleep2()
 {
   if (power == false) {
@@ -442,16 +559,16 @@ void sleep2()
   power = false;
 
   // interrupt
-  attachInterrupt (digitalPinToInterrupt(PIN_BUTTON), isr, LOW);  // attach interrupt handler
+  attachInterrupt (digitalPinToInterrupt(PIN_PWRBUTTON), isr, LOW);  // attach interrupt handler
 
   digitalWrite(LED, LOW);
 
-  CPU::sleep(PIN_BUTTON);
+  CPU::sleep(PIN_PWRBUTTON);
 
   // After waking the code continues
   // to execute from this point.
 
-  detachInterrupt(digitalPinToInterrupt(PIN_BUTTON));
+  detachInterrupt(digitalPinToInterrupt(PIN_PWRBUTTON));
   digitalWrite(LED, HIGH);
   power = true;
 
@@ -529,16 +646,12 @@ void saveSettings() {
 }
 
 
-/*
-   Check if an integer is within a min and max value
-*/
+/*   Check if an integer is within a min and max value */
 bool inRange(short val, short minimum, short maximum) {
   return ((minimum <= val) && (val <= maximum));
 }
 
-/*
-   Return true if trigger is activated, false otherwice
-*/
+/* Return true if trigger is activated, false otherwise */
 bool triggerActive() {
   bool active = digitalRead(PIN_TRIGGER) == LOW;
   if (active) keepAlive();
@@ -566,7 +679,7 @@ void onTelemetryChanged() {
 
 }
 
-/*
+/* TODO triggerActiveSafe() Returns true if trigger is activated with no/low throttle only
    Return true if trigger is activated with no/low throttle only
 
 bool triggerActiveSafe() {
@@ -586,11 +699,18 @@ bool triggerActiveSafe() {
     vibrate(60);
     return false;
   }
-} */
+}
+<<<<<<< HEAD
 
-bool sendData() {
+*/
 
-  // Transmit the remPacket
+=======
+
+*/
+
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
+bool sendData() { // Transmit the remPacket
+
   byte sz = sizeof(remPacket) + CRC_SIZE; // crc
   uint8_t buf[sz];
   memcpy (buf, &remPacket, sizeof(remPacket));
@@ -754,48 +874,72 @@ bool responseAvailable(uint8_t len) {
 
 void prepatePacket() {
 
-  // speed control
-  switch (state) {
+    // speed control
+    switch (state) {//state is an AppState() type - (Remote control state)
 
-  case CRUISE: // Set cruise mode
-    remPacket.command = SET_CRUISE;
-    remPacket.data = round(cruiseSpeed);
-    break;
+        case CRUISE: // Set cruise mode
+            remPacket.command = SET_CRUISE;
+            remPacket.data = round(cruiseSpeed);
+        break;
 
-  case CONNECTING:
-    if (needConfig) {
-      // Ask for board configuration
-      remPacket.command = GET_CONFIG;
-      debug("send GET_CONFIG");
-      break;
-    } // else falltrough
+        case CONNECTING:
+            if (needConfig) {
+                // Ask for board configuration
+                remPacket.command = GET_CONFIG;
+                debug("send GET_CONFIG");
+                break;
+            }
+            // else falltrough
 
-  case IDLE:
-  case NORMAL: // Send throttle to the receiver.
-    remPacket.command = SET_THROTTLE;
-    remPacket.data = round(throttle);
-    break;
+        case IDLE:
+        case NORMAL: // Send throttle to the receiver.
+            remPacket.command = SET_THROTTLE;
+            remPacket.data = round(throttle);
+        break;
 
-  case MENU:
-    if (requestUpdate) {
-      debug("requestUpdate");
-      remPacket.command = SET_STATE;
-      remPacket.data = UPDATE;
-      requestUpdate = false;
-    } else {
-      remPacket.command = SET_THROTTLE;
-      remPacket.data = default_throttle;
+        case MENU:
+            if (requestUpdate) {
+                debug("requestUpdate");
+                remPacket.command = SET_STATE;
+                remPacket.data = UPDATE; //type : AppState{}
+                requestUpdate = false;
+                break;
+            }
+
+// ****************************************LIGHT IMPLEMENTATION*****************************
+            if (requestSwitchLight) {
+                //vibe(4);
+                //xTaskCreate(vibeTask, "vibeTask", 100, NULL, 2, &TaskHandle1);
+                debug("requestSwitchLight");
+                remPacket.command = SET_LIGHT;
+<<<<<<< HEAD
+                if (ROADLIGHT_BRIGHTNESS==0){remPacket.data = LOW;}
+                else{remPacket.data = HIGH;}
+=======
+//                if (ROADLIGHT_MODE==0){remPacket.data = LOW;}
+//                else{remPacket.data = HIGH;}
+                remPacket.data = ROADLIGHT_MODE;
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
+                requestSwitchLight = false;
+                break;
+            }
+// ****************************************LIGHT IMPLEMENTATION*****************************
+
+            else {
+                remPacket.command = SET_THROTTLE;
+                remPacket.data = default_throttle;
+            }
+        break;
+
+        case PAIRING:
+            debug("send PAIRING");
+            remPacket.command = SET_STATE;
+            remPacket.data = PAIRING;
+        break;
     }
-    break;
-  case PAIRING:
-    debug("send PAIRING");
-    remPacket.command = SET_STATE;
-    remPacket.data = PAIRING;
-    break;
-  }
 
-  remPacket.address = settings.boardID; // todo: cycle
-  remPacket.counter = counter++;
+    remPacket.address = settings.boardID; // todo: cycle
+    remPacket.counter = counter++;
 }
 /*
    Function used to transmit the remPacket and receive auto acknowledgement.
@@ -922,7 +1066,8 @@ float batteryLevelVolts() {
 
     // read raw value
     for (uint8_t i = 0; i < samples; i++) {
-      total += analogRead(PIN_BATTERY);
+        total += analogRead(PIN_BATTERY);
+        //total += analogRead(BATTERY_PROBE);
     }
 
     // calculate voltage
@@ -932,8 +1077,12 @@ float batteryLevelVolts() {
       voltage = ( (float)total / (float)samples ) * 2 * refVoltage / 1024.0;
     #elif ESP32
       double reading = (double)total / (double)samples;
-      voltage = -0.000000000000016 * pow(reading,4) + 0.000000000118171 * pow(reading,3)- 0.000000301211691 * pow(reading,2)+ 0.001109019271794 * reading + 0.034143524634089;
-      voltage = voltage * 2.64;
+      //voltage = -0.000000000000016 * pow(reading,4) + 0.000000000118171 * pow(reading,3)- 0.000000301211691 * pow(reading,2)+ 0.001109019271794 * reading + 0.034143524634089;
+      //voltage = voltage * 2.64;
+// -------------------- battery voltage bugfix -----------------------------------------
+      //voltage = reading;
+      voltage = reading / 512; //quickfix with voltmeter reference..
+// -------------------- battery voltage bugfix -----------------------------------------
     #endif
 
     // don't smooth at startup
@@ -973,24 +1122,28 @@ float getBatteryLevel() {
 */
 float batteryPackPercentage( float voltage ) {
 
-  float maxCellVoltage = 4.2;
-  float minCellVoltage;
+    float maxCellVoltage = 4.2;
+    float minCellVoltage;
 
-  if (boardConfig.batteryType == 0) { // Li-ion
-    minCellVoltage = 3.1;
-  } else { // Li-po
-    minCellVoltage = 3.4;
-  }
+    if (boardConfig.batteryType == 0) { // Li-ion
+        minCellVoltage = 3.1;
+    }
+    else { // Li-po
+        minCellVoltage = 3.4;
+    }
 
-  float percentage = (100 - ( (maxCellVoltage - voltage / boardConfig.batteryCells) / ((maxCellVoltage - minCellVoltage)) ) * 100);
+    float percentage = (100 - ( (maxCellVoltage - voltage / boardConfig.batteryCells) / ((maxCellVoltage - minCellVoltage)) ) * 100);
 
-  if (percentage > 100.0) {
-    return 100.0;
-  } else if (percentage < 0.0) {
-    return 0.0;
-  }
+    if (percentage > 100.0) {
+        return 100.0;
+    }
+    else{
+        if (percentage < 0.0) {
+            return 0.0;
+        }
+    }
 
-  return percentage;
+    return percentage;
 }
 
 // --------------------------------
@@ -998,51 +1151,75 @@ float batteryPackPercentage( float voltage ) {
 /*
    Update the OLED for each loop
 */
-void updateMainDisplay()
-{
-  display.clearDisplay();
-  display.setTextColor(WHITE);
+void updateMainDisplay(){   //LOOP() task on core 1 runs thins function continuously after checkBatteryLevel() and handleButtons()
 
-  if (isShuttingDown()) drawShutdownScreen();
 
-  else switch (state) {
+    display.clearDisplay();
+    display.setTextColor(WHITE);
 
-    case CONNECTING:
-      drawConnectingScreen();
-      drawThrottle();
-      break;
+    if (isShuttingDown()){
+         drawShutdownScreen();
+     }
+    else {
+        switch (state) {
 
-    case PAIRING:
-      drawPairingScreen();
-      drawThrottle();
-      break;
+            case CONNECTING:
+                drawConnectingScreen();
+                drawThrottle();
+            break;
 
-    default: // connected
+            case PAIRING:
+                drawPairingScreen();
+                drawThrottle();
+            break;
 
-      switch (page) {
-        case PAGE_MAIN:
-          drawBatteryLevel(); // 2 ms
-          drawMode();
-          drawSignal(); // 1 ms
-          drawMainPage();
-          break;
-        case PAGE_EXT:  drawExtPage(); break;
-        case PAGE_MENU: drawSettingsMenu(); break;
-        case PAGE_DEBUG: drawDebugPage(); break;
-      }
-  }
+            default: // connected
 
-  display.display();
-}
+                switch (page) {
 
-void drawShutdownScreen()
-{
-  drawString("Turning off...", -1, 60, fontMicro);
+                    case PAGE_MAIN:
+                        drawBatteryLevel(); // 2 ms
+                        drawMode();
+                        drawSignal(); // 1 ms
+                        drawMainPage();
+                    break;
 
-  // shrinking line
-  long ms_left = longHoldTime - (millisSince(downTime));
-  int w = map(ms_left, 0, longHoldTime - holdTime, 0, 32);
-  drawHLine(32 - w, 70, w * 2); // top line
+                    case PAGE_EXT:
+                        drawExtPage();
+                    break;
+
+                    case PAGE_MENU:
+                        drawSettingsMenu();
+                    break;
+
+                    case PAGE_DEBUG:
+                        drawDebugPage();
+                    break;
+
+<<<<<<< HEAD
+//                    case PAGE_LIGHT_SWITCH:
+=======
+//                    case PAGE_LIGHT_SETTINGS:
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
+                        //drawLightPage();
+                        //drawDebugPage();
+//                    break;
+                    //LIGHT page will display like UPDATE (STOPPED)
+                }
+        }
+    }
+
+    display.display();
+}// end updateMainDisplay()
+
+void drawShutdownScreen(){
+
+    drawString("Turning off...", -1, 60, fontMicro);
+    // shrinking line
+    long ms_left = longHoldTime - (millisSince(downTime));
+    int w = map(ms_left, 0, longHoldTime - holdTime, 0, 32);
+    drawHLine(32 - w, 70, w * 2); // top line
+
 }
 
 void drawPairingScreen() {
@@ -1064,7 +1241,7 @@ void drawPairingScreen() {
   }
 
   y += 38;
-  drawString("Firefly Nano", -1, y, fontMicro);
+  drawString("FF_Remote", -1, y, fontMicro);
   drawString(String(RF_FREQ, 0) + " Mhz", -1, y + 12, fontMicro);
 
   y += 12 + 12*2;
@@ -1085,7 +1262,7 @@ void drawConnectingScreen() {
   display.drawXBitmap((64-24)/2, y, logo, 24, 24, WHITE);
 
   y += 38;
-  drawString("Firefly Nano", -1, y, fontMicro);
+  drawString("FF_Remote", -1, y, fontMicro);
   drawString(String(RF_FREQ, 0) + " Mhz", -1, y + 12, fontMicro);
 
   // blinking icon
@@ -1174,13 +1351,12 @@ void calibrateScreen() {
       settings.minHallValue = tempSettings.minHallValue;
       settings.maxHallValue = tempSettings.maxHallValue;
 
+      backToMainMenu();
       display.setRotation(DISPLAY_ROTATION);
-      menuPage = MENU_MAIN;
-      currentMenu = 0;
-
       saveSettings();
-    }
 
+      return;
+    }
   }
 
   display.setRotation(DISPLAY_ROTATION_90);
@@ -1222,128 +1398,369 @@ void calibrateScreen() {
 }
 
 void backToMainMenu() {
-  menuPage = MENU_MAIN;
-  currentMenu = 0;
+    menuPage = MENU_MAIN;
+    currentMenu = 0;
 }
 
-void drawSettingsMenu() {
-
-  //  display.drawFrame(0,0,64,128);
-  int y = 10;
-
-  // check speed
-  if (state != MENU) {
-
-    if (telemetry.getSpeed() != 0) {
-      drawString("Stop", -1, y=50, fontDesc);
-      drawString("to use", -1, y+=14, fontDesc);
-      drawString("menu", -1, y+=14, fontDesc);
-      return;
-    } else { // enable menu
-      state = MENU;
+void drawSettingsMenu() {   //LOOP() task on core 1 runs thins function continuously via updateMainDisplay() when PAGE state == PAGE_MENU
+    //  display.drawFrame(0,0,64,128);
+    int y = 10;
+    // check speed
+    if (state != MENU) {
+        if (telemetry.getSpeed() != 0) {
+            drawString("Stop", -1, y=50, fontDesc);
+            drawString("to use", -1, y+=14, fontDesc);
+            drawString("menu", -1, y+=14, fontDesc);
+            return;
+        }
+        else { // enable menu
+            state = MENU;
+        }
     }
-  }
+<<<<<<< HEAD
 
-  // wheel = up/down
-  int position = readThrottlePosition();
 
-  // todo: wheel control
-  if (position < default_throttle - 30) {
-    if (currentMenu < subMenus-1) currentMenu += 0.25;
-  }
-  if (position > default_throttle + 30) {
-    if (currentMenu > 0) currentMenu -= 0.25;
-  }
+    // wheel = up/down
+    int position = readThrottlePosition();
 
-  switch (menuPage) {
+    int lastMenuIndex = round(currentMenu);
+    int nextMenuIndex = lastMenuIndex;
 
-  case MENU_MAIN:
-
-    drawString("- Menu -", -1, y, fontDesc);
-
-    y += 20;
-    for (int i = 0; i < mainMenus; i++) {
-      drawString(MENUS[i][0], -1, y, fontDesc);
-      // draw cursor
-      if (i == round(currentMenu)) drawFrame(0, y-10, 64, 14);
-      y += 16;
+    // todo: wheel control
+    if (position < default_throttle - 15) {
+        if (currentMenu < subMenus-1) currentMenu += 0.25;
+    }
+    if (position > default_throttle + 15) {
+        if (currentMenu > 0) currentMenu -= 0.25;
     }
 
-    if (pressed(PIN_TRIGGER)) {
-      menuPage = MENU_SUB;
-      subMenu = round(currentMenu);
-      currentMenu = 0;
-      waitRelease(PIN_TRIGGER);
-    }
-    break;
+    nextMenuIndex = round(currentMenu);
+    if (lastMenuIndex != nextMenuIndex){vibe(0);}   //short vibration each time we change the selected menu item
 
-  case MENU_SUB:
-    // header
-    drawString("- " + MENUS[subMenu][0] + " -", -1, y, fontDesc);
-    y += 20;
-    for (int i = 0; i < subMenus-1; i++) {
-      drawString(MENUS[subMenu][i+1], -1, y, fontDesc);
-      // draw cursor
-      if (i == round(currentMenu)) drawFrame(0, y-10, 64, 14);
-      y += 16;
-    }
 
-    if (pressed(PIN_TRIGGER)) {
-      menuPage = MENU_ITEM;
-      subMenuItem = round(currentMenu);
-      waitRelease(PIN_TRIGGER);
+    switch (menuPage) {
 
-      // handle commands
-      switch (subMenu) {
-        case MENU_INFO: break;
-        case MENU_REMOTE:
-          switch (subMenuItem) {
-            case REMOTE_PAIR:
-              state = PAIRING;
-              backToMainMenu(); // exit menu
-              break;
-          }
-        case MENU_BOARD:
-          switch (subMenuItem) {
-            case BOARD_UPDATE:
-              requestUpdate = true;
-              backToMainMenu();
-              break;
-          }
-      }
-    }
-    break;
+        case MENU_MAIN:
+            //header
+            drawString("- Menu -", -1, y, fontDesc);
+            y += 20;
+            for (int i = 0; i < mainMenus; i++) {
+                drawString(MENUS[i][0], -1, y, fontDesc);
+                // draw cursor
+                if (i == round(currentMenu)){
+                    drawFrame(0, y-10, 64, 14);
+                }
+                lastMenuIndex = nextMenuIndex;
 
-  case MENU_ITEM:
+                y += 16;
+            }
 
-    switch (subMenu) {
-    case MENU_INFO:
-      switch (subMenuItem) {
-        case INFO_DEBUG: drawDebugPage(); break;
-      }
-      break;
-
-    case MENU_REMOTE:
-      switch (subMenuItem) {
-      case REMOTE_CALIBRATE: calibrateScreen(); break;
-      }
-      break;
-
-    case MENU_BOARD:
-      switch (subMenuItem) {
-      case BOARD_UPDATE:
+            if (pressed(PIN_TRIGGER)) {
+                menuPage = MENU_SUB;
+                subMenu = round(currentMenu);
+                currentMenu = 0;
+                waitRelease(PIN_TRIGGER);
+                vibe(3);   //short vibrations when pressing the trigger
+            }
         break;
-      }
 
-      break;
+        case MENU_SUB:
+            // header
+            drawString("- " + MENUS[subMenu][0] + " -", -1, y, fontDesc);
+            y += 20;
+            for (int i = 0; i < subMenus-1; i++) {
+                drawString(MENUS[subMenu][i+1], -1, y, fontDesc);
+                // draw cursor
+                if (i == round(currentMenu)) {
+                    drawFrame(0, y-10, 64, 14);
+                }
+                y += 16;
+            }
+
+            if (pressed(PIN_TRIGGER)) {
+                menuPage = MENU_ITEM;
+                subMenuItem = round(currentMenu);
+                waitRelease(PIN_TRIGGER);
+                vibe(3);    //short vibrations when pressing the trigger
+
+                // handle commands
+                switch (subMenu) {
+                    case MENU_INFO:
+                    break;
+
+                    case MENU_REMOTE:
+                        switch (subMenuItem) {
+                            case REMOTE_PAIR:
+                                state = PAIRING;
+                                backToMainMenu(); // exit menu
+                            break;
+                        }
+                    break;
+
+                    case MENU_BOARD:
+                        switch (subMenuItem) {
+                            case BOARD_UPDATE:
+                                requestUpdate = true;
+                                backToMainMenu();
+                            break;
+                        }
+                    break;
+
+// ****************************************LIGHT IMPLEMENTATION*****************************
+                    case MENU_LIGHT:
+                        switch (subMenuItem){
+                            //requestSwitchLight = true; //flag signaling a LIGHT command for the next remotePacket sent
+                            case SWITCH_LIGHT_ON:
+                                requestSwitchLight = true;
+                                ROADLIGHT_BRIGHTNESS = 1;
+                                backToMainMenu();
+                            break;
+                            case SWITCH_LIGHT_OFF:
+                                requestSwitchLight = true;
+                                ROADLIGHT_BRIGHTNESS = 0;
+                                //drawDebugPage();
+                                backToMainMenu();
+                            break;
+                            case ROADLIGHT_SETTINGS:
+                                //backToMainMenu(); //nothing, we want to display drawLightPage()
+                            break;
+                        }
+                    break;
+// ****************************************LIGHT IMPLEMENTATION*****************************
+                }
+            }
+
+        break; //MENU_SUB
+
+        case MENU_ITEM: //Here we can display a specific page after handling commands, and stay on it (debugPage)
+            switch (subMenu) {
+                case MENU_INFO:
+                    switch (subMenuItem) {
+                        case INFO_DEBUG:
+                            drawDebugPage();
+                        break;
+                    }
+                break;
+
+                case MENU_REMOTE:
+                    switch (subMenuItem) {
+                        case REMOTE_CALIBRATE:
+                            calibrateScreen();
+                        break;
+                    }
+                break;
+
+                case MENU_BOARD:
+                    switch (subMenuItem) {
+                        case BOARD_UPDATE:
+                        break;
+                    }
+                break;
+
+// ****************************************LIGHT IMPLEMENTATION*****************************
+                case MENU_LIGHT: //if we want to display a specific page and stay on it
+                    switch (subMenuItem){
+                        case SWITCH_LIGHT_ON:
+                            //drawLightPage(); //backToMainmenu() ^^ prevents anything to be executed here
+                        break;
+                        case SWITCH_LIGHT_OFF:
+                            //drawDebugPage();
+                        break;
+                        case ROADLIGHT_SETTINGS:
+                            drawLightPage();
+                        break;
+                    }
+                break;
+// ****************************************LIGHT IMPLEMENTATION*****************************
+
+
+            }
+
+        break;
+=======
+
+
+    // wheel = up/down
+    int position = readThrottlePosition();
+
+    int lastMenuIndex = round(currentMenu);
+    int nextMenuIndex = lastMenuIndex;
+
+
+    switch (menuPage) {
+
+        case MENU_MAIN:
+            // --------- mainMenu wheel control navigation---------------------
+            if (position < default_throttle - 15) {
+                if (currentMenu < ARRAYLEN(MENUS)-1){currentMenu += 0.25;}
+            }
+            if (position > default_throttle + 15) {
+                if (currentMenu > 0){currentMenu -= 0.25;}
+            }
+            nextMenuIndex = round(currentMenu);
+            if (lastMenuIndex != nextMenuIndex){vibe(0);}   //short vibration each time we change the selected menu item
+            // ----------------------------------------------------------------
+
+            //header
+            drawString("- Menu -", -1, y, fontDesc);
+            y += 20;
+            for (int i = 0; i < (ARRAYLEN(MENUS)); i++) {
+                drawString(MENUS[i][0], -1, y, fontDesc);
+                // draw cursor
+                if (i == round(currentMenu)){
+                        drawFrame(0, y-10, 64, 14);
+                }
+                //lastMenuIndex = nextMenuIndex;
+                y += 16;
+            }
+            //drawString(".", -1, y, fontDesc);
+
+            if (pressed(PIN_TRIGGER)) {
+                menuPage = MENU_SUB;
+                subMenu = round(currentMenu);
+                currentMenu = 0;
+                waitRelease(PIN_TRIGGER);
+                vibe(3);   //short vibrations when pressing the trigger
+            }
+        break;
+
+        case MENU_SUB:
+            // --------- subMenus wheel control navigation---------------------
+            if (position < default_throttle - 15) {
+                if (currentMenu < ARRAYLEN(MENUS[subMenu])-2){currentMenu += 0.25;}
+            }
+            if (position > default_throttle + 15) {
+                if (currentMenu > 0) currentMenu -= 0.25;
+            }
+            nextMenuIndex = round(currentMenu);
+            if (lastMenuIndex != nextMenuIndex){vibe(0);}   //short vibration each time we change the selected menu item
+            // ----------------------------------------------------------------
+
+            // header
+            drawString("- " + MENUS[subMenu][0] + " -", -1, y, fontDesc);
+            y += 20;
+            for (int i = 0; i < ARRAYLEN(MENUS[subMenu]) -1; i++) {
+                drawString(MENUS[subMenu][i+1], -1, y, fontDesc);
+                // draw cursor
+                if (i == round(currentMenu)) {
+                    drawFrame(0, y-10, 64, 14);
+                }
+                y += 16;
+            }
+            drawString("- - - -", -1, y, fontDesc);
+
+            if (pressed(PIN_TRIGGER)) {
+                menuPage = MENU_ITEM;
+                subMenuItem = round(currentMenu);
+                waitRelease(PIN_TRIGGER);
+                vibe(3);    //short vibrations when pressing the trigger
+
+                // handle commands
+                switch (subMenu) {
+                    case MENU_INFO:
+                    break;
+
+                    case MENU_REMOTE:
+                        switch (subMenuItem) {
+                            case REMOTE_PAIR:
+                                state = PAIRING;
+                                backToMainMenu(); // exit menu
+                            break;
+                        }
+                    break;
+
+                    case MENU_BOARD:
+                        switch (subMenuItem) {
+                            case BOARD_UPDATE:
+                                requestUpdate = true;
+                                backToMainMenu();
+                            break;
+                        }
+                    break;
+
+// ****************************************LIGHT IMPLEMENTATION*****************************
+                    case MENU_LIGHT:
+                        switch (subMenuItem){
+                            //requestSwitchLight = true; //flag signaling a LIGHT command for the next remotePacket sent
+                            case SWITCH_LIGHT_ON:
+                                requestSwitchLight = true;
+                                ROADLIGHT_MODE = 1;
+                                backToMainMenu();
+                            break;
+                            case SWITCH_LIGHT_OFF:
+                                requestSwitchLight = true;
+                                ROADLIGHT_MODE = 0;
+                                //drawDebugPage();
+                                backToMainMenu();
+                            break;
+                            case SWITCH_LIGHT_BRAKES_ONLY:
+                                requestSwitchLight = true;
+                                ROADLIGHT_MODE = 2;
+                                backToMainMenu();
+                            case ROADLIGHT_SETTINGS:
+                                drawLightPage();
+                                //backToMainMenu(); //nothing, we want to display drawLightPage()
+                            break;
+                        }
+                    break;
+// ****************************************LIGHT IMPLEMENTATION*****************************
+                }
+            }
+
+        break; //MENU_SUB
+
+        case MENU_ITEM: //Here we can display a specific page after handling commands, and stay on it (debugPage)
+            switch (subMenu) {
+                case MENU_INFO:
+                    switch (subMenuItem) {
+                        case INFO_DEBUG:
+                            drawDebugPage();
+                        break;
+                    }
+                break;
+
+                case MENU_REMOTE:
+                    switch (subMenuItem) {
+                        case REMOTE_CALIBRATE:
+                            calibrateScreen();
+                        break;
+                    }
+                break;
+
+                case MENU_BOARD:
+                    switch (subMenuItem) {
+                        case BOARD_UPDATE:
+                        break;
+                    }
+                break;
+
+// ****************************************LIGHT IMPLEMENTATION*****************************
+                case MENU_LIGHT: //if we want to display a specific page and stay on it
+                    switch (subMenuItem){
+                        case SWITCH_LIGHT_ON:
+                            //nothing to display
+                        break;
+                        case SWITCH_LIGHT_OFF:
+                            //nothing to display
+                        break;
+                        case SWITCH_LIGHT_BRAKES_ONLY:
+                            //nothing to display
+                        break;
+                        case ROADLIGHT_SETTINGS:
+                            drawLightPage();
+                        break;
+                    }
+                break;
+// ****************************************LIGHT IMPLEMENTATION*****************************
+
+
+            }
+
+        break;
 
     }
 
-    break;
-
-  }
-
-}
+}//END drawSettingsMenu()
 
 void drawDebugPage() {
 
@@ -1363,393 +1780,518 @@ void drawDebugPage() {
 
 }
 
+// ****************************************LIGHT IMPLEMENTATION*****************************
+void drawLightPage(){
+    //  display.drawFrame(0,0,64,128);
+
+    int y = 10;
+    drawString(String(settings.boardID, HEX), -1, y, fontDesc);
+    y = 35;
+    drawStringCenter(String(lastDelay), " LUMENS", y);
+    y += 25;
+    drawStringCenter(String(lastRssi, 0), " db", y);
+    //y += 25;
+    //drawStringCenter(String(readThrottlePosition()), String(hallValue), y);
+
+    /*
+
+      int padding = 10;
+      int tick = 5;
+      int w = display.width() - padding*2;
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
+
+      int position = readThrottlePosition();
+
+<<<<<<< HEAD
+}//END drawSettingsMenu()
+=======
+      switch (calibrationStage) {
+      case CALIBRATE_CENTER:
+
+        tempSettings.centerHallValue = hallValue;
+        tempSettings.minHallValue = hallValue - 100;
+        tempSettings.maxHallValue = hallValue + 100;
+        calibrationStage = CALIBRATE_MAX;
+        break;
+
+      case CALIBRATE_MAX:
+        if (hallValue > tempSettings.maxHallValue) {
+          tempSettings.maxHallValue = hallValue;
+        } else if (hallValue < tempSettings.minHallValue) {
+          calibrationStage = CALIBRATE_MIN;
+        }
+        break;
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
+
+      case CALIBRATE_MIN:
+        if (hallValue < tempSettings.minHallValue) {
+          tempSettings.minHallValue = hallValue;
+        } else if (hallValue == tempSettings.centerHallValue) {
+          calibrationStage = CALIBRATE_STOP;
+        }
+        break;
+
+      case CALIBRATE_STOP:
+
+        if (pressed(PIN_TRIGGER)) {
+          // apply calibration values
+          settings.centerHallValue = tempSettings.centerHallValue;
+          settings.minHallValue = tempSettings.minHallValue;
+          settings.maxHallValue = tempSettings.maxHallValue;
+
+          backToMainMenu();
+          display.setRotation(DISPLAY_ROTATION);
+          saveSettings();
+
+          return;
+        }
+        */
+
+
+}// ****************************************LIGHT IMPLEMENTATION*****************************
+
+
+// ****************************************LIGHT IMPLEMENTATION*****************************
+void drawLightPage(){
+    //  display.drawFrame(0,0,64,128);
+
+    int y = 10;
+    drawString(String(settings.boardID, HEX), -1, y, fontDesc);
+    y = 35;
+    drawStringCenter(String(lastDelay), " LUMENS", y);
+    y += 25;
+    drawStringCenter(String(lastRssi, 0), " db", y);
+    //y += 25;
+    //drawStringCenter(String(readThrottlePosition()), String(hallValue), y);
+
+
+}// ****************************************LIGHT IMPLEMENTATION*****************************
+
+
 int getStringWidth(String s) {
 
-  int16_t x1, y1;
-  uint16_t w1, h1;
+    int16_t x1, y1;
+    uint16_t w1, h1;
 
-  display.getTextBounds(s, 0, 0, &x1, &y1, &w1, &h1);
-  return w1;
+    display.getTextBounds(s, 0, 0, &x1, &y1, &w1, &h1);
+    return w1;
 }
 
 void drawString(String string, int x, int y, const GFXfont *font) {
 
-  display.setFont(font);
+    display.setFont(font);
 
-  if (x == -1) {
-    x = (display.width() - getStringWidth(string)) / 2;
-  }
+    if (x == -1) {
+        x = (display.width() - getStringWidth(string)) / 2;
+    }
 
-  display.setCursor(x, y);
-  display.print(string);
+    display.setCursor(x, y);
+    display.print(string);
 }
 
 float speed() {
-  return telemetry.getSpeed();
+    return telemetry.getSpeed();
 }
 
 void drawMode() {
+    String m = "?";
+    switch (state) {
 
-  String m = "?";
+        case IDLE:
+            m = "!";
+        break;
+<<<<<<< HEAD
 
-  switch (state) {
+        case NORMAL:
+            m = "N";
+        break;
 
-  case IDLE:
-    m = "!";
-    break;
+        case ENDLESS:
+            m = "E";
+        break;
 
-  case NORMAL:
-    m = "N";
-    break;
+        case CRUISE:
+            m = "C";
+        break;
+    }
 
-  case ENDLESS:
-    m = "E";
-    break;
+    // top center
+    drawString(m, -1, 10, fontPico);
 
-  case CRUISE:
-    m = "C";
-    break;
-  }
+=======
 
-  // top center
-  drawString(m, -1, 10, fontPico);
+        case NORMAL:
+            m = "N";
+        break;
 
-}
+        case ENDLESS:
+            m = "E";
+        break;
+
+        case CRUISE:
+            m = "C";
+        break;
+    }
+
+    // top center
+    drawString(m, -1, 10, fontPico);
+
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
+}//drawMode()
 
 void drawBars(int x, int y, int bars, String caption, String s) {
 
-  const int width = 14;
+    const int width = 14;
+<<<<<<< HEAD
 
-  drawString(caption, x + 4, 10, fontDesc);
+    drawString(caption, x + 4, 10, fontDesc);
 
-  if (bars > 0) { // up
-    for (int i = 0; i <= 10; i++)
-      if (i <= bars) drawHLine(x, y - i*3, width);
-  } else { // down
-    for (int i = 0; i >= -10; i--)
-      if (i >= bars) drawHLine(x, y - i*3, width);
-  }
+=======
 
-  // frame
-  drawHLine(x, y-33, width);
-  drawHLine(x, y+33, width);
+    drawString(caption, x + 4, 10, fontDesc);
 
-  // values
-  drawString(s, x, y + 48, fontPico);
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
+    if (bars > 0) { // up
+        for (int i = 0; i <= 10; i++)
+            if (i <= bars) drawHLine(x, y - i*3, width);
+    }
+    else { // down
+        for (int i = 0; i >= -10; i--)
+            if (i >= bars) drawHLine(x, y - i*3, width);
+    }
+
+    // frame
+    drawHLine(x, y-33, width);
+    drawHLine(x, y+33, width);
+    // values
+    drawString(s, x, y + 48, fontPico);
 }
 
 /*
    Print the main page: Throttle, battery level and telemetry
 */
 void drawExtPage() {
+    const int gap = 20;
 
-  const int gap = 20;
+    int x = 5;
+    int y = 48;
+    float value;
+    int bars;
+<<<<<<< HEAD
 
-  int x = 5;
-  int y = 48;
-  float value;
-  int bars;
+    drawHLine(2, y, 64-2);
 
-  drawHLine(2, y, 64-2);
+    // 1 - throttle
+    value = throttle;  //telemetry.getInputCurrent
+    bars = map(throttle, 0, 254, -10, 10);
+    drawBars(x, y, bars, "T", String(bars));
 
-  // 1 - throttle
-  value = throttle;  //telemetry.getInputCurrent
-  bars = map(throttle, 0, 254, -10, 10);
-  drawBars(x, y, bars, "T", String(bars));
+    // motor current
+    x += gap;
+    bars = map(telemetry.getMotorCurrent(), MOTOR_MIN, MOTOR_MAX, -10, 10);
+    drawBars(x, y, bars, "M", String(telemetry.getMotorCurrent(),0));
 
-  // motor current
-  x += gap;
-  bars = map(telemetry.getMotorCurrent(), MOTOR_MIN, MOTOR_MAX, -10, 10);
-  drawBars(x, y, bars, "M", String(telemetry.getMotorCurrent(),0));
+    // battery current
+    x += gap;
+    bars = map(telemetry.getInputCurrent(), BATTERY_MIN, BATTERY_MAX, -10, 10);
+    drawBars(x, y, bars, "B", String(telemetry.getInputCurrent(), 0) );
 
-  // battery current
-  x += gap;
-  bars = map(telemetry.getInputCurrent(), BATTERY_MIN, BATTERY_MAX, -10, 10);
-  drawBars(x, y, bars, "B", String(telemetry.getInputCurrent(), 0) );
+=======
 
-  // FET & motor temperature
-  drawString(String(telemetry.tempFET) + " C    "
+    drawHLine(2, y, 64-2);
+
+    // 1 - throttle
+    value = throttle;  //telemetry.getInputCurrent
+    bars = map(throttle, 0, 254, -10, 10);
+    drawBars(x, y, bars, "T", String(bars));
+
+    // motor current
+    x += gap;
+    bars = map(telemetry.getMotorCurrent(), MOTOR_MIN, MOTOR_MAX, -10, 10);
+    drawBars(x, y, bars, "M", String(telemetry.getMotorCurrent(),0));
+
+    // battery current
+    x += gap;
+    bars = map(telemetry.getInputCurrent(), BATTERY_MIN, BATTERY_MAX, -10, 10);
+    drawBars(x, y, bars, "B", String(telemetry.getInputCurrent(), 0) );
+
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
+    // FET & motor temperature
+    drawString(String(telemetry.tempFET) + " C    "
     + String(telemetry.tempMotor) + " C", -1, 114, fontPico);
-
 }
 
 /*
-   Print the main page: Throttle, battery level and telemetry
+   Print the main page: Throttle, battery level in longboard shape and telemetry
 */
 void drawMainPage() {
 
-  float value;
+    float value;
+    String s;
+    int x = 0;
+    int y = 37;
+    int h;
+    //  display.drawFrame(0,0,64,128);
+    // --- Speed ---
+    value = speed();
+    float speedMax = boardConfig.maxSpeed;
+    String m = "km/h";
 
-  String s;
+    drawStringCenter(String(value, 0), m, y);
 
-  int x = 0;
-  int y = 37;
-  int h;
+    if (receiverState == CONNECTED) {
+        // speedometer graph height array
+        uint8_t a[16] = {3, 3, 4, 4, 5, 6, 7, 8, 10, 11, 13, 15, 17, 20, 24, 28};
+        y = 48;
 
-  //  display.drawFrame(0,0,64,128);
+        for (uint8_t i = 0; i < 16; i++) {
+            h = a[i];
+            if (speedMax / 16 * i <= value) {
+                drawVLine(x + i * 4 + 2, y - h, h);
+            }
+            else {
+                drawPixel(x + i * 4 + 2, y - h);
+                drawPixel(x + i * 4 + 2, y - 1);
+            }
+        }
+    }
+    else {
+        switch (receiverState) {
+            case STOPPING: m = "Stopping"; break;
+            case STOPPED: m = "Stopped"; break;
+            case PUSHING: m = "Pushing"; break;
+            case COASTING: m = "Coasting"; break;
+            case ENDLESS: m = "Cruise"; break;
+            case UPDATE: m = "Update"; break;
+            default: m = "?";
+        }
 
-  // --- Speed ---
-  value = speed();
-  float speedMax = boardConfig.maxSpeed;
+        drawString(m, -1, 50, fontDesc);
+    }
 
-  String m = "km/h";
+    // --- Battery ---
+    value = batteryPackPercentage( telemetry.getVoltage() );
 
-  drawStringCenter(String(value, 0), m, y);
+    y = 74;
+    int battery = (int) value;
+    drawStringCenter(String(battery), "%", y);
+    drawString(String(telemetry.getVoltage(), 1), 44, 73, fontPico);
 
-  if (receiverState == CONNECTED) {
+    y = 80;
+    x = 1;
 
-    // speedometer graph height array
-    uint8_t a[16] = {3, 3, 4, 4, 5, 6, 7, 8, 10,
-                     11, 13, 15, 17, 20, 24, 28
-                    };
-    y = 48;
+    // longboard body
+    h = 12;
+    uint8_t w = 41;
+    drawHLine(x + 10, y, w); // top line
+    drawHLine(x + 10, y + h, w); // bottom
 
+    // nose
+    drawHLine(x + 2, y + 3, 5); // top line
+    drawHLine(x + 2, y + h - 3, 5); // bottom
+
+    drawPixel(x + 1, y + 4);
+    drawVLine(x, y + 5, 3); // nose
+    drawPixel(x + 1, y + h - 4);
+
+    display.drawLine(x + 6, y + 3, x + 9, y, WHITE);
+    display.drawLine(x + 6, y + h - 3, x + 9, y + h, WHITE);
+
+    // tail
+    drawHLine(64 - 6 - 2, y + 3, 5); // top line
+    drawHLine(64 - 6 - 2, y + h - 3, 5); // bottom
+
+    drawPixel(64 - 3, y + 4);
+    drawVLine(64 - 2, y + 5, 3); // tail
+    drawPixel(64 - 3, y + h - 4);
+
+    display.drawLine(64 - 6 - 3, y + 3, 64 - 6 - 6, y, WHITE);
+    display.drawLine(64 - 6 - 3, y + h - 3, 64 - 6 - 6, y + h, WHITE);
+
+    // longboard wheels
+    drawBox(x + 3, y, 3, 2); // left
+    drawBox(x + 3, y + h - 1, 3, 2);
+    drawBox(64 - 7, y, 3, 2); // right
+    drawBox(64 - 7, y + h - 1, 3, 2);
+
+    // battery sections
+    for (uint8_t i = 0; i < 14; i++) {
+        if (round((100 / 14) * i) <= value) {
+            drawBox(x + i * 3 + 10, y + 2, 1, h - 3);
+        }
+    }
+
+    // --- Distance in km ---
+    value = telemetry.getDistance();
+    String km;
+
+    y = 118;
+
+    if (value >= 1) {
+        km = String(value, 0);
+        drawStringCenter(km, "km", y);
+    }
+    else {
+        km = String(value * 1000, 0);
+        drawStringCenter(km, "m", y);
+    }
+
+    // max distance
+<<<<<<< HEAD
+    int range = 30;
+=======
+    int range = boardConfig.maxRange;
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
+    if (value > range) {range = value;}
+
+    drawString(String(range), 52, 118, fontPico);
+
+    // dots
+    y = 122;
     for (uint8_t i = 0; i < 16; i++) {
-      h = a[i];
-      if (speedMax / 16 * i <= value) {
-        drawVLine(x + i * 4 + 2, y - h, h);
-      } else {
-        drawPixel(x + i * 4 + 2, y - h);
-        drawPixel(x + i * 4 + 2, y - 1);
-      }
-    }
-  } else {
-    switch (receiverState) {
-      case STOPPING: m = "Stopping"; break;
-      case STOPPED: m = "Stopped"; break;
-      case PUSHING: m = "Pushing"; break;
-      case COASTING: m = "Coasting"; break;
-      case ENDLESS: m = "Cruise"; break;
-      case UPDATE: m = "Update"; break;
-      default: m = "?";
+        drawBox(x + i * 4, y + 4, 2, 2);
     }
 
-    drawString(m, -1, 50, fontDesc);
-  }
+    // start end
+    drawBox(x, y, 2, 6);
+    drawBox(62, y, 2, 6);
+    drawBox(30, y, 2, 6);
 
-  // --- Battery ---
-  value = batteryPackPercentage( telemetry.getVoltage() );
-
-  y = 74;
-
-  int battery = (int) value;
-  drawStringCenter(String(battery), "%", y);
-
-  drawString(String(telemetry.getVoltage(), 1), 44, 73, fontPico);
-
-  y = 80;
-  x = 1;
-
-  // longboard body
-  h = 12;
-  uint8_t w = 41;
-  drawHLine(x + 10, y, w); // top line
-  drawHLine(x + 10, y + h, w); // bottom
-
-  // nose
-  drawHLine(x + 2, y + 3, 5); // top line
-  drawHLine(x + 2, y + h - 3, 5); // bottom
-
-  drawPixel(x + 1, y + 4);
-  drawVLine(x, y + 5, 3); // nose
-  drawPixel(x + 1, y + h - 4);
-
-  display.drawLine(x + 6, y + 3, x + 9, y, WHITE);
-  display.drawLine(x + 6, y + h - 3, x + 9, y + h, WHITE);
-
-  // tail
-  drawHLine(64 - 6 - 2, y + 3, 5); // top line
-  drawHLine(64 - 6 - 2, y + h - 3, 5); // bottom
-
-  drawPixel(64 - 3, y + 4);
-  drawVLine(64 - 2, y + 5, 3); // tail
-  drawPixel(64 - 3, y + h - 4);
-
-  display.drawLine(64 - 6 - 3, y + 3, 64 - 6 - 6, y, WHITE);
-  display.drawLine(64 - 6 - 3, y + h - 3, 64 - 6 - 6, y + h, WHITE);
-
-  // longboard wheels
-  drawBox(x + 3, y, 3, 2); // left
-  drawBox(x + 3, y + h - 1, 3, 2);
-  drawBox(64 - 7, y, 3, 2); // right
-  drawBox(64 - 7, y + h - 1, 3, 2);
-
-  // battery sections
-  for (uint8_t i = 0; i < 14; i++) {
-    if (round((100 / 14) * i) <= value) {
-      drawBox(x + i * 3 + 10, y + 2, 1, h - 3);
-    }
-  }
-
-  // --- Distance in km ---
-  value = telemetry.getDistance();
-  String km;
-
-  y = 118;
-
-  if (value >= 1) {
-    km = String(value, 0);
-    drawStringCenter(km, "km", y);
-  } else {
-    km = String(value * 1000, 0);
-    drawStringCenter(km, "m", y);
-  }
-
-  // max distance
-  int range = 30;
-  if (value > range) range = value;
-
-  drawString(String(range), 52, 118, fontPico);
-
-  // dots
-  y = 122;
-  for (uint8_t i = 0; i < 16; i++) {
-    drawBox(x + i * 4, y + 4, 2, 2);
-  }
-
-  // start end
-  drawBox(x, y, 2, 6);
-  drawBox(62, y, 2, 6);
-  drawBox(30, y, 2, 6);
-
-  // position
-  drawBox(x, y + 2, value / range * 62, 4);
+    // position
+    drawBox(x, y + 2, value / range * 62, 4);
 }
 
 void drawStringCenter(String value, String caption, uint8_t y) {
 
-  // draw digits
-  int x = 0;
+    // draw digits
+    int x = 0;
 
-  display.setFont(fontDigital);
+    display.setFont(fontDigital);
 
-  display.setTextSize(1);             // Normal 1:1 pixel scale
-  display.setTextColor(WHITE);        // Draw white text
+    display.setTextSize(1);             // Normal 1:1 pixel scale
+    display.setTextColor(WHITE);        // Draw white text
 
-  display.setCursor(x, y);
-  display.print(value);
+    display.setCursor(x, y);
+    display.print(value);
 
-  // draw caption km/%
-  x += getStringWidth(value) + 4;
-  y -= 9;
+    // draw caption km/%
+    x += getStringWidth(value) + 4;
+    y -= 9;
 
-  display.setCursor(x, y);
-  display.setFont(fontDesc);
+    display.setCursor(x, y);
+    display.setFont(fontDesc);
 
-  display.print(caption);
-
-}
-
-/*
-   Print the signal icon if connected, and flash the icon if not connected
-*/
-void drawSignal() {
-
-  int x = 45;
-  int y = 11;
-
-  for (int i = 0; i < 9; i++) {
-    if (round((100 / 9) * i) <= signalStrength)
-      drawVLine(x + (2 * i), y - i, i);
-  }
-}
-
-
-/*
-   Print the remotes battery level as a battery on the OLED
-*/
-void drawBatteryLevel() {
-
-  int x = 2;
-  int y = 2;
-
-  // blinking
-  if (batteryLevel < 20) {
-    if (millisSince(lastSignalBlink) > 500) {
-        signalBlink = !signalBlink;
-        lastSignalBlink = millis();
-      }
-  } else signalBlink = false;
-
-  drawFrame(x, y, 18, 9);
-  drawBox(x + 18, y + 2, 2, 5);
-
-  // blink
-  if (signalBlink) return;
-
-  // battery level
-  drawBox(x + 2, y + 2, batteryLevel * 14 / 100, 5);
-
-  if (batteryLevel <= 19) { // < 10%
-    drawString(String(batteryLevel), x + 7, y + 6, fontMicro);
-  }
+    display.print(caption);
 
 }
 
-int checkButton() {
+void drawSignal() { // Print the signal icon if connected, and flash the icon if not connected
 
-  int event = 0;
-  buttonVal = digitalRead(PIN_BUTTON);
+    int x = 45;
+    int y = 11;
 
-  // Button pressed down
-  if (buttonVal == LOW && buttonLast == HIGH && (millis() - upTime) > debounce)
-  {
-    downTime = millis();
-    ignoreUp = false;
-    waitForUp = false;
-    singleOK = true;
-    holdEventPast = false;
-    longHoldEventPast = false;
-    if ((millis() - upTime) < DCgap && DConUp == false && DCwaiting == true)  DConUp = true;
-    else  DConUp = false;
-    DCwaiting = false;
-  }
-  // Button released
-  else if (buttonVal == HIGH && buttonLast == LOW && (millis() - downTime) > debounce)
-  {
-    if (not ignoreUp)
-    {
-      upTime = millis();
-      if (DConUp == false) DCwaiting = true;
-      else
-      {
-        event = DBL_CLICK;
-        DConUp = false;
+    for (int i = 0; i < 9; i++) {
+        if (round((100 / 9) * i) <= signalStrength){
+            drawVLine(x + (2 * i), y - i, i);
+        }
+    }
+}
+
+void drawBatteryLevel() { // Print the remotes battery level as a battery on the OLED
+
+    int x = 2;
+    int y = 2;
+
+    // blinking
+    if (batteryLevel < 20) {
+        if (millisSince(lastSignalBlink) > 500) {
+            signalBlink = !signalBlink;
+            lastSignalBlink = millis();
+        }
+    }
+    else { signalBlink = false;
+    }
+
+    drawFrame(x, y, 18, 9);
+    drawBox(x + 18, y + 2, 2, 5);
+
+    // blink
+    if (signalBlink) { return;
+    }
+
+    // battery level
+    drawBox(x + 2, y + 2, batteryLevel * 14 / 100, 5);
+
+    if (batteryLevel <= 19) { // < 10%
+        drawString(String(batteryLevel), x + 7, y + 6, fontMicro);
+    }
+
+}
+
+int checkButton() { //reads value of PWR_BUTTON and return event 0 - CLICK - DBL_CLICK - HOLD - LONG_HOLD
+
+    int event = 0;
+    buttonVal = digitalRead(PIN_PWRBUTTON);
+
+    // Button pressed down
+    if (buttonVal == LOW && buttonLast == HIGH && (millis() - upTime) > debounce) {
+        downTime = millis();
+        ignoreUp = false;
+        waitForUp = false;
+        singleOK = true;
+        holdEventPast = false;
+        longHoldEventPast = false;
+        if ((millis() - upTime) < DCgap && DConUp == false && DCwaiting == true){
+            DConUp = true;
+        }
+        else {  DConUp = false; }
         DCwaiting = false;
-        singleOK = false;
-      }
     }
-  }
-  // Test for normal click event: DCgap expired
-  if ( buttonVal == HIGH && (millis() - upTime) >= DCgap && DCwaiting == true && DConUp == false && singleOK == true && event != 2)
-  {
-    event = CLICK;
-    DCwaiting = false;
-  }
-  // Test for hold
-  if (buttonVal == LOW && (millis() - downTime) >= holdTime) {
-    // Trigger "normal" hold
-    if (not holdEventPast)
-    {
-      event = HOLD;
-      waitForUp = true;
-      ignoreUp = true;
-      DConUp = false;
-      DCwaiting = false;
-      holdEventPast = true;
+    // Button released
+    else {
+        if (buttonVal == HIGH && buttonLast == LOW && (millis() - downTime) > debounce){
+            if (not ignoreUp){
+                upTime = millis();
+                if (DConUp == false){
+                    DCwaiting = true;
+                }
+                else{
+                    event = DBL_CLICK;
+                    DConUp = false;
+                    DCwaiting = false;
+                    singleOK = false;
+                }
+            }
+        }
     }
-    // Trigger "long" hold
-    if ((millis() - downTime) >= longHoldTime)
-    {
-      if (not longHoldEventPast)
-      {
-        event = LONG_HOLD;
-        longHoldEventPast = true;
-      }
+
+    // Test for normal click event: DCgap expired
+    if ( buttonVal == HIGH && (millis() - upTime) >= DCgap && DCwaiting == true && DConUp == false && singleOK == true && event != 2){
+        event = CLICK;
+        DCwaiting = false;
     }
-  }
-  buttonLast = buttonVal;
-  return event;
+    // Test for hold
+    if (buttonVal == LOW && (millis() - downTime) >= holdTime) {
+        // Trigger "normal" hold
+        if (not holdEventPast){
+            event = HOLD;
+            waitForUp = true;
+            ignoreUp = true;
+            DConUp = false;
+            DCwaiting = false;
+            holdEventPast = true;
+        }
+        // Trigger "long" hold
+        if ((millis() - downTime) >= longHoldTime){
+            if (not longHoldEventPast){
+                event = LONG_HOLD;
+                longHoldEventPast = true;
+            }
+        }
+    }
+
+    buttonLast = buttonVal;
+    return event;
 }
 
 bool isShuttingDown() {
@@ -1763,4 +2305,12 @@ void vibrate(int ms) {
     delay(ms);
     digitalWrite(PIN_VIBRO, LOW);
   #endif
+}
+
+void vibe(int vibeMode){    //vibrate() combos
+    if (vibeMode == 0){vibrate(52);}
+    if (vibeMode == 1){vibrate(45); delay(5);vibrate(15); delay(5);vibrate(15);}
+    if (vibeMode == 2){vibrate(40); delay(8);vibrate(16);}
+    if (vibeMode == 3){vibrate(35); delay(6);vibrate(15); delay(7);vibrate(15);}
+    if (vibeMode == 4){vibrate(50); delay(25); vibrate(50); delay(25); vibrate(50);}
 }

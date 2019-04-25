@@ -21,16 +21,16 @@
 #define BATT_FACTOR 2 // voltage divider 100k/100k on board
 
 // Pins for I2C interface of OLED Display
-#define DISPLAY_SDA 21
-#define DISPLAY_SCL 22
-#define DISPLAY_RST 16
+#define SDA_OLED 21
+#define SCL_OLED 22
+#define RST_OLED 16
 
 // Pins for LORA chip SPI interface, reset line and interrupt lines
-#define RF_SCK  5
+// #define SCK  5
 #define RF_CS   18
-#define RF_MISO 19
-#define RF_MOSI 27
-#define RF_RST  23
-#define RF_DI0  26
-#define RF_DI1  33
-#define RF_DI2  32
+// #define MISO 19
+// #define MOSI 27
+#define RST_LoRa  23
+#define DIO0  26
+#define DIO1  33
+#define DIO2  32

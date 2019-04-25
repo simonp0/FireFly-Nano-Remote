@@ -7,6 +7,8 @@
 #include "utils.h"
 #include "VescUart.h"
 
+//#include <analogWrite.h>
+
 #ifdef RECEIVER_SCREEN
   #include <Adafruit_GFX.h>
   #include "Adafruit_SSD1306.h"
@@ -73,6 +75,8 @@ String updateStatus;
 
 unsigned long lastBrakeTime;
 
+//ROADLIGHT_SETTINGS
+uint8_t ROADLIGHT_BRIGHTNESS = 0;
 
 #ifdef RECEIVER_SCREEN
 const GFXfont* fontDigital = &Segment13pt7b;  // speed, distance, ...
@@ -112,6 +116,57 @@ void speedControl(uint16_t throttle , bool trigger );
 String uint64ToAddress(uint64_t number);
 String uint64ToString(uint64_t number);
 void updateEEPROMSettings();
-
-
 void updateSetting(uint8_t setting, uint64_t value);
+
+
+<<<<<<< HEAD
+void updateSetting(uint8_t setting, uint64_t value);
+
+//void drawLightPage();
+void switchLightOn();
+void switchLightOff();
+
+void vibrate(int ms);
+=======
+// *******************   LED LIGHT IMPLEMENTATION - Receiver *************
+
+// we have PIN_FRONTLIGHT attributed on what is PIN_VIBRO on the remote control side
+// we have PIN_BACKLIGHT attributed on what is PIN_PWRBUTTON on the remote control side
+
+#ifdef ROADLIGHT_CONNECTED
+
+    enum RoadLightState{
+        OFF,
+        ON,
+        BRAKES_ONLY,
+        DISCO // yes baby !
+    };
+
+    RoadLightState myRoadLightState = OFF; //default value on startupTime
+
+    const double led_pwm_frequency = 200;
+    const uint8_t led_pwm_channel_frontLight = 0; //GPIO channel to use
+    const uint8_t led_pwm_channel_backLight = 1; //GPIO channel to use
+    const uint8_t led_pwm_resolution = 8;
+
+    uint_fast32_t dutyCycle_lightOff = 0;
+    uint_fast32_t dutyCycle_frontLightOn = 90;   //TODO : value can be changed via the remote menu
+    uint_fast32_t dutyCycle_backLightOn = 90;    //TODO : value can be changed via the remote menu
+    uint_fast32_t dutyCycle_brakeLight = 255;   //TODO : value can be changed via the remote menu
+
+    unsigned long lastBrakeLightPulse;
+    unsigned long brakeLightPulseInterval = 100; //ms between each brakeLightPulse initiation
+    unsigned long brakeLightPulseDuration = 50; //ms TBD
+
+    //uint8_t ROADLIGHT_MODE = 0;
+    void switchLightOn();
+    void switchLightOff();
+    void switchLightBrakesOnly();
+    void updateBrakeLight();
+    void emitBrakeLightPulse(uint_fast32_t value);
+    //void drawLightPage();
+
+#endif
+
+// *******************   LED LIGHT IMPLEMENTATION - Receiver *************
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
