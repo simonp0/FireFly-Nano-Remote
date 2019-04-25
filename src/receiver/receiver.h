@@ -120,6 +120,7 @@ void updateSetting(uint8_t setting, uint64_t value);
 
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 void updateSetting(uint8_t setting, uint64_t value);
 
 //void drawLightPage();
@@ -128,6 +129,8 @@ void switchLightOff();
 
 void vibrate(int ms);
 =======
+=======
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
 // *******************   LED LIGHT IMPLEMENTATION - Receiver *************
 
 // we have PIN_FRONTLIGHT attributed on what is PIN_VIBRO on the remote control side
@@ -169,4 +172,7 @@ void vibrate(int ms);
 #endif
 
 // *******************   LED LIGHT IMPLEMENTATION - Receiver *************
+<<<<<<< HEAD
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
+=======
 >>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214

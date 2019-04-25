@@ -22,6 +22,9 @@
 #define PIN_PWRBUTTON 12
 #define PIN_BACKLIGHT 12  //PWRBUTTON PIN is free on the RECEIVER side, we'll use it for PIN_BACKLIGHT
 
+<<<<<<< HEAD
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
+=======
 >>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
 #define PIN_TRIGGER   32
 #define ADC_THROTTLE  ADC1_GPIO38_CHANNEL // ADC1_CHANNEL_2
@@ -29,9 +32,13 @@
 #define PIN_BATTERY   13
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 //#define PIN_LIGHT      //LED lights control PIN
 
 #define HAS_BUTTON (0) // button "PRG" on board
+=======
+#define HAS_BUTTON KEY_BUILTIN // button "PRG" on board
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
 =======
 #define HAS_BUTTON KEY_BUILTIN // button "PRG" on board
 >>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214

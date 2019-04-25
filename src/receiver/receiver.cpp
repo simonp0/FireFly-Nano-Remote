@@ -42,9 +42,14 @@ unsigned long lastDelay;
 
 void setup(){ //runs once after powerOn
 <<<<<<< HEAD
+<<<<<<< HEAD
     // wait for VESC?
     delay(1000);
     Serial.begin(115200);
+=======
+    delay(1000);    // wait for VESC?
+    Serial.begin(115200);//was 9600
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
 =======
     delay(1000);    // wait for VESC?
     Serial.begin(115200);//was 9600
@@ -54,6 +59,7 @@ void setup(){ //runs once after powerOn
     //loadEEPROMSettings();
     setDefaultEEPROMSettings();
     calculateRatios();
+<<<<<<< HEAD
 <<<<<<< HEAD
     pinMode(LED, OUTPUT);
 
@@ -73,6 +79,8 @@ digitalWrite(PIN_PWRBUTTON, LOW);
     // 1 sec average
     motorCurrent.begin(SMOOTHED_AVERAGE, 2);
 =======
+=======
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
     pinMode(LED, OUTPUT); //LED onBoard
 
 
@@ -89,6 +97,9 @@ digitalWrite(PIN_PWRBUTTON, LOW);
 
     batterySensor.begin(SMOOTHED_EXPONENTIAL, 10);     // 10 seconds average
     motorCurrent.begin(SMOOTHED_AVERAGE, 2);    // 1 sec average
+<<<<<<< HEAD
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
+=======
 >>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
     motorCurrent.add(0);
 
@@ -124,10 +135,15 @@ digitalWrite(PIN_PWRBUTTON, LOW);
     debug("Setup complete - begin listening");
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     #ifdef VEXT // power on display
         pinMode(VEXT, OUTPUT);
         digitalWrite(VEXT, LOW);
     #endif
+=======
+   pinMode(Vext, OUTPUT);
+    digitalWrite(Vext, LOW);
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
 =======
    pinMode(Vext, OUTPUT);
     digitalWrite(Vext, LOW);
@@ -176,6 +192,7 @@ float batteryPackPercentage( float voltage ) { // Calculate the battery level of
 
 #ifdef RECEIVER_SCREEN  //Receiver WIFI UPDATE and OLED display functions
     bool prepareUpdate() { //receiver with screen -> WIFI UPDATE mode functions
+<<<<<<< HEAD
 <<<<<<< HEAD
 
         // safety checks
@@ -303,6 +320,23 @@ float batteryPackPercentage( float voltage ) { // Calculate the battery level of
         WiFi.mode(WIFI_STA);
         WiFi.begin(ssid, password);
 
+=======
+
+        // safety checks
+        if (isMoving()) return false;
+        state = UPDATE;
+
+        // replace this with your WiFi network credentials
+        const char* ssid = "sk8"; // e.g. "FBI Surveillance Van #34";
+        const char* password = "12345678"; // e.g. "12345678";
+
+        wifiStatus = "Connecting:";
+        updateStatus = String(ssid);
+
+        WiFi.mode(WIFI_STA);
+        WiFi.begin(ssid, password);
+
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
         while (WiFi.waitForConnectResult() != WL_CONNECTED) {
             debug("Connection Failed!");
             delay(3000);
@@ -398,6 +432,9 @@ float batteryPackPercentage( float voltage ) { // Calculate the battery level of
                 display.println("SPD: " + String(telemetry.getSpeed(),1));
             break;
 
+<<<<<<< HEAD
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
+=======
 >>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
             case UPDATE:
                 display.setTextColor(WHITE);
@@ -426,6 +463,7 @@ float batteryPackPercentage( float voltage ) { // Calculate the battery level of
         String s = getState() + "  " +
         String(telemetry.getVoltage(), 1) + "v  " +
         String(telemetry.getDistance(), 1) + "km";
+<<<<<<< HEAD
 
         #ifdef FAKE_UART
             s = "Board ID: " + String(boardID, HEX);
@@ -565,6 +603,99 @@ void pairingRequest() {
 =======
 void pairingRequest() { // TODO
 >>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
+=======
+
+        #ifdef FAKE_UART
+            s = "Board ID: " + String(boardID, HEX);
+        #endif
+
+        drawStringCentered(s, 64, 62, fontDesc);
+
+        display.display();
+
+    }//end updateScreen()
+    void drawBattery() {  //OLED battery display function
+
+        display.setTextColor(WHITE);
+        if (telemetry.getVoltage() == 0) {
+            // no uart connection
+            display.setFont();
+            display.setCursor(0, 10);
+            display.print("No UART data");
+// ****************************************LIGHT IMPLEMENTATION*****************************
+        //    display.print(" Vp" + String(digitalRead(PIN_FRONTLIGHT)) );
+        //    display.print(" Lp" + String(digitalRead(PIN_BACKLIGHT)) );
+// ****************************************LIGHT IMPLEMENTATION*****************************
+
+            // remote info
+            display.setCursor(0, 25);
+            if (!connected)
+                display.print("Remote not connected");
+            else
+                display.print("Signal: " + String(lastRssi, 0) + " dB");
+            //    display.setCursor(0, 40);
+            //    display.print("Delay: " + String(lastDelay));
+        return;
+        }
+
+        // --- battery ----
+        int w = 120; int h = 46;
+        display.drawRect(0, 0, w, h, WHITE);
+        display.drawRect(1, 1, w-2, h-2, WHITE);
+        display.fillRect(w, 10, 6, h-10-10, WHITE);
+
+        // fill
+        float pc = batteryPackPercentage(telemetry.getVoltage());
+        int x = w * pc / 100-8;
+        display.fillRect(4, 4, x, h-8, WHITE);
+
+        // % value
+        if (pc > 50) { // left side
+            display.setTextColor(BLACK);
+            drawStringCentered(String(pc, 0) + "%", x/2 + 4, 31, fontBig);
+        }
+        else { // right side
+            display.setTextColor(WHITE);
+            drawStringCentered(String(pc, 0) + "%", x + (w - x) / 2, 31, fontBig);
+        }
+
+    }//end drawBattery()
+#endif //END #IFDEF RECEIVER_SCREEN
+
+
+void loop() { // CORE 1 task launcher - UART data exchange with VESC
+              // function LOOP() starts just after setup() & runs continuously !
+    // get telemetry;
+    getUartData(); // every 250 ms ?
+    #ifdef ARDUINO_SAMD_ZERO
+        radioExchange();
+        stateMachine();
+    #elif RECEIVER_SCREEN //refresh receiver OLED screen
+        if (state == UPDATE) {ArduinoOTA.handle();
+        }
+        updateScreen(); // 25 ms
+        vTaskDelay(1);
+    #endif
+}
+
+
+#ifdef ESP32   // CORE 0 task launcher - radioExchange & stateMachine
+    void coreTask( void * pvParameters ){  // core 0
+        String taskMessage = "radio task running on core ";
+        taskMessage = taskMessage + xPortGetCoreID();
+        Serial.println(taskMessage);
+
+        while (true) {  //while loop that runs continuously !
+            radioExchange();
+            stateMachine();
+            vTaskDelay(1);//was 1
+        }
+    }
+#endif //endifdef
+
+
+void pairingRequest() { // TODO
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
   // safety checks
   #ifdef FAKE_UART
     setState(PAIRING);
@@ -574,7 +705,10 @@ void pairingRequest() { // TODO
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 
+=======
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
 =======
 >>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
 bool receiveData(){ // copies buffer data into remPacket
@@ -787,11 +921,17 @@ void setState(AppState newState) { //called by the stateMachine()
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 void radioExchange(){   //receive packet, execute SET_ or GET_ request, send answer
 //radioExchange() is executed by CORE 0 task via coreTask() function
 
 // controlStatusLed();
 
+=======
+void radioExchange() {   //receive packet, execute SET_ or GET_ request, send answer
+    //radioExchange() is executed by CORE 0 task via coreTask() function
+    // controlStatusLed();
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
 =======
 void radioExchange() {   //receive packet, execute SET_ or GET_ request, send answer
     //radioExchange() is executed by CORE 0 task via coreTask() function
@@ -839,6 +979,7 @@ void radioExchange() {   //receive packet, execute SET_ or GET_ request, send an
                 break;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // ****************************************LIGHT IMPLEMENTATION*****************************
                 case SET_LIGHT:
                     // vibrate(2000); WE CANNOT DELAY THIS FUNCTION OR IT GENERATES A DISCONNECTION
@@ -865,6 +1006,8 @@ void radioExchange() {   //receive packet, execute SET_ or GET_ request, send an
 
             }
 =======
+=======
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
             #ifdef ROADLIGHT_CONNECTED  // ************* LED LIGHT IMPLEMENTATION*********************
                 case SET_LIGHT:
                     // vibrate(2000); TODO : launch via an independant task to avoid introducing any delay here
@@ -885,6 +1028,9 @@ void radioExchange() {   //receive packet, execute SET_ or GET_ request, send an
             #endif
 
             } // end switch
+<<<<<<< HEAD
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
+=======
 >>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
 
             // send config after power on
@@ -915,12 +1061,19 @@ void radioExchange() {   //receive packet, execute SET_ or GET_ request, send an
 
         } else receivedData = false;
 <<<<<<< HEAD
+<<<<<<< HEAD
 
     }
 /* End listen for transmission */
 
 } //END radioExchange() function
 
+=======
+    }   // End if( dataAvailable() ) - Stop listening for transmission
+
+} //END radioExchange() function
+
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
 =======
     }   // End if( dataAvailable() ) - Stop listening for transmission
 
@@ -1157,7 +1310,10 @@ void setCruise(uint8_t speed) {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 
+=======
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
 =======
 >>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
 /* void speedControl( uint16_t throttle , bool trigger ){ TODO
@@ -1382,6 +1538,7 @@ bool inRange(int val, int minimum, int maximum){ //checks if value is within MIN
 // ****************************************LIGHT IMPLEMENTATION*****************************
 //void drawLightPage(); // uint8_t lightBrightnessValue
 <<<<<<< HEAD
+<<<<<<< HEAD
 void switchLightOn(){
     #ifdef PIN_PWRBUTTON
         digitalWrite(PIN_PWRBUTTON, HIGH);
@@ -1402,6 +1559,8 @@ void vibrate(int ms) {
   #endif
 }
 =======
+=======
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
 
 
 #ifdef ROADLIGHT_CONNECTED
@@ -1470,5 +1629,8 @@ void vibrate(int ms) {
 #endif
 
 
+<<<<<<< HEAD
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
+=======
 >>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
 // ****************************************LIGHT IMPLEMENTATION*****************************

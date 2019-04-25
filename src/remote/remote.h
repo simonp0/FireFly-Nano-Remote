@@ -85,7 +85,12 @@ enum ui_page {
   PAGE_MAX,
   PAGE_DEBUG,
 <<<<<<< HEAD
+<<<<<<< HEAD
   //PAGE_LIGHT_SWITCH
+=======
+  PAGE_LIGHT_SETTINGS,
+
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
 =======
   PAGE_LIGHT_SETTINGS,
 
@@ -143,9 +148,12 @@ int cruiseThrottle;
 bool requestUpdate = false; //when drawSettingsMenu() sets flag requestUpdate=TRUE : Next run of prepatePacket() function catches requestUpdate=TRUE flag -> next packet sent to receiver is a SET_STATE = UPDATE request. Possible only under AppState=MENU
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // flag for LIGHT switch
 bool requestSwitchLight = false;
 uint8_t ROADLIGHT_BRIGHTNESS = 0;
+=======
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
 =======
 >>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
 
@@ -166,15 +174,21 @@ const byte mainMenus = 4;
 
 String MENUS[mainMenus][subMenus] = {
 <<<<<<< HEAD
+<<<<<<< HEAD
     { "Info", "Debug", "TestDebug", "Specs", "", "", "" },
     { "Remote", "Calibrate", "Pair", "Auto off", "", "", "" },
     { "Board", "WIFIupdate",  "Max Speed", "Range", "Cells", "Battery", "Motor" },
     { "Lights", "Switch ON", "Switch OFF", "Settings", "", "", "" }
 =======
+=======
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
     { "Info", "Debug", "TestDebug", "Specs"},
     { "Remote", "Calibrate", "Pair", "Auto off", "", ""},
     { "Board", "WIFIupdate",  "Max Speed", "Range", "Cells", "Battery"},
     { "Lights", "Switch ON", "Switch OFF", "Brake Only", "Settings"}
+<<<<<<< HEAD
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
+=======
 >>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
   };
 
@@ -183,7 +197,11 @@ enum menu_info { INFO_DEBUG };
 enum menu_remote { REMOTE_CALIBRATE, REMOTE_PAIR, REMOTE_SLEEP_TIMER };
 enum menu_board { BOARD_UPDATE };
 <<<<<<< HEAD
+<<<<<<< HEAD
 enum menu_light { SWITCH_LIGHT_ON, SWITCH_LIGHT_OFF, ROADLIGHT_SETTINGS };
+=======
+enum menu_light { SWITCH_LIGHT_ON, SWITCH_LIGHT_OFF, SWITCH_LIGHT_BRAKES_ONLY, ROADLIGHT_SETTINGS };
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
 =======
 enum menu_light { SWITCH_LIGHT_ON, SWITCH_LIGHT_OFF, SWITCH_LIGHT_BRAKES_ONLY, ROADLIGHT_SETTINGS };
 >>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
@@ -318,12 +336,15 @@ void updateMainDisplay();
 void vibrate(int ms);
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 void vibe(int vibeMode);
 void drawLightPage();
 void switchLightOn();
 void switchLightOff();
 //void vibeTask(void * pvParameters );
 =======
+=======
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
 void vibe(int vibeMode); //vibrations combos
 
 
@@ -337,4 +358,7 @@ void drawLightPage();//test
 //void switchLightOn(); //on receiver side only.
 //void switchLightOff();
 // ****************************************LIGHT IMPLEMENTATION*****************************
+<<<<<<< HEAD
+>>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
+=======
 >>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
