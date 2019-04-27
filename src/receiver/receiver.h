@@ -116,21 +116,25 @@ void updateEEPROMSettings();
 void updateSetting(uint8_t setting, uint64_t value);
 
 
-// *******************   LED LIGHT IMPLEMENTATION - Receiver *************
-
+// ******************************** LED ROADLIGHTS IMPLEMENTATION - Receiver *****************************
 // we have PIN_FRONTLIGHT attributed on what is PIN_VIBRO on the remote control side
 // we have PIN_BACKLIGHT attributed on what is PIN_PWRBUTTON on the remote control side
 
 #ifdef ROADLIGHT_CONNECTED
 
-    enum RoadLightState{
-        OFF,
-        ON,
-        BRAKES_ONLY,
-        DISCO // yes baby !
-    };
 
+
+//    enum RoadLightState{
+//        OFF,
+//        ON,
+//        BRAKES_ONLY,
+//        DISCO // yes baby !
+//    };
+//
     RoadLightState myRoadLightState = OFF; //default value on startupTime
+//  //--> moved to globals.h
+
+
 
     const double led_pwm_frequency = 200;
     const uint8_t led_pwm_channel_frontLight = 0; //GPIO channel to use
@@ -146,7 +150,6 @@ void updateSetting(uint8_t setting, uint64_t value);
     unsigned long brakeLightPulseInterval = 100; //ms between each brakeLightPulse initiation
     unsigned long brakeLightPulseDuration = 50; //ms TBD
 
-    //uint8_t ROADLIGHT_MODE = 0;
     void switchLightOn();
     void switchLightOff();
     void switchLightBrakesOnly();
@@ -156,4 +159,4 @@ void updateSetting(uint8_t setting, uint64_t value);
 
 #endif
 
-// *******************   LED LIGHT IMPLEMENTATION - Receiver *************
+// ******************************** LED ROADLIGHTS IMPLEMENTATION - Receiver *****************************

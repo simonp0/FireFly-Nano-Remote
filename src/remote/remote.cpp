@@ -127,7 +127,7 @@ void setup() {
         0);  /* Core where the task should run */
     #endif
 
-// ****************************************LIGHT IMPLEMENTATION*****************************
+// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
 
 }
 
@@ -308,13 +308,13 @@ void handleButtons() { //executes action depending on PWR_BUTTON state ( CLICK -
             calibrationStage = CALIBRATE_CENTER;
             return backToMainMenu();
           }
-//*********** ROADLIGHTS SETTINGS ImPLEMENTATION *****************
+// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
 //    DEFAULT BEHAVIOUR -> quit the page, bakcToMainMenu();
 //  if (menuPage ==  MENU_LIGHT){
 
 //  }
 
-//*********** ROADLIGHTS SETTINGS ImPLEMENTATION *****************
+// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
 
           // exit menu
           state = menuWasUsed ? IDLE : NORMAL;
@@ -821,21 +821,18 @@ void prepatePacket() {
                 break;
             }
 
-// ****************************************LED ROADLIGHTS IMPLEMENTATION*****************************
+// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
             if (requestSwitchLight) {
                 //vibe(4);
                 //xTaskCreate(vibeTask, "vibeTask", 100, NULL, 2, &TaskHandle1);
                 debug("requestSwitchLight");
                 remPacket.command = SET_LIGHT;
-//                if (ROADLIGHT_MODE==0){remPacket.data = LOW;}
-//                else{remPacket.data = HIGH;}
-                remPacket.data = ROADLIGHT_MODE;
-                //it's a uint8_t ---> but we want to send all that :
-                //remPacket.Data = ROADLIGHT_MODE (2 or 3 bits) + FRONTLIGHT_BRIGHTNESS (8bits) + BACKLIGHT_BRIGHTNESS (8bits)
+                //remPacket.data = ROADLIGHT_MODE;
+                remPacket.data = myRoadLightState;
                 requestSwitchLight = false;
                 break;
             }
-// ****************************************LED ROADLIGHTS IMPLEMENTATION*****************************
+// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
 
             else {
                 remPacket.command = SET_THROTTLE;
@@ -1433,24 +1430,27 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                         }
                     break;
 
-// ****************************************LED ROADLIGHTS IMPLEMENTATION*****************************
+// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
                     case MENU_LIGHT:
                         switch (subMenuItem){
                             //requestSwitchLight = true; //flag signaling a LIGHT command for the next remotePacket sent
                             case SWITCH_LIGHT_ON:
                                 requestSwitchLight = true;
-                                ROADLIGHT_MODE = 1;
+                                //ROADLIGHT_MODE = 1;
+                                myRoadLightState = ON;
                                 backToMainMenu();
                             break;
                             case SWITCH_LIGHT_OFF:
                                 requestSwitchLight = true;
-                                ROADLIGHT_MODE = 0;
+                                //ROADLIGHT_MODE = 0;
+                                myRoadLightState = OFF;
                                 //drawDebugPage();
                                 backToMainMenu();
                             break;
                             case SWITCH_LIGHT_BRAKES_ONLY:
                                 requestSwitchLight = true;
-                                ROADLIGHT_MODE = 2;
+                                //ROADLIGHT_MODE = 2;
+                                myRoadLightState = BRAKES_ONLY;
                                 backToMainMenu();
                             case ROADLIGHT_SETTINGS:
                                 drawLightSettingsPage();
@@ -1458,7 +1458,7 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                             break;
                         }
                     break;
-// ****************************************LED ROADLIGHTS IMPLEMENTATION*****************************
+// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
                 }
             }
 
@@ -1489,7 +1489,7 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                     }
                 break;
 
-// ****************************************LED ROADLIGHTS IMPLEMENTATION*****************************
+// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
                 case MENU_LIGHT: //if we want to display a specific page and stay on it
                     switch (subMenuItem){
                         case SWITCH_LIGHT_ON:
@@ -1506,7 +1506,7 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                         break;
                     }
                 break;
-// ****************************************LED ROADLIGHTS IMPLEMENTATION*****************************
+// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
 
 
             }
@@ -1535,7 +1535,7 @@ void drawDebugPage() {
 
 }
 
-// ****************************************LIGHT IMPLEMENTATION*****************************
+// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
 void drawLightSettingsPage(){
     /*
       int padding = 10;
@@ -1683,7 +1683,7 @@ void drawLightSettingsPage(){
         */
 
 
-}// ****************************************LED ROADLIGHTS IMPLEMENTATION*****************************
+}// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
 
 
 int getStringWidth(String s) {

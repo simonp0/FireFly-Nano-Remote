@@ -31,7 +31,7 @@ Smoothed <double> motorCurrent;
 float signalStrength;
 float lastRssi;
 
-// Status blink LED
+//  Status blink LED
 uint8_t statusCode = 0;
 bool statusLedState = false;
 
@@ -51,15 +51,15 @@ void setup(){ //runs once after powerOn
     pinMode(PIN_LED, OUTPUT); //LED onBoard
 
 
-// ******** LED LED ROADLIGHTS IMPLEMENTATION ********
+// ******** LED ROADLIGHTS IMPLEMENTATION ********
 #ifdef ROADLIGHT_CONNECTED
     ledcSetup(led_pwm_channel_frontLight, led_pwm_frequency, led_pwm_resolution); // configure LED PWM functionalitites
     ledcAttachPin(PIN_FRONTLIGHT, led_pwm_channel_frontLight); // attach the channel to the GPIO to be controlled
     ledcSetup(led_pwm_channel_backLight, led_pwm_frequency, led_pwm_resolution); // configure LED PWM functionalitites
     ledcAttachPin(PIN_BACKLIGHT, led_pwm_channel_backLight); // attach the channel to the GPIO to be controlled
-    myRoadLightState = OFF; //default setting when switching on the board
+    //myRoadLightState = OFF; //default setting when switching on the board // in header file
 #endif
-// ******** LED LED ROADLIGHTS IMPLEMENTATION ********
+// ******** LED ROADLIGHTS IMPLEMENTATION ********
 
 
     batterySensor.begin(SMOOTHED_EXPONENTIAL, 10);     // 10 seconds average
@@ -300,10 +300,10 @@ float batteryPackPercentage( float voltage ) { // Calculate the battery level of
             display.setFont();
             display.setCursor(0, 10);
             display.print("No UART data");
-// ****************************************LED ROADLIGHTS IMPLEMENTATION*****************************
-        //    display.print(" Vp" + String(digitalRead(PIN_FRONTLIGHT)) );
-        //    display.print(" Lp" + String(digitalRead(PIN_BACKLIGHT)) );
-// ****************************************LED ROADLIGHTS IMPLEMENTATION*****************************
+// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
+            display.print(" L:" + String(myRoadLightState) );
+            //display.print(" Lp" + String(digitalRead(PIN_BACKLIGHT)) );
+// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
 
             // remote info
             display.setCursor(0, 25);
@@ -634,7 +634,7 @@ void radioExchange() {   //receive packet, execute SET_ or GET_ request, send an
                     response = CONFIG;
                 break;
 
-            #ifdef ROADLIGHT_CONNECTED  // ************* LED LED ROADLIGHTS IMPLEMENTATION*********************
+            #ifdef ROADLIGHT_CONNECTED  // ************* LED ROADLIGHTS IMPLEMENTATION*********************
                 case SET_LIGHT:
                     // vibrate(2000); TODO : launch via an independant task to avoid introducing any delay here
                     response = ACK_ONLY;
@@ -1134,7 +1134,7 @@ bool inRange(int val, int minimum, int maximum){ //checks if value is within MIN
   return ((minimum <= val) && (val <= maximum));
 }
 
-// ****************************************LED ROADLIGHTS IMPLEMENTATION*****************************
+// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
 //void drawLightPage(); // uint8_t lightBrightnessValue
 
 
@@ -1204,4 +1204,4 @@ bool inRange(int val, int minimum, int maximum){ //checks if value is within MIN
 #endif
 
 
-// ****************************************LED ROADLIGHTS IMPLEMENTATION*****************************
+// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************

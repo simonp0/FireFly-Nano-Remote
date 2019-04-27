@@ -71,11 +71,21 @@ const int WHEEL_DIAMETER = 105;
 const int WHEEL_PULLEY = 1;
 const int MOTOR_PULLEY = 1;
 
-#ifdef ROADLIGHT_CONNECTED   // ********** ROADLIGHTS IMPLEMENTATION ***********************************************
-//    const int FRONTLIGHT_BRIGHTNESS = 100;
-//    const int BACKLIGHT_BRIGHTNESS = 100;
-#endif                      // ********** ROADLIGHTS IMPLEMENTATION ***********************************************
-/// -Moved in remote.h
+#ifdef ROADLIGHT_CONNECTED  // ********** LED ROADLIGHTS IMPLEMENTATION ***********************************************
+//    const int FRONTLIGHT_BRIGHTNESS = 100;        // -Moved in remote.h
+//    const int BACKLIGHT_BRIGHTNESS = 100;         // -Moved in remote.h
+
+    enum RoadLightState{
+        OFF,
+        ON,
+        BRAKES_ONLY,
+        DISCO // yes baby !
+    };
+
+//    RoadLightState myRoadLightState; //default value on startupTime
+
+#endif                      // ********** LED ROADLIGHTS IMPLEMENTATION ***********************************************
+
 
 
 #define VERSION 2
@@ -206,6 +216,12 @@ struct ConfigPacket {  //extends ReceiverPacket
     int16_t r1;  // battery amps * 100
     int16_t r2;
     // -------------------
+    // ********** LED ROADLIGHTS IMPLEMENTATION ***********
+    //uint8_t  roadlightAppMode;
+    //uint8_t  frontLightBrightnessValue;
+    //uint8_t  backLightBrightnessValue;
+    //uint8_t  anythingElse;
+    // ********** LED ROADLIGHTS IMPLEMENTATION ***********
     //
     float getMaxSpeed() { return (maxSpeed) / 100; }
     void setMaxSpeed(float f) { maxSpeed = f * 100; }

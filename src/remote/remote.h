@@ -35,10 +35,12 @@
   const int MIN_HALL = 0;
   const int CENTER_HALL = 752;
   const int MAX_HALL = 1023;
-  // **************************************** ROADLIGHTS IMPLEMENTATION*****************************
+  // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
   const int FRONTLIGHT_BRIGHTNESS = 100;
   const int BACKLIGHT_BRIGHTNESS = 100;
-  // **************************************** ROADLIGHTS IMPLEMENTATION*****************************
+  RoadLightState myRoadLightState = OFF;
+  // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
+
 
   static intr_handle_t s_rtc_isr_handle;
 
@@ -50,11 +52,10 @@ struct RemoteSettings {
   short centerHallValue = CENTER_HALL;
   short maxHallValue = MAX_HALL;
   uint32_t boardID = 0;
-  // **************************************** ROADLIGHTS IMPLEMENTATION*****************************
+  // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
   short frontLightBrightnessValue = FRONTLIGHT_BRIGHTNESS;
   short backLightBrightnessValue = BACKLIGHT_BRIGHTNESS;
-  // **************************************** ROADLIGHTS IMPLEMENTATION*****************************
-
+  // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
 } settings;
 
 RemoteSettings tempSettings;
@@ -93,7 +94,7 @@ enum ui_page {
   PAGE_MENU,
   PAGE_MAX,
   PAGE_DEBUG,
-  PAGE_LIGHT_SETTINGS   // **************************************** ROADLIGHTS IMPLEMENTATION*****************************
+  PAGE_LIGHT_SETTINGS   // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
 
 } page = PAGE_MAIN;
 
@@ -168,6 +169,7 @@ String MENUS[mainMenus][subMenus] = {
     { "Remote", "Calibrate", "Pair", "Auto off", "", ""},
     { "Board", "WIFIupdate",  "Max Speed", "Range", "Cells", "Battery"},
     { "Lights", "Switch ON", "Switch OFF", "Brake Only", "Settings"}
+    // *** LED ROADLIGHTS IMPLEMENTATION ***
   };
 
 enum menu_main { MENU_INFO, MENU_REMOTE, MENU_BOARD, MENU_LIGHT };
@@ -175,6 +177,7 @@ enum menu_info { INFO_DEBUG };
 enum menu_remote { REMOTE_CALIBRATE, REMOTE_PAIR, REMOTE_SLEEP_TIMER };
 enum menu_board { BOARD_UPDATE };
 enum menu_light { SWITCH_LIGHT_ON, SWITCH_LIGHT_OFF, SWITCH_LIGHT_BRAKES_ONLY, ROADLIGHT_SETTINGS };
+// *** LED ROADLIGHTS IMPLEMENTATION ***
 
 float currentMenu = 0;
 int subMenu = 0;
@@ -308,13 +311,16 @@ void vibrate(int ms);
 void vibe(int vibeMode); //vibrations combos
 
 
-// ****************************************LED ROADLIGHTS IMPLEMENTATION*****************************
+// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
 // flag for LIGHT switch (same method)
 
 bool requestSwitchLight = false;
-uint8_t ROADLIGHT_MODE = 0;
+//uint8_t ROADLIGHT_MODE = myRoadLightState; //
+
 void drawLightSettingsPage();//test
+
+
 
 //void switchLightOn(); //on receiver side only.
 //void switchLightOff();
-// ****************************************LED ROADLIGHTS IMPLEMENTATION*****************************
+// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
