@@ -1,4 +1,3 @@
-
 #include <Arduino.h>
 #include <Smoothed.h>
 #include "CPU.h"
@@ -75,8 +74,6 @@ String updateStatus;
 
 unsigned long lastBrakeTime;
 
-//ROADLIGHT_SETTINGS
-uint8_t ROADLIGHT_BRIGHTNESS = 0;
 
 #ifdef RECEIVER_SCREEN
 const GFXfont* fontDigital = &Segment13pt7b;  // speed, distance, ...
@@ -119,18 +116,6 @@ void updateEEPROMSettings();
 void updateSetting(uint8_t setting, uint64_t value);
 
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-void updateSetting(uint8_t setting, uint64_t value);
-
-//void drawLightPage();
-void switchLightOn();
-void switchLightOff();
-
-void vibrate(int ms);
-=======
-=======
->>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
 // *******************   LED LIGHT IMPLEMENTATION - Receiver *************
 
 // we have PIN_FRONTLIGHT attributed on what is PIN_VIBRO on the remote control side
@@ -172,7 +157,3 @@ void vibrate(int ms);
 #endif
 
 // *******************   LED LIGHT IMPLEMENTATION - Receiver *************
-<<<<<<< HEAD
->>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
-=======
->>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214

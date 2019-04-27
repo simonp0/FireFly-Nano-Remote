@@ -32,9 +32,13 @@
   #include <nvs_flash.h>
   #include <Preferences.h>
 
-  const int MIN_HALL = 250;
-  const int CENTER_HALL = 750;
+  const int MIN_HALL = 0;
+  const int CENTER_HALL = 752;
   const int MAX_HALL = 1023;
+  // **************************************** ROADLIGHTS IMPLEMENTATION*****************************
+  const int FRONTLIGHT_BRIGHTNESS = 100;
+  const int BACKLIGHT_BRIGHTNESS = 100;
+  // **************************************** ROADLIGHTS IMPLEMENTATION*****************************
 
   static intr_handle_t s_rtc_isr_handle;
 
@@ -46,6 +50,11 @@ struct RemoteSettings {
   short centerHallValue = CENTER_HALL;
   short maxHallValue = MAX_HALL;
   uint32_t boardID = 0;
+  // **************************************** ROADLIGHTS IMPLEMENTATION*****************************
+  short frontLightBrightnessValue = FRONTLIGHT_BRIGHTNESS;
+  short backLightBrightnessValue = BACKLIGHT_BRIGHTNESS;
+  // **************************************** ROADLIGHTS IMPLEMENTATION*****************************
+
 } settings;
 
 RemoteSettings tempSettings;
@@ -84,22 +93,13 @@ enum ui_page {
   PAGE_MENU,
   PAGE_MAX,
   PAGE_DEBUG,
-<<<<<<< HEAD
-<<<<<<< HEAD
-  //PAGE_LIGHT_SWITCH
-=======
-  PAGE_LIGHT_SETTINGS,
+  PAGE_LIGHT_SETTINGS   // **************************************** ROADLIGHTS IMPLEMENTATION*****************************
 
->>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
-=======
-  PAGE_LIGHT_SETTINGS,
-
->>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
 } page = PAGE_MAIN;
 
 // Battery monitoring
 const float minVoltage = 3.3; // min voltage with vibro motor
-const float maxVoltage = 4.05; //Heltec_Lora32_v2 stops charging around here..
+const float maxVoltage = 4.1; //Heltec_Lora32_v2 stops charging around here..
 const float refVoltage = 3.3; // Feather double-100K resistor divider
 
 unsigned long lastBatterySample = 0; // smooth remote voltage
@@ -111,7 +111,7 @@ uint16_t hallValue;
 float throttle;
 
 const uint8_t hallNoiseMargin = 5;
-byte hallCenterMargin = 0;
+byte hallCenterMargin = 3;
 
 AppState state = CONNECTING;
 AppState receiverState;
@@ -147,15 +147,6 @@ int cruiseThrottle;
 
 bool requestUpdate = false; //when drawSettingsMenu() sets flag requestUpdate=TRUE : Next run of prepatePacket() function catches requestUpdate=TRUE flag -> next packet sent to receiver is a SET_STATE = UPDATE request. Possible only under AppState=MENU
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-// flag for LIGHT switch
-bool requestSwitchLight = false;
-uint8_t ROADLIGHT_BRIGHTNESS = 0;
-=======
->>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
-=======
->>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
 
 // menu
 enum menu_page {
@@ -173,38 +164,17 @@ const byte subMenus = 7;
 const byte mainMenus = 4;
 
 String MENUS[mainMenus][subMenus] = {
-<<<<<<< HEAD
-<<<<<<< HEAD
-    { "Info", "Debug", "TestDebug", "Specs", "", "", "" },
-    { "Remote", "Calibrate", "Pair", "Auto off", "", "", "" },
-    { "Board", "WIFIupdate",  "Max Speed", "Range", "Cells", "Battery", "Motor" },
-    { "Lights", "Switch ON", "Switch OFF", "Settings", "", "", "" }
-=======
-=======
->>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
     { "Info", "Debug", "TestDebug", "Specs"},
     { "Remote", "Calibrate", "Pair", "Auto off", "", ""},
     { "Board", "WIFIupdate",  "Max Speed", "Range", "Cells", "Battery"},
     { "Lights", "Switch ON", "Switch OFF", "Brake Only", "Settings"}
-<<<<<<< HEAD
->>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
-=======
->>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
   };
 
 enum menu_main { MENU_INFO, MENU_REMOTE, MENU_BOARD, MENU_LIGHT };
 enum menu_info { INFO_DEBUG };
 enum menu_remote { REMOTE_CALIBRATE, REMOTE_PAIR, REMOTE_SLEEP_TIMER };
 enum menu_board { BOARD_UPDATE };
-<<<<<<< HEAD
-<<<<<<< HEAD
-enum menu_light { SWITCH_LIGHT_ON, SWITCH_LIGHT_OFF, ROADLIGHT_SETTINGS };
-=======
 enum menu_light { SWITCH_LIGHT_ON, SWITCH_LIGHT_OFF, SWITCH_LIGHT_BRAKES_ONLY, ROADLIGHT_SETTINGS };
->>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
-=======
-enum menu_light { SWITCH_LIGHT_ON, SWITCH_LIGHT_OFF, SWITCH_LIGHT_BRAKES_ONLY, ROADLIGHT_SETTINGS };
->>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
 
 float currentMenu = 0;
 int subMenu = 0;
@@ -227,7 +197,7 @@ const int HOLD      = 3;
 const int LONG_HOLD = 4;
 
 // Button timing variables
-int debounce = 20;          // ms debounce period to prevent flickering when pressing or releasing the button
+int debounce = 30;          // ms debounce period to prevent flickering when pressing or releasing the button (20ms)
 int DCgap = 250;            // max ms between clicks for a double click event
 int holdTime = 300;        // ms hold period: how long to wait for press+hold event
 int longHoldTime = 1000;    // ms long hold period: how long to wait for press+hold event
@@ -335,30 +305,16 @@ bool triggerActiveSafe();
 void updateMainDisplay();
 void vibrate(int ms);
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-void vibe(int vibeMode);
-void drawLightPage();
-void switchLightOn();
-void switchLightOff();
-//void vibeTask(void * pvParameters );
-=======
-=======
->>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
 void vibe(int vibeMode); //vibrations combos
 
 
-// ****************************************LIGHT IMPLEMENTATION*****************************
+// ****************************************LED ROADLIGHTS IMPLEMENTATION*****************************
 // flag for LIGHT switch (same method)
 
 bool requestSwitchLight = false;
 uint8_t ROADLIGHT_MODE = 0;
-void drawLightPage();//test
+void drawLightSettingsPage();//test
 
 //void switchLightOn(); //on receiver side only.
 //void switchLightOff();
-// ****************************************LIGHT IMPLEMENTATION*****************************
-<<<<<<< HEAD
->>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
-=======
->>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
+// ****************************************LED ROADLIGHTS IMPLEMENTATION*****************************

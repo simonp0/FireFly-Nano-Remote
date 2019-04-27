@@ -4,28 +4,6 @@
 #include <Arduino.h>
 #include <datatypes.h>
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-//#define FAKE_UART // Comment out after pairing the remote and connecting VESC
-//#define DEBUG // Uncomment DEBUG if you need to debug the remote
-
-//const uint32_t boardAddress = 0xA9BF713C;
-=======
-// ********** OPTIONAL FEATURES ***********************************************
-
-//#define FAKE_UART // Comment out after pairing the remote and connecting VESC
-//#define DEBUG // Uncomment DEBUG if you need to debug the remote
-//const uint32_t boardAddress = 0xA9BF713C;
-//#include <analogWrite.h>
-#define ROADLIGHT_CONNECTED //FRONT LIGHT and BACKLIGHT option. Reconfigure 2 pins on the receiver side for FRONTLIGHT and BACKLIGHT
-
-// ********** * * * * * * * * * ***********************************************
->>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
-
-const COMM_PACKET_ID VESC_COMMAND = COMM_GET_VALUES; // VESC
-// const COMM_PACKET_ID VESC_COMMAND = COMM_GET_UNITY_VALUES; // Enertion Unity
-
-=======
 // ********** OPTIONAL FEATURES ***********************************************
 
 //#define FAKE_UART // Comment out after pairing the remote and connecting VESC
@@ -39,7 +17,6 @@ const COMM_PACKET_ID VESC_COMMAND = COMM_GET_VALUES; // VESC
 const COMM_PACKET_ID VESC_COMMAND = COMM_GET_VALUES; // VESC
 // const COMM_PACKET_ID VESC_COMMAND = COMM_GET_UNITY_VALUES; // Enertion Unity
 
->>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
 /* AUTOCRUISE SETTINGS
   Endless ride - when remote is off and speed is over 12 km/h for 3 seconds,
   cruise control will be activated when speed drops below 12 km/h.
@@ -89,22 +66,17 @@ const int MAX_SPEED = 30;       // KM/H
 const int MAX_RANGE = 30;       // KM
 const int BATTERY_CELLS = 10;
 const int BATTERY_TYPE = 0;     // 0: LI-ION | 1: LIPO
-const int MOTOR_POLES = 24;
-const int WHEEL_DIAMETER = 100;
+const int MOTOR_POLES = 28;
+const int WHEEL_DIAMETER = 105;
 const int WHEEL_PULLEY = 1;
 const int MOTOR_PULLEY = 1;
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-//adding LIGHT modes...
-//const int LIGHT_OFF = 0;
-//const int LIGHT_ON = 1;
-//uint8_t ROADLIGHT_BRIGHTNESS = 255; has to be declared in REMOTE.CPP
+#ifdef ROADLIGHT_CONNECTED   // ********** ROADLIGHTS IMPLEMENTATION ***********************************************
+//    const int FRONTLIGHT_BRIGHTNESS = 100;
+//    const int BACKLIGHT_BRIGHTNESS = 100;
+#endif                      // ********** ROADLIGHTS IMPLEMENTATION ***********************************************
+/// -Moved in remote.h
 
-=======
->>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
-=======
->>>>>>> a4f09c8541f4bad3a7f4cbf52c014308b7545214
 
 #define VERSION 2
 
