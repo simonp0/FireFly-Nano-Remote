@@ -159,7 +159,7 @@ void loop() { // core 1
 
 void radioLoop() {  //Calculate THROTTLE and transmit a packet - every 50ms
   // Transmit once every 50 millisecond
-  if (millisSince(lastTransmission) < 50) return;
+  if (millisSince(lastTransmission) < REMOTE_RADIOLOOP_DELAY) return;
 
   // mark start
   lastTransmission = millis();
@@ -827,7 +827,6 @@ void prepatePacket() {
                 //xTaskCreate(vibeTask, "vibeTask", 100, NULL, 2, &TaskHandle1);
                 debug("requestSwitchLight");
                 remPacket.command = SET_LIGHT;
-                //remPacket.data = ROADLIGHT_MODE;
                 remPacket.data = myRoadLightState;
                 requestSwitchLight = false;
                 break;
@@ -1111,11 +1110,9 @@ void updateMainDisplay(){   //LOOP() task on core 1 runs thins function continuo
                     break;
 
                     //*********** ROADLIGHTS SETTINGS ImPLEMENTATION *****************
-                    case PAGE_LIGHT_SETTINGS:
-                        drawLightSettingsPage();
-                        //drawDebugPage();
-//                    break;
-                    //LIGHT page will display like UPDATE (STOPPED)
+                    case PAGE_LIGHT_SETTINGS:   //entering light settings submenu
+                        //drawDebugPage(); //TEST
+                    break;
                     //*********** ROADLIGHTS SETTINGS ImPLEMENTATION *****************
 
      }
@@ -1433,28 +1430,27 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
 // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
                     case MENU_LIGHT:
                         switch (subMenuItem){
-                            //requestSwitchLight = true; //flag signaling a LIGHT command for the next remotePacket sent
+                            //requestSwitchLight = true; //flag signaling a SET_LIGHT command for the next remotePacket sent
                             case SWITCH_LIGHT_ON:
                                 requestSwitchLight = true;
-                                //ROADLIGHT_MODE = 1;
                                 myRoadLightState = ON;
                                 backToMainMenu();
                             break;
                             case SWITCH_LIGHT_OFF:
                                 requestSwitchLight = true;
-                                //ROADLIGHT_MODE = 0;
                                 myRoadLightState = OFF;
                                 //drawDebugPage();
                                 backToMainMenu();
                             break;
                             case SWITCH_LIGHT_BRAKES_ONLY:
                                 requestSwitchLight = true;
-                                //ROADLIGHT_MODE = 2;
                                 myRoadLightState = BRAKES_ONLY;
                                 backToMainMenu();
                             case ROADLIGHT_SETTINGS:
-                                drawLightSettingsPage();
-                                //backToMainMenu(); //nothing, we want to display drawLightPage()
+                                //initiate default light to adjust when entering the setup page
+                                //myRoadlightSetting_page_stage = ADJUSTING_FRONTLIGHT_BRIGHTNESS; //let's keep the last used one instead
+                                //nothing else to do
+                                //backToMainMenu(); //we don't exit yet - we want to display the drawLightSettingsPage()
                             break;
                         }
                     break;
@@ -1464,7 +1460,7 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
 
         break; //MENU_SUB
 
-        case MENU_ITEM: //Here we can display a specific page after handling commands, and stay on it (debugPage)
+        case MENU_ITEM: //Here we can display a specific page after handling commands, and stay on it (similar to debugPage)
             switch (subMenu) {
                 case MENU_INFO:
                     switch (subMenuItem) {
@@ -1489,8 +1485,8 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                     }
                 break;
 
-// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
-                case MENU_LIGHT: //if we want to display a specific page and stay on it
+                // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
+                case MENU_LIGHT: //if we want to display a specific page and stay on it for some menu items
                     switch (subMenuItem){
                         case SWITCH_LIGHT_ON:
                             //nothing to display
@@ -1502,18 +1498,19 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                             //nothing to display
                         break;
                         case ROADLIGHT_SETTINGS:
+                            //myRoadlightSetting_page_stage = ADJUSTING_FRONTLIGHT_BRIGHTNESS; //movedTo MENU_LIGHT submenu_case
                             drawLightSettingsPage();
                         break;
                     }
                 break;
-// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
+                // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
 
 
-            }
+            }//end switch
 
         break;
 
-            }
+    } //end switch
 
 }//END drawSettingsMenu()
 
@@ -1534,156 +1531,6 @@ void drawDebugPage() {
   drawStringCenter(String(readThrottlePosition()), String(hallValue), y);
 
 }
-
-// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
-void drawLightSettingsPage(){
-    /*
-      int padding = 10;
-      int tick = 5;
-      int w = display.width() - padding*2;
-
-      int position = readThrottlePosition();
-
-      switch (calibrationStage) {
-    case ROADLIGHT_BRIGHTNESS_VALUE_CENTER:
-
-        tempSettings.centerHallValue = hallValue;
-        tempSettings.minHallValue = hallValue - 100;
-        tempSettings.maxHallValue = hallValue + 100;
-    calibrationStage = ROADLIGHT_BRIGHTNESS_VALUE_MAX;
-        break;
-
-    case ROADLIGHT_BRIGHTNESS_VALUE_MAX:
-        if (hallValue > tempSettings.maxHallValue) {
-          tempSettings.maxHallValue = hallValue;
-        } else if (hallValue < tempSettings.minHallValue) {
-    calibrationStage = ROADLIGHT_BRIGHTNESS_VALUE_MIN;
-        }
-        break;
-
-    case ROADLIGHT_BRIGHTNESS_VALUE_MIN:
-        if (hallValue < tempSettings.minHallValue) {
-          tempSettings.minHallValue = hallValue;
-        } else if (hallValue == tempSettings.centerHallValue) {
-    calibrationStage = ROADLIGHT_BRIGHTNESS_VALUE_STOP;
-        }
-        break;
-
-    case ROADLIGHT_BRIGHTNESS_VALUE_STOP:
-
-        if (pressed(PIN_TRIGGER)) {
-          // apply calibration values
-          settings.centerHallValue = tempSettings.centerHallValue;
-          settings.minHallValue = tempSettings.minHallValue;
-          settings.maxHallValue = tempSettings.maxHallValue;
-
-          backToMainMenu();
-          display.setRotation(DISPLAY_ROTATION);
-          saveSettings();
-
-          return;
-        }
-    }
-
-    display.setRotation(DISPLAY_ROTATION_90);
-
-    int center = map(tempSettings.centerHallValue, tempSettings.minHallValue, tempSettings.maxHallValue, display.width() - padding, padding);
-
-    int y = 8;
-    drawString(String(tempSettings.maxHallValue), 0, y, fontDesc);
-    drawString(String(tempSettings.centerHallValue), center-10, y, fontDesc);
-    drawString(String(tempSettings.minHallValue), 128-20, y, fontDesc);
-
-    // line
-    y = 16;
-    drawHLine(padding, y, w);
-    // ticks
-    drawVLine(padding, y-tick, tick);
-    drawVLine(center, y-tick, tick);
-    drawVLine(w + padding, y-tick, tick);
-
-    // current throttle position
-    int th = map(hallValue, tempSettings.minHallValue, tempSettings.maxHallValue, display.width() - padding, padding);
-    drawVLine(constrain(th, 0, display.width()-1), y, tick);
-
-    y = 32;
-    drawString(String(hallValue), constrain(th-10, 0, w), y, fontDesc); // min
-
-    y = 48;
-    switch (calibrationStage) {
-    case ROADLIGHT_BRIGHTNESS_VALUE_MAX:
-    case ROADLIGHT_BRIGHTNESS_VALUE_MIN:
-    drawString("Press throttle fully", -1, y, fontDesc);
-    drawString("forward and backward", -1, y+14, fontDesc);
-    break;
-    case ROADLIGHT_BRIGHTNESS_VALUE_STOP:
-    drawString("Calibration completed", -1, y, fontDesc);
-    drawString("Trigger: Save", -1, y+14, fontDesc);
-    }
-
-}
-    //  display.drawFrame(0,0,64,128);
-
-    int y = 10;
-    drawString(String(settings.boardID, HEX), -1, y, fontDesc);
-    y = 35;
-    drawStringCenter(String(lastDelay), " LUMENS", y);
-    y += 25;
-    drawStringCenter(String(lastRssi, 0), " db", y);
-    //y += 25;
-    //drawStringCenter(String(readThrottlePosition()), String(hallValue), y);
-
-    /*
-
-      int padding = 10;
-      int tick = 5;
-      int w = display.width() - padding*2;
-
-      int position = readThrottlePosition();
-
-      switch (calibrationStage) {
-      case CALIBRATE_CENTER:
-
-        tempSettings.centerHallValue = hallValue;
-        tempSettings.minHallValue = hallValue - 100;
-        tempSettings.maxHallValue = hallValue + 100;
-        calibrationStage = CALIBRATE_MAX;
-        break;
-
-      case CALIBRATE_MAX:
-        if (hallValue > tempSettings.maxHallValue) {
-          tempSettings.maxHallValue = hallValue;
-        } else if (hallValue < tempSettings.minHallValue) {
-          calibrationStage = CALIBRATE_MIN;
-        }
-        break;
-
-      case CALIBRATE_MIN:
-        if (hallValue < tempSettings.minHallValue) {
-          tempSettings.minHallValue = hallValue;
-        } else if (hallValue == tempSettings.centerHallValue) {
-          calibrationStage = CALIBRATE_STOP;
-        }
-        break;
-
-      case CALIBRATE_STOP:
-
-        if (pressed(PIN_TRIGGER)) {
-          // apply calibration values
-          settings.centerHallValue = tempSettings.centerHallValue;
-          settings.minHallValue = tempSettings.minHallValue;
-          settings.maxHallValue = tempSettings.maxHallValue;
-
-          backToMainMenu();
-          display.setRotation(DISPLAY_ROTATION);
-          saveSettings();
-
-          return;
-        }
-        */
-
-
-}// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
 
 
 int getStringWidth(String s) {
@@ -1757,6 +1604,32 @@ void drawBars(int x, int y, int bars, String caption, String s) {
     drawHLine(x, y+33, width);
     // values
     drawString(s, x, y + 48, fontPico);
+}
+
+void drawBars_2(int x, int y, int bars, String caption, String s, bool isHighlighted) {
+
+    const int width = 14;
+
+    drawString(caption, x + 4, 10, fontDesc);
+
+    if (bars > 0) { // up
+        for (int i = 0; i <= 10; i++)
+            if (i <= bars) drawHLine(x, y - i*3, width);
+    }
+    else { // down
+        for (int i = 0; i >= -10; i--)
+            if (i >= bars) drawHLine(x, y - i*3, width);
+    }
+
+    // frame
+    drawHLine(x, y-33, width);
+    //drawHLine(x, y+33, width);
+    // values
+    display.setRotation(DISPLAY_ROTATION_90);
+    if (isHighlighted==true){drawString((" - " + s + " - "), 25, x + width -2, fontPico);    }
+    else{drawString(s, 40, x + width -2, fontDesc); }
+    display.setRotation(DISPLAY_ROTATION);
+
 }
 
 /*
@@ -2081,3 +1954,96 @@ void vibe(int vibeMode){    //vibrate() combos
     if (vibeMode == 3){vibrate(35); delay(6);vibrate(15); delay(7);vibrate(15);}
     if (vibeMode == 4){vibrate(50); delay(25); vibrate(50); delay(25); vibrate(50);}
 }
+
+// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
+void drawLightSettingsPage(){
+
+    switch (myRoadlightSetting_page_stage) {
+        case ADJUSTING_FRONTLIGHT_BRIGHTNESS:
+            myLightSettingValue = myFrontLightBrightness;
+        break;
+        case ADJUSTING_BACKLIGHT_BRIGHTNESS:
+            myLightSettingValue = myBackLightBrightness;
+        break;
+        case ADJUSTING_BRAKELIGHT_BRIGHTNESS:
+            myLightSettingValue = myBrakeLightBrightness;
+        break;
+    }
+
+    int position = readThrottlePosition();
+    int lastPositionIndex = myLightSettingValue;
+    int nextPositionIndex = lastPositionIndex;
+    // --------- wheel control ---------------------
+    if (position > default_throttle + 15) {
+        if (myLightSettingValue < 255){ myLightSettingValue = constrain((myLightSettingValue += 5),0,255);}
+    }
+    if (position < default_throttle - 15) {
+        if (myLightSettingValue > 0){ myLightSettingValue = constrain((myLightSettingValue -= 5),0,255);}
+    }
+    nextPositionIndex = myLightSettingValue;
+    if (lastPositionIndex != nextPositionIndex){vibe(0);}   //short vibration each time we change the selected menu item
+    // ---------------------------------------------
+    //myLightSettingValue = nextPositionIndex;
+
+    switch (myRoadlightSetting_page_stage) {
+        case ADJUSTING_FRONTLIGHT_BRIGHTNESS:
+            myFrontLightBrightness = myLightSettingValue;
+        break;
+        case ADJUSTING_BACKLIGHT_BRIGHTNESS:
+            myBackLightBrightness = myLightSettingValue;
+        break;
+        case ADJUSTING_BRAKELIGHT_BRIGHTNESS:
+            myBrakeLightBrightness = myLightSettingValue;
+        break;
+    }
+
+    const int gap = 20;
+
+    int x = 5;
+    int y = 48;
+    float value;
+    int bars;
+//bool isHighlighted
+    drawHLine(2, y, 64-2);
+        bars = map(myFrontLightBrightness, 0, 255, 0, 10);
+        drawBars_2(x, y, bars, String(bars), "Front", (myRoadlightSetting_page_stage==ADJUSTING_FRONTLIGHT_BRIGHTNESS));
+
+        x += gap;
+        bars = map(myBackLightBrightness, 0, 255, 0, 10);
+        drawBars_2(x, y, bars, String(bars), "Back", (myRoadlightSetting_page_stage==ADJUSTING_BACKLIGHT_BRIGHTNESS));
+
+        x += gap;
+        bars = map(myBrakeLightBrightness, 0, 255, 0, 10);
+        drawBars_2(x, y, bars, String(bars), "Brakes", (myRoadlightSetting_page_stage==ADJUSTING_BRAKELIGHT_BRIGHTNESS));
+
+
+    if (pressed(PIN_TRIGGER)) {
+        // apply calibration values
+        waitRelease(PIN_TRIGGER);
+        switch (myRoadlightSetting_page_stage) {
+            case ADJUSTING_FRONTLIGHT_BRIGHTNESS:
+                FRONTLIGHT_BRIGHTNESS = myFrontLightBrightness;
+                myRoadlightSetting_page_stage = ADJUSTING_BACKLIGHT_BRIGHTNESS;
+            break;
+            case ADJUSTING_BACKLIGHT_BRIGHTNESS:
+                BACKLIGHT_BRIGHTNESS = myBackLightBrightness;
+                myRoadlightSetting_page_stage = ADJUSTING_BRAKELIGHT_BRIGHTNESS;
+            break;
+            case ADJUSTING_BRAKELIGHT_BRIGHTNESS:
+                BRAKELIGHT_BRIGHTNESS = myBrakeLightBrightness;
+                myRoadlightSetting_page_stage = ADJUSTING_FRONTLIGHT_BRIGHTNESS;   // OR backToMainMenu();
+            break;
+
+            //backToMainMenu();
+            //display.setRotation(DISPLAY_ROTATION);
+            //saveSettings()
+            //return;
+        }
+    }
+
+
+    // FET & motor temperature
+    //    drawString(String(telemetry.tempFET) + " C    "
+    //    + String(telemetry.tempMotor) + " C", -1, 114, fontPico);
+
+}// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************

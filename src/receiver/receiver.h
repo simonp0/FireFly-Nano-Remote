@@ -121,20 +121,7 @@ void updateSetting(uint8_t setting, uint64_t value);
 // we have PIN_BACKLIGHT attributed on what is PIN_PWRBUTTON on the remote control side
 
 #ifdef ROADLIGHT_CONNECTED
-
-
-
-//    enum RoadLightState{
-//        OFF,
-//        ON,
-//        BRAKES_ONLY,
-//        DISCO // yes baby !
-//    };
-//
     RoadLightState myRoadLightState = OFF; //default value on startupTime
-//  //--> moved to globals.h
-
-
 
     const double led_pwm_frequency = 200;
     const uint8_t led_pwm_channel_frontLight = 0; //GPIO channel to use
@@ -155,8 +142,4 @@ void updateSetting(uint8_t setting, uint64_t value);
     void switchLightBrakesOnly();
     void updateBrakeLight();
     void emitBrakeLightPulse(uint_fast32_t value);
-    //void drawLightPage();
-
-#endif
-
-// ******************************** LED ROADLIGHTS IMPLEMENTATION - Receiver *****************************
+#endif  // ******************************** LED ROADLIGHTS IMPLEMENTATION - Receiver *****************************

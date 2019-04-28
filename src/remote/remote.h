@@ -36,9 +36,24 @@
   const int CENTER_HALL = 752;
   const int MAX_HALL = 1023;
   // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
-  const int FRONTLIGHT_BRIGHTNESS = 100;
-  const int BACKLIGHT_BRIGHTNESS = 100;
-  RoadLightState myRoadLightState = OFF;
+    int FRONTLIGHT_BRIGHTNESS = 100;
+    int BACKLIGHT_BRIGHTNESS = 100;
+    int BRAKELIGHT_BRIGHTNESS = 255;
+
+    RoadLightState myRoadLightState = OFF;  //current roadlight mode activated (OFF : default at startup)
+    int myLightSettingValue;
+    int myFrontLightBrightness = FRONTLIGHT_BRIGHTNESS;
+    int myBackLightBrightness = BACKLIGHT_BRIGHTNESS;
+    int myBrakeLightBrightness = BRAKELIGHT_BRIGHTNESS;
+
+    bool requestSwitchLight = false; //flag for putting a SET_LIGHT request in the next remotePacket
+
+    enum RoadlightSetting_page_stage{
+        ADJUSTING_FRONTLIGHT_BRIGHTNESS,
+        ADJUSTING_BACKLIGHT_BRIGHTNESS,
+        ADJUSTING_BRAKELIGHT_BRIGHTNESS,
+    } myRoadlightSetting_page_stage = ADJUSTING_FRONTLIGHT_BRIGHTNESS; //default mode at startup
+
   // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
 
 
@@ -176,8 +191,7 @@ enum menu_main { MENU_INFO, MENU_REMOTE, MENU_BOARD, MENU_LIGHT };
 enum menu_info { INFO_DEBUG };
 enum menu_remote { REMOTE_CALIBRATE, REMOTE_PAIR, REMOTE_SLEEP_TIMER };
 enum menu_board { BOARD_UPDATE };
-enum menu_light { SWITCH_LIGHT_ON, SWITCH_LIGHT_OFF, SWITCH_LIGHT_BRAKES_ONLY, ROADLIGHT_SETTINGS };
-// *** LED ROADLIGHTS IMPLEMENTATION ***
+enum menu_light { SWITCH_LIGHT_ON, SWITCH_LIGHT_OFF, SWITCH_LIGHT_BRAKES_ONLY, ROADLIGHT_SETTINGS }; // *** LED ROADLIGHTS IMPLEMENTATION ***
 
 float currentMenu = 0;
 int subMenu = 0;
@@ -312,15 +326,8 @@ void vibe(int vibeMode); //vibrations combos
 
 
 // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
-// flag for LIGHT switch (same method)
-
-bool requestSwitchLight = false;
-//uint8_t ROADLIGHT_MODE = myRoadLightState; //
 
 void drawLightSettingsPage();//test
-
-
-
 //void switchLightOn(); //on receiver side only.
-//void switchLightOff();
+//void switchLightOff(); //on receiver side only.
 // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************

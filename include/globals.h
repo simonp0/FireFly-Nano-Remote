@@ -46,8 +46,9 @@ const int UART_SPEED = 115200;
 
 
 const uint16_t uartPullInterval = 150;
-const int UART_TIMEOUT = 15; // 10ms for 115200 bauds, 100ms for 9600 bauds
+const int UART_TIMEOUT = 25; // 10ms for 115200 bauds, 100ms for 9600 bauds
 const int REMOTE_RX_TIMEOUT = 25; // ms (was 20)
+const int REMOTE_RADIOLOOP_DELAY = 50; //ms sending THROTTLE each xx millisecond to the receiver
 
 const int REMOTE_LOCK_TIMEOUT = 10; // seconds to lock throttle when idle
 const int REMOTE_SLEEP_TIMEOUT = 180; // seconds to go to sleep mode
@@ -217,15 +218,17 @@ struct ConfigPacket {  //extends ReceiverPacket
     int16_t r2;
     // -------------------
     // ********** LED ROADLIGHTS IMPLEMENTATION ***********
-    //uint8_t  roadlightAppMode;
-    //uint8_t  frontLightBrightnessValue;
-    //uint8_t  backLightBrightnessValue;
-    //uint8_t  anythingElse;
+//    uint8_t  roadlightAppMode;
+//    uint8_t  frontLightBrightness_val;
+//    uint8_t  backLightBrightness_val;
+//    uint8_t  anythingElseToAdd;
     // ********** LED ROADLIGHTS IMPLEMENTATION ***********
     //
     float getMaxSpeed() { return (maxSpeed) / 100; }
     void setMaxSpeed(float f) { maxSpeed = f * 100; }
 };  //end struct declaration
+
+
 
 const int default_throttle = 127;
 
