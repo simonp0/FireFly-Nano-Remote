@@ -18,6 +18,8 @@
 #define PIN_PWRBUTTON 12
 #define PIN_BACKLIGHT 12  //PWRBUTTON PIN is free on the RECEIVER side, we'll use it for PIN_BACKLIGHT
 
+#define PIN_PWM_THROTTLE 32 //PWM throttle output on RECEIVER side
+
 #define PIN_TRIGGER   32
 #define ADC_THROTTLE  ADC1_GPIO38_CHANNEL // ADC1_CHANNEL_2
 

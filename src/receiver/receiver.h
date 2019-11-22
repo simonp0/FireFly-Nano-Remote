@@ -143,3 +143,15 @@ void updateSetting(uint8_t setting, uint64_t value);
     void updateBrakeLight();
     void emitBrakeLightPulse(uint_fast32_t value);
 #endif  // ******************************** LED ROADLIGHTS IMPLEMENTATION - Receiver *****************************
+
+// ******** PWM THROTTLE OUTPUT IMPLEMENTATION ********
+#ifdef OUTPUT_PWM_THROTTLE
+    const double pwm_throttle_frequency = 50; //50Hz standard RC freq - pulse 1 to 2 ms with 1.5ms = neutral
+    const uint8_t pwm_throttle_channel = 2; //GPIO channel to use
+    const uint8_t pwm_throttle_resolution = 16;//16bits -> 0 to 65535
+    //20ms (50Hz) = 65535 ---> 1ms = 3276 & 2ms = 6552
+    // MAP throttleValue(0 to 255) -> 3276 to 6552
+    uint_fast32_t pwm_throttle_dutyCycle_value;
+    void updatePwmThrottleOutput();
+#endif
+// ******** PWM THROTTLE OUTPUT IMPLEMENTATION ********

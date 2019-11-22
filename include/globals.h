@@ -12,6 +12,8 @@
 //#include <analogWrite.h>
 #define ROADLIGHT_CONNECTED //FRONT LIGHT and BACKLIGHT option. Reconfigure 2 pins on the receiver side for FRONTLIGHT and BACKLIGHT
 
+#define OUTPUT_PWM_THROTTLE //RECEIVER outputs a THROTTLE PWM signal on PIN_PWM_THROTTLE
+
 // ********** * * * * * * * * * ***********************************************
 
 const COMM_PACKET_ID VESC_COMMAND = COMM_GET_VALUES; // VESC

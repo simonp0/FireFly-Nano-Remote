@@ -61,6 +61,12 @@ void setup(){ //runs once after powerOn
 #endif
 // ******** LED ROADLIGHTS IMPLEMENTATION ********
 
+// ******** PWM THROTTLE OUTPUT IMPLEMENTATION ********
+#ifdef OUTPUT_PWM_THROTTLE
+    ledcSetup(pwm_throttle_channel, pwm_throttle_frequency, pwm_throttle_resolution); //configure THROTTLE PWM functionalitites
+    ledcAttachPin(PIN_PWM_THROTTLE, pwm_throttle_channel); // attach the channel to the GPIO to be controlled
+#endif
+// ******** PWM THROTTLE OUTPUT IMPLEMENTATION ********
 
     batterySensor.begin(SMOOTHED_EXPONENTIAL, 10);     // 10 seconds average
     motorCurrent.begin(SMOOTHED_AVERAGE, 2);    // 1 sec average
@@ -895,6 +901,13 @@ void setThrottle(uint16_t value){
     //    digitalWrite(throttlePin, HIGH);
     //    delayMicroseconds(map(throttle, 0, 255, 1000, 2000) );
     //    digitalWrite(throttlePin, LOW);
+    
+    // ******** PWM THROTTLE OUTPUT IMPLEMENTATION ********
+    #ifdef OUTPUT_PWM_THROTTLE
+            updatePwmThrottleOutput();
+    #endif
+    // ******** PWM THROTTLE OUTPUT IMPLEMENTATION ********
+
     // remember throttle for smooth auto stop
     lastThrottle = throttle;
 
@@ -1202,6 +1215,13 @@ bool inRange(int val, int minimum, int maximum){ //checks if value is within MIN
     }
 
 #endif
-
-
 // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
+
+// ******** PWM THROTTLE OUTPUT IMPLEMENTATION ********
+#ifdef OUTPUT_PWM_THROTTLE
+        void updatePwmThrottleOutput(){
+            uint_fast32_t pwm_throttle_dutyCycle_value = map(throttle, 0, 255, 3276, 6552); //throttle; //map(throttle, 0, 255, 1ms, 2ms);
+            ledcWrite(pwm_throttle_channel, pwm_throttle_dutyCycle_value);
+        }
+#endif
+// ******** PWM THROTTLE OUTPUT IMPLEMENTATION ********
