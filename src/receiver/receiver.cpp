@@ -768,9 +768,12 @@ void stateMachine() { // handle auto-stop, endless mode, etc...
         connected = false;
         timeoutTimer = millis();
 
+        //  Set last speed
+        lastSpeedValue = telemetry.getSpeed();
+
         setState(STOPPING);
 
-        // use last throttle
+        //  Use last throttle in case of reconnection shortly after timeout
         throttle = lastThrottle;
       }
 
@@ -797,6 +800,15 @@ void stateMachine() { // handle auto-stop, endless mode, etc...
 
       // check speed
       if (throttle == 0 && !isMoving()) {
+        setState(STOPPED);
+      }
+
+      //avoids going backwards after stopping if auto-reverse is enabled within VESC app
+      currentSpeedValue = telemetry.getSpeed();
+      if (currentSpeedValue < lastSpeedValue){
+        lastSpeedValue = currentSpeedValue;
+      }
+      if(abs(currentSpeedValue) > abs(lastSpeedValue*1.5)){   //absolute speed has increased by 50% --> abort coz we're probably going backwards!
         setState(STOPPED);
       }
 
@@ -897,11 +909,7 @@ void setThrottle(uint16_t value){
     UART.nunchuck.lowerButton = false;
     UART.setNunchuckValues();
     #endif
-    // PPM
-    //    digitalWrite(throttlePin, HIGH);
-    //    delayMicroseconds(map(throttle, 0, 255, 1000, 2000) );
-    //    digitalWrite(throttlePin, LOW);
-    
+
     // ******** PWM THROTTLE OUTPUT IMPLEMENTATION ********
     #ifdef OUTPUT_PWM_THROTTLE
             updatePwmThrottleOutput();

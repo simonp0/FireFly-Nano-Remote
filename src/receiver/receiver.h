@@ -72,8 +72,10 @@ uint8_t lastThrottle;
 String wifiStatus;
 String updateStatus;
 
-unsigned long lastBrakeTime;
+unsigned long lastBrakeTime = 0;
 
+float lastSpeedValue = 0;
+float currentSpeedValue = 0;
 
 #ifdef RECEIVER_SCREEN
 const GFXfont* fontDigital = &Segment13pt7b;  // speed, distance, ...
@@ -133,7 +135,7 @@ void updateSetting(uint8_t setting, uint64_t value);
     uint_fast32_t dutyCycle_backLightOn = 90;    //TODO : value can be changed via the remote menu
     uint_fast32_t dutyCycle_brakeLight = 255;   //TODO : value can be changed via the remote menu
 
-    unsigned long lastBrakeLightPulse;
+    unsigned long lastBrakeLightPulse = 0;
     unsigned long brakeLightPulseInterval = 100; //ms between each brakeLightPulse initiation
     unsigned long brakeLightPulseDuration = 50; //ms TBD
 
