@@ -809,7 +809,8 @@ void stateMachine() { // handle auto-stop, endless mode, etc...
         lastSpeedValue = currentSpeedValue;
       }
       if(abs(currentSpeedValue) > abs(lastSpeedValue*1.5)){   //absolute speed has increased by 50% --> abort coz we're probably going backwards!
-        setState(STOPPED);
+        //setState(STOPPED);
+        setThrottle(default_throttle); //restart break procedure from zero throttle
       }
 
       break;
