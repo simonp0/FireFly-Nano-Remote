@@ -13,6 +13,7 @@
 #define ROADLIGHT_CONNECTED //FRONT LIGHT and BACKLIGHT option. Reconfigure 2 pins on the receiver side for FRONTLIGHT and BACKLIGHT
 
 #define OUTPUT_PWM_THROTTLE //RECEIVER outputs a THROTTLE PWM signal on PIN_PWM_THROTTLE
+#define DISABLE_UART_THROTTLE_OUTPUT //RECEIVER disables setThrottle() via UART
 
 // ********** * * * * * * * * * ***********************************************
 
@@ -40,7 +41,8 @@ const float MAX_PUSHING_SPEED = 20.0;   // km/h
 
 // Auto stop (in seconds)
 const float AUTO_BRAKE_TIME = 5.0;    // time to apply the full brakes
-const int AUTO_BRAKE_RELEASE = 5;     // time to release brakes after the full stop
+const int AUTO_BRAKE_RELEASE = 3;     // time to release brakes after the full stop
+const float AUTO_BRAKE_ABORT_MAXSPEED = 3; // speed under which it's safe to abort auto brake procedure
 
 // UART
 const int UART_SPEED = 115200;
@@ -169,7 +171,8 @@ struct TelemetryPacket{ //extends ReceiverPacket
 
     ReceiverPacket header;
     // -----------------  // keep 4 byte alignment!
-    uint16_t speed;       // km/h * 100
+//  uint16_t speed;       // km/h * 100
+    int16_t speed;       // km/h * 100
     uint8_t tempMotor;
     uint8_t tempFET;
     // -----------------
@@ -185,8 +188,10 @@ struct TelemetryPacket{ //extends ReceiverPacket
     int16_t f2wi(float f) { return f * 100; } // pack float
     float w2fi(int16_t w) { return float(w) / 100; }; // unpack float
 
-    float getSpeed() { return w2f(speed); }
-    void setSpeed(float f) { speed = f2w(f); }
+//    float getSpeed() { return w2f(speed); }
+    float getSpeed() { return w2fi(speed); }
+//    void setSpeed(float f) { speed = f2w(f); }
+    void setSpeed(float f) { speed = f2wi(f); }
 
     float getVoltage() { return w2f(voltage); }
     void setVoltage(float f) { voltage = f2w(f); }

@@ -20,6 +20,7 @@
 
 #define PIN_PWM_THROTTLE 32 //PWM throttle output on RECEIVER side
 
+
 #define PIN_TRIGGER   32
 #define ADC_THROTTLE  ADC1_GPIO38_CHANNEL // ADC1_CHANNEL_2
 

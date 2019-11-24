@@ -808,9 +808,12 @@ void stateMachine() { // handle auto-stop, endless mode, etc...
       if (currentSpeedValue < lastSpeedValue){
         lastSpeedValue = currentSpeedValue;
       }
+
       if(abs(currentSpeedValue) > abs(lastSpeedValue*1.5)){   //absolute speed has increased by 50% --> abort coz we're probably going backwards!
-        //setState(STOPPED);
         setThrottle(default_throttle); //restart break procedure from zero throttle
+        if(abs(currentSpeedValue) < AUTO_BRAKE_ABORT_MAXSPEED){
+          setState(IDLE);   //If speed is low enough -> abort break procedure
+        }
       }
 
       break;
@@ -905,23 +908,24 @@ void setThrottle(uint16_t value){
 
     // UART
     #ifndef FAKE_UART
-    UART.nunchuck.valueY = value;
-    UART.nunchuck.upperButton = false;
-    UART.nunchuck.lowerButton = false;
-    UART.setNunchuckValues();
+      #ifndef DISABLE_UART_THROTTLE_OUTPUT
+        UART.nunchuck.valueY = value;
+        UART.nunchuck.upperButton = false;
+        UART.nunchuck.lowerButton = false;
+        UART.setNunchuckValues();
+      #endif
     #endif
 
     // ******** PWM THROTTLE OUTPUT IMPLEMENTATION ********
     #ifdef OUTPUT_PWM_THROTTLE
-            updatePwmThrottleOutput();
+      updatePwmThrottleOutput();
     #endif
-    // ******** PWM THROTTLE OUTPUT IMPLEMENTATION ********
 
     // remember throttle for smooth auto stop
     lastThrottle = throttle;
 
     #ifdef ROADLIGHT_CONNECTED
-            updateBrakeLight();
+      updateBrakeLight();
     #endif
 
 
@@ -930,10 +934,12 @@ void setThrottle(uint16_t value){
 void setCruise(uint8_t speed) {
     // UART
     #ifndef FAKE_UART
-    UART.nunchuck.valueY = 127;
-    UART.nunchuck.upperButton = false;
-    UART.nunchuck.lowerButton = true;
-    UART.setNunchuckValues();
+      #ifndef DISABLE_UART_THROTTLE_OUTPUT
+        UART.nunchuck.valueY = 127;
+        UART.nunchuck.upperButton = false;
+        UART.nunchuck.lowerButton = true;
+        UART.setNunchuckValues();
+      #endif
     #endif
 }
 
@@ -978,7 +984,8 @@ void calculateRatios() { //   Update values used to calculate speed and distance
 }
 
 float rpm2speed(long rpm) { // rpm to km/h
-  return abs(ratioRpmSpeed * rpm);
+  //return abs(ratioRpmSpeed * rpm);
+  return (ratioRpmSpeed * rpm);
 }
 
 // rpm to km/h
@@ -1014,7 +1021,7 @@ void getUartData(){ //reads VESC data via UART and stores values in telemetry pa
 
     // Only get what we need
     if ( UART.getVescValues(VESC_COMMAND) ) {
-      // float dutyCycleNow;
+      //float dutyCycleNow;
       // float ampHours;
       // float ampHoursCharged;
 
