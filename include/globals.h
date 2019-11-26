@@ -93,30 +93,58 @@ const int MOTOR_PULLEY = 1;
 
 
 
-#define VERSION 2
+#define VERSION 3
 
 // Remote > receiver
 struct RemotePacket {
-    uint32_t address;
+    uint32_t address;   //LoRa packets : max payload = 255bytes 
     // --------------  // keep 4 byte alignment!
     uint8_t  version;  // 1
     uint8_t  command;	 // Throttle | Light | Settings
     uint8_t  data;     // e.g. throttle value
     uint8_t  counter;
     // --------------
+
+    //***********  RemotePacket::option parameter implementation  ***********
+    int8_t  optParamCommand;//test transmission with biggerPackets
+    int8_t  optParamIndex;
+    int16_t optParamValue;
+
+    int16_t f2wi(float f) { return f * 100; } // pack float
+    float w2fi(int16_t w) { return float(w) / 100; }; // unpack float
+
+    float unpackOptParamValue() { return w2fi(optParamValue); }
+    void packOptParamValue(float f) { optParamValue = f2wi(f); }
+    //***********  RemotePacket::opt parameter implementation  ***********
+
 }; //end struct declaration
 
 // RemotePacket.COMMANDS :
-const uint8_t SET_THROTTLE  = 1;
-const uint8_t SET_CRUISE    = 2;
-const uint8_t GET_CONFIG    = 3;
-const uint8_t SET_STATE     = 4;
-const uint8_t SET_LIGHT     = 5;
+enum RemotePacketCommand {
+    SET_THROTTLE,
+    SET_CRUISE,
+    GET_CONFIG,
+    SET_STATE,
+    SET_LIGHT,
+    OPT_PARAM_MODE
+};
 
-/* equivalent to
-    enum remotePacketCommand { SET_THROTTLE = 1, SET_CRUISE, GET_CONFIG, SET_STATE, SET_LIGHT}
-    but explicitely using uint8_t type guarantees 8bits integers
-*/
+// RemotePacket.optParamCommand :
+enum OptionParamCommand {
+    SET_OPT_PARAM_VALUE,
+    GET_OPT_PARAM_VALUE
+};
+
+// RemotePacket.optParamIndex :
+enum OptionParamIndex {
+    LED_BRIGHTNESS_FRONT,
+    LED_BRIGHTNESS_BACK,
+    LED_BRIGHTNESS_BRAKE,
+    OPT_PARAM_4,
+    OPT_PARAM_5
+};
+
+
 
 // state machine
 enum AppState {
@@ -141,6 +169,9 @@ struct ReceiverPacket {
     uint8_t chain;	// CRC from RemotePacket
     uint8_t state;   // Mode: Pairing, BT, ...
     uint8_t r2;
+
+    // int32_t testBigPacket;//test transmission with biggerPackets
+
 }; //end struct declaration
 
 // responses type
@@ -148,6 +179,7 @@ const uint8_t ACK_ONLY  = 1;
 const uint8_t TELEMETRY = 2;
 const uint8_t CONFIG    = 3;
 const uint8_t BOARD_ID  = 4;
+const uint8_t OPT_PARAM_RESPONSE  = 5;
 
 struct InfoPacket {  //extends ReceiverPacket
     ReceiverPacket header;
@@ -188,9 +220,7 @@ struct TelemetryPacket{ //extends ReceiverPacket
     int16_t f2wi(float f) { return f * 100; } // pack float
     float w2fi(int16_t w) { return float(w) / 100; }; // unpack float
 
-//    float getSpeed() { return w2f(speed); }
     float getSpeed() { return w2fi(speed); }
-//    void setSpeed(float f) { speed = f2w(f); }
     void setSpeed(float f) { speed = f2wi(f); }
 
     float getVoltage() { return w2f(voltage); }
@@ -235,7 +265,27 @@ struct ConfigPacket {  //extends ReceiverPacket
     void setMaxSpeed(float f) { maxSpeed = f * 100; }
 };  //end struct declaration
 
+struct OptionParamPacket {  //extends ReceiverPacket
+    ReceiverPacket header;
+    // --------------  // keep 4 byte alignment!
+    //***********  RemotePacket::option parameter implementation  ***********
+    uint8_t  optParamCommand;//test transmission with biggerPackets
+    uint8_t  optParamIndex;
+    int16_t optParamValue;
+    //------------------
+    int16_t xx1;
+    int16_t xx2;
+    //------------------
+    int16_t zz1;
+    int16_t zz2;
+    //------------------
+    int16_t f2wi(float f) { return f * 100; } // pack float
+    float w2fi(int16_t w) { return float(w) / 100; }; // unpack float
 
+    float unpackOptParamValue() { return w2fi(optParamValue); }
+    void packOptParamValue(float f) { optParamValue = f2wi(f); }
+    //***********  RemotePacket::option parameter implementation  ***********
+}; //end struct declaration
 
 const int default_throttle = 127;
 

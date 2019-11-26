@@ -28,8 +28,13 @@ RemotePacket remPacket;
 TelemetryPacket telemetry;
 ConfigPacket boardConfig;
 InfoPacket boardInfo;
+OptionParamPacket optParamPacket;
 
 AppState state = IDLE;
+
+//OptionParamCommand optParamCommand; already declared inside "struct RemotePacket{}"
+// OptionParamIndex optParamIndex; declared in globals.h
+// float localOptParamValueArray[]; declared in globals.h
 
 // get MAC address / CPU serial
 uint32_t boardID;
@@ -116,6 +121,16 @@ String uint64ToAddress(uint64_t number);
 String uint64ToString(uint64_t number);
 void updateEEPROMSettings();
 void updateSetting(uint8_t setting, uint64_t value);
+
+//***********  RemotePacket::option parameter implementation  ***********
+const uint8_t optionParamArrayLength = 128;
+float localOptParamValueArray[optionParamArrayLength];
+
+void setOptParamValue(uint8_t myOptParamIndex, float value);
+float getOptParamValue(uint8_t myOptParamIndex);
+
+void updateOptParamVariables();
+//***********  RemotePacket::option parameter implementation  ***********
 
 
 // ******************************** LED ROADLIGHTS IMPLEMENTATION - Receiver *****************************

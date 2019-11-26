@@ -308,13 +308,13 @@ void handleButtons() { //executes action depending on PWR_BUTTON state ( CLICK -
             calibrationStage = CALIBRATE_CENTER;
             return backToMainMenu();
           }
-// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
-//    DEFAULT BEHAVIOUR -> quit the page, bakcToMainMenu();
-//  if (menuPage ==  MENU_LIGHT){
+  // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
+  //    DEFAULT BEHAVIOUR -> quit the page, bakcToMainMenu();
+  //  if (menuPage ==  MENU_LIGHT){
 
-//  }
+  //  }
 
-// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
+  // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
 
           // exit menu
           state = menuWasUsed ? IDLE : NORMAL;
@@ -703,22 +703,27 @@ bool receiveData() {
       settings.boardID = boardInfo.id;
       saveSettings();
 
-      //******************** ROADLIGHTS SETTINGS ************************************
-
-        //DEPRECATED - we can simply add a BRIGHTNESS variable in the boardConfigPacket...
-
-        //case ROADLIGHT_BRIGHTNESS_VALUE
-        // memcpy(&boardInfo, buf, PACKET_SIZE);
-         // check chain and CRC
-        // debug("InfoPacket: board ID " + String(boardInfo.id));
-         // add to list
-        // settings.boardID = boardInfo.id;
-        // saveSettings();
-
-      //******************** ROADLIGHTS SETTINGS ************************************
-
       // pairing done
       state = NORMAL;
+      return true;
+
+    case OPT_PARAM_RESPONSE: //recvPacket.type
+        // debug("OPT_PARAM_RESPONSE: chain " + String(recvPacket.chain));
+        memcpy(&optParamPacket, buf, PACKET_SIZE);
+       // if (optParamPacket.optParamCommand == SET_OPT_PARAM_VALUE){}
+        switch (optParamPacket.optParamCommand) {
+            case SET_OPT_PARAM_VALUE:
+                setOptParamValue(optParamPacket.optParamIndex, optParamPacket.unpackOptParamValue()); 
+            break;
+            case GET_OPT_PARAM_VALUE:
+                remPacket.command = OPT_PARAM_MODE;
+                remPacket.optParamCommand = SET_OPT_PARAM_VALUE;
+                remPacket.optParamIndex = optParamPacket.optParamIndex;
+                //remPacket.optParamValue(getOptParamValue(optParamPacket.optParamIndex));
+                remPacket.packOptParamValue(getOptParamValue(optParamPacket.optParamIndex));
+                requestSendOptParamPacket = true;
+            break;
+        } // end switch
       return true;
   }
 
@@ -833,6 +838,28 @@ void prepatePacket() {
             }
 // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
 
+            //***********  RemotePacket::option parameter implementation  ***********
+
+            if (requestSendOptParamPacket){   //only in MENU mode
+                debug("requestSendOptParamPacket");
+                remPacket.command = OPT_PARAM_MODE;
+                /*
+                switch (remPacket.optParamCommand) {
+                    case SET_OPT_PARAM_VALUE:
+                        //nothing to do 
+                    break;
+                    case GET_OPT_PARAM_VALUE:
+                        //nothing to do
+                    break;
+                } // end switch
+                */
+                requestSendOptParamPacket = false;
+                break;
+
+            }
+
+            //***********  RemotePacket::option parameter implementation  ***********
+
             else {
                 remPacket.command = SET_THROTTLE;
                 remPacket.data = default_throttle;
@@ -924,7 +951,7 @@ int readThrottlePosition() {
 
     for ( uint8_t i = 0; i < samples; i++ )
     {
-//        total += adc1_get_raw(ADC_THROTTLE);
+  //        total += adc1_get_raw(ADC_THROTTLE);
         total += adc1_get_voltage(ADC_THROTTLE); //seems to give better results
 
     }
@@ -943,11 +970,11 @@ int readThrottlePosition() {
 
   // map values 0..1023 >> 0..255
   if (hallValue >= settings.centerHallValue + hallNoiseMargin) {    // 127 > 150
-//      position = constrain(map(hallValue, settings.centerHallValue + hallNoiseMargin, settings.maxHallValue, 127, 255), 127, 255);
+  //      position = constrain(map(hallValue, settings.centerHallValue + hallNoiseMargin, settings.maxHallValue, 127, 255), 127, 255);
       position = constrain(map(hallValue, settings.centerHallValue, settings.maxHallValue, 127, 255), 127, 255);
   }
   else if (hallValue <= settings.centerHallValue - hallNoiseMargin) {
-//      position = constrain(map(hallValue, settings.minHallValue, settings.centerHallValue - hallNoiseMargin, 0, 127), 0, 127);
+  //      position = constrain(map(hallValue, settings.minHallValue, settings.centerHallValue - hallNoiseMargin, 0, 127), 0, 127);
       position = constrain(map(hallValue, settings.minHallValue, settings.centerHallValue, 0, 127), 0, 127);
   }
   else {
@@ -956,7 +983,7 @@ int readThrottlePosition() {
   }
 
   // removeing center noise, todo: percent
-//  if (abs(throttle - default_throttle) < hallCenterMargin) {
+  //  if (abs(throttle - default_throttle) < hallCenterMargin) {
     if (abs(position - default_throttle) < hallCenterMargin) {
     position = default_throttle;
   }
@@ -992,10 +1019,10 @@ float batteryLevelVolts() {
       double reading = (double)total / (double)samples;
       //voltage = -0.000000000000016 * pow(reading,4) + 0.000000000118171 * pow(reading,3)- 0.000000301211691 * pow(reading,2)+ 0.001109019271794 * reading + 0.034143524634089;
       //voltage = voltage * 2.64;
-// -------------------- battery voltage bugfix -----------------------------------------
+  // -------------------- battery voltage bugfix -----------------------------------------
       //voltage = reading;
       voltage = reading / 512; //quickfix with voltmeter reference..
-// -------------------- battery voltage bugfix -----------------------------------------
+  // -------------------- battery voltage bugfix -----------------------------------------
     #endif
 
     // don't smooth at startup
@@ -1955,18 +1982,40 @@ void vibe(int vibeMode){    //vibrate() combos
     if (vibeMode == 4){vibrate(50); delay(25); vibrate(50); delay(25); vibrate(50);}
 }
 
+//***********  RemotePacket::option parameter implementation  ***********
+//void setOptParamValue(OptionParamIndex myOptParamIndex, float value){  // Set a value of a specific setting by index in the local table.
+void setOptParamValue(uint8_t myOptParamIndex, float value){  // Set a value of a specific setting by index in the local table.
+   uint8_t arrayIndex = myOptParamIndex;
+   localOptParamValueArray[arrayIndex] = value;
+}
+
+//float getOptParamValue(OptionParamIndex myOptParamIndex){ // Get settings value by index from the local table.
+float getOptParamValue(uint8_t myOptParamIndex){ // Get settings value by index from the local table.
+   float value;
+   uint8_t arrayIndex = myOptParamIndex;
+   value = localOptParamValueArray[arrayIndex];
+   return value;
+   //float localOptParamValueArray[] ;
+}
+//***********  RemotePacket::option parameter implementation  ***********
+
+
 // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
 void drawLightSettingsPage(){
+    uint8_t myOptIndex;
 
     switch (myRoadlightSetting_page_stage) {
         case ADJUSTING_FRONTLIGHT_BRIGHTNESS:
             myLightSettingValue = myFrontLightBrightness;
+            myOptIndex = LED_BRIGHTNESS_FRONT;
         break;
         case ADJUSTING_BACKLIGHT_BRIGHTNESS:
             myLightSettingValue = myBackLightBrightness;
+            myOptIndex = LED_BRIGHTNESS_BACK;
         break;
         case ADJUSTING_BRAKELIGHT_BRIGHTNESS:
             myLightSettingValue = myBrakeLightBrightness;
+            myOptIndex = LED_BRIGHTNESS_BRAKE;
         break;
     }
 
@@ -1981,7 +2030,15 @@ void drawLightSettingsPage(){
         if (myLightSettingValue > 0){ myLightSettingValue = constrain((myLightSettingValue -= 5),0,255);}
     }
     nextPositionIndex = myLightSettingValue;
-    if (lastPositionIndex != nextPositionIndex){vibe(0);}   //short vibration each time we change the selected menu item
+    if (lastPositionIndex != nextPositionIndex){
+      vibe(0); //short vibration each time we change the selected menu item
+      setOptParamValue(myOptIndex, myLightSettingValue);  //store the value locally
+      remPacket.command = OPT_PARAM_MODE; //prepare the next packet to update receiver's value
+      remPacket.optParamCommand = SET_OPT_PARAM_VALUE;
+      remPacket.optParamIndex = myOptIndex;
+      remPacket.packOptParamValue(myLightSettingValue);
+      requestSendOptParamPacket = true;    //send the value to the receiver
+      }  
     // ---------------------------------------------
     //myLightSettingValue = nextPositionIndex;
 

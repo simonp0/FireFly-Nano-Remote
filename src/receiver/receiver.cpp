@@ -306,10 +306,10 @@ float batteryPackPercentage( float voltage ) { // Calculate the battery level of
             display.setFont();
             display.setCursor(0, 10);
             display.print("No UART data");
-// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
-            display.print(" L:" + String(myRoadLightState) );
-            //display.print(" Lp" + String(digitalRead(PIN_BACKLIGHT)) );
-// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
+  // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
+              display.print(" L:" + String(myRoadLightState) + String(dutyCycle_backLightOn));
+              //display.print(" Lp" + String(digitalRead(PIN_BACKLIGHT)) );
+  // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
 
             // remote info
             display.setCursor(0, 25);
@@ -532,6 +532,21 @@ bool sendData(uint8_t response) { //Answers to (response) type by sending the co
       return true;
     }
     break;
+
+  case OPT_PARAM_RESPONSE:
+    debug("Sending rx->tx OPT PARAM packet");
+    optParamPacket.header.type = response;
+    optParamPacket.header.chain = remPacket.counter;
+    
+    optParamPacket.optParamCommand = 0;
+    optParamPacket.optParamIndex = 0;
+    optParamPacket.optParamValue = 0;
+
+    if (sendPacket(&optParamPacket, sizeof(optParamPacket))) {
+      return true;
+    }
+    break;
+
   }
 
   return false;
@@ -645,19 +660,38 @@ void radioExchange() {   //receive packet, execute SET_ or GET_ request, send an
                     // vibrate(2000); TODO : launch via an independant task to avoid introducing any delay here
                     response = ACK_ONLY;
                     // display.clearDisplay();
-                    switch (remPacket.data) {
-                        case 1:
+                    switch (remPacket.data) { //remPacket.data = RoadLightState
+                        case RoadLightState::ON: //1:
                             switchLightOn();
                         break;
-                        case 0:
+                        case RoadLightState::OFF: //0:
                             switchLightOff();
                         break;
-                        case 2:  //brake only mode
+                        case RoadLightState::BRAKES_ONLY: //2:  //brake only mode
                             switchLightBrakesOnly();
                         break;
                     }
                 break;
             #endif
+
+                //***********  RemotePacket::option parameter implementation  ***********
+                case OPT_PARAM_MODE:
+                    //response = CONFIG;
+                    switch (remPacket.optParamCommand) {
+                        case SET_OPT_PARAM_VALUE:
+                            response = ACK_ONLY;
+                            setOptParamValue(remPacket.optParamIndex, remPacket.unpackOptParamValue()); 
+                            updateOptParamVariables();//reloads new values into local variables
+                        break;
+                        case GET_OPT_PARAM_VALUE:
+                            response = OPT_PARAM_RESPONSE;
+                            optParamPacket.optParamCommand = SET_OPT_PARAM_VALUE;
+                            optParamPacket.optParamIndex = remPacket.optParamIndex;
+                            optParamPacket.packOptParamValue(getOptParamValue(remPacket.optParamIndex));
+                        break;
+                    } // end switch
+                break;
+                //***********  RemotePacket::option parameter implementation  ***********
 
             } // end switch
 
@@ -804,6 +838,7 @@ void stateMachine() { // handle auto-stop, endless mode, etc...
       }
 
       //avoids going backwards after stopping if auto-reverse is enabled within VESC app
+      /*
       currentSpeedValue = telemetry.getSpeed();
       if (currentSpeedValue < lastSpeedValue){
         lastSpeedValue = currentSpeedValue;
@@ -814,6 +849,11 @@ void stateMachine() { // handle auto-stop, endless mode, etc...
         if(abs(currentSpeedValue) < AUTO_BRAKE_ABORT_MAXSPEED){
           setState(IDLE);   //If speed is low enough -> abort break procedure
         }
+      }*/
+
+      if(currentSpeedValue < 0){  //going backwards --> ABORT
+        setThrottle(default_throttle);
+        setState(IDLE);
       }
 
       break;
@@ -1148,7 +1188,7 @@ void setSettingValue(int index, uint64_t value){ //TODO     // Set a value of a 
   // }
 }
 
-int getSettingValue(uint8_t index){//TODO     // Get settings value by index (usefull when iterating through settings).
+int getSettingValue(uint8_t index){//TODO     // Get settings value by index (useful when iterating through settings).
   // int value;
   // switch (index) {
   //   case 0: value = rxSettings.triggerMode; break;
@@ -1159,13 +1199,36 @@ int getSettingValue(uint8_t index){//TODO     // Get settings value by index (us
   // return value;
 }
 
+
+//***********  RemotePacket::option parameter implementation  ***********
+void setOptParamValue(uint8_t myOptParamIndex, float value){ // Set a value of a specific setting by index in the local table.
+   uint8_t arrayIndex = myOptParamIndex;
+   localOptParamValueArray[arrayIndex] = value;
+}
+
+float getOptParamValue(uint8_t myOptParamIndex){ // Get settings value by index from the local table.
+   float value;
+   uint8_t arrayIndex = myOptParamIndex;
+   value = localOptParamValueArray[arrayIndex];
+   return value;
+   //float localOptParamValueArray[] ;
+}
+
+// Update local variables from new OptParamValues
+void updateOptParamVariables(){
+    //dutyCycle_backLightOn = (int) round(getOptParamValue(LED_BRIGHTNESS_BACK)); //localOptParamValueArray[1];
+    dutyCycle_frontLightOn = getOptParamValue(LED_BRIGHTNESS_FRONT);
+    dutyCycle_backLightOn = getOptParamValue(LED_BRIGHTNESS_BACK);
+    dutyCycle_brakeLight = getOptParamValue(LED_BRIGHTNESS_BRAKE);
+}
+//***********  RemotePacket::option parameter implementation  ***********
+
 bool inRange(int val, int minimum, int maximum){ //checks if value is within MIN - MAX range
   return ((minimum <= val) && (val <= maximum));
 }
 
 // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
 //void drawLightPage(); // uint8_t lightBrightnessValue
-
 
 #ifdef ROADLIGHT_CONNECTED
     void switchLightOn(){
@@ -1191,10 +1254,6 @@ bool inRange(int val, int minimum, int maximum){ //checks if value is within MIN
         switch(myRoadLightState){
             case OFF:
                 // do nothing
-                //delay(1);
-                //vTaskDelay(10 / portTICK_PERIOD_MS); //delay specified in milliseconds instead of ticks
-
-                //emitBrakeLightPulse(dutyCycle_lightOff); //activate brakeLight flashes while OFF in between
             break;
 
             case ON:

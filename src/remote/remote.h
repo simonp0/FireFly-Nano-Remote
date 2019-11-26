@@ -48,13 +48,19 @@
 
     bool requestSwitchLight = false; //flag for putting a SET_LIGHT request in the next remotePacket
 
+    //bool requestAdjustLightBrightness = false; //flag for putting a SET_LIGHT_BRIGHTNESS request in the next remotePacket
+
     enum RoadlightSetting_page_stage{
         ADJUSTING_FRONTLIGHT_BRIGHTNESS,
         ADJUSTING_BACKLIGHT_BRIGHTNESS,
         ADJUSTING_BRAKELIGHT_BRIGHTNESS,
     } myRoadlightSetting_page_stage = ADJUSTING_FRONTLIGHT_BRIGHTNESS; //default mode at startup
 
+
   // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
+  
+  //***********  RemotePacket::option parameter implementation  ***********
+  bool requestSendOptParamPacket = false; //flag for putting a OPT_PARAM command in the next remotePacket
 
 
   static intr_handle_t s_rtc_isr_handle;
@@ -89,6 +95,7 @@ RemotePacket remPacket;
 TelemetryPacket telemetry;
 ConfigPacket boardConfig;
 InfoPacket boardInfo;
+OptionParamPacket optParamPacket;
 
 bool needConfig = true; // query board confirmation on start
 
@@ -323,6 +330,14 @@ void updateMainDisplay();
 void vibrate(int ms);
 
 void vibe(int vibeMode); //vibrations combos
+
+//***********  RemotePacket::option parameter implementation  ***********
+const uint8_t optionParamArrayLength = 128;
+float localOptParamValueArray[optionParamArrayLength];
+
+void setOptParamValue(uint8_t myOptParamIndex, float value);
+float getOptParamValue(uint8_t myOptParamIndex);
+//***********  RemotePacket::option parameter implementation  ***********
 
 
 // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
