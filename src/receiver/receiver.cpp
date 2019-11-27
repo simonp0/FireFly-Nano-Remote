@@ -1202,14 +1202,14 @@ int getSettingValue(uint8_t index){//TODO     // Get settings value by index (us
 
 //***********  RemotePacket::option parameter implementation  ***********
 void setOptParamValue(uint8_t myOptParamIndex, float value){ // Set a value of a specific setting by index in the local table.
-   uint8_t arrayIndex = myOptParamIndex;
-   localOptParamValueArray[arrayIndex] = value;
+   //uint8_t arrayIndex = myOptParamIndex;
+   localOptParamValueArray[myOptParamIndex] = value;
 }
 
 float getOptParamValue(uint8_t myOptParamIndex){ // Get settings value by index from the local table.
    float value;
-   uint8_t arrayIndex = myOptParamIndex;
-   value = localOptParamValueArray[arrayIndex];
+   //uint8_t arrayIndex = myOptParamIndex;
+   value = localOptParamValueArray[myOptParamIndex];
    return value;
    //float localOptParamValueArray[] ;
 }

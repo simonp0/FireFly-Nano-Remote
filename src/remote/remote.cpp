@@ -1012,16 +1012,16 @@ float batteryLevelVolts() {
 
     // calculate voltage
     float voltage;
-
     #ifdef ARDUINO_SAMD_ZERO
       voltage = ( (float)total / (float)samples ) * 2 * refVoltage / 1024.0;
     #elif ESP32
-      double reading = (double)total / (double)samples;
+      //double reading = (double)total / (double)samples;
       //voltage = -0.000000000000016 * pow(reading,4) + 0.000000000118171 * pow(reading,3)- 0.000000301211691 * pow(reading,2)+ 0.001109019271794 * reading + 0.034143524634089;
       //voltage = voltage * 2.64;
   // -------------------- battery voltage bugfix -----------------------------------------
       //voltage = reading;
-      voltage = reading / 512; //quickfix with voltmeter reference..
+      //voltage = reading / 512; 
+      voltage = ( (float)total / (float)samples ) * 2 * adjVoltage / 1024.0;
   // -------------------- battery voltage bugfix -----------------------------------------
     #endif
 

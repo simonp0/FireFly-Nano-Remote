@@ -124,6 +124,7 @@ enum ui_page {
 const float minVoltage = 3.3; // min voltage with vibro motor
 const float maxVoltage = 4.1; //Heltec_Lora32_v2 stops charging around here..
 const float refVoltage = 3.3; // Feather double-100K resistor divider
+const float adjVoltage = 4.1/4.34; // Adjustment factor - Heltec : when battery is full, adjVoltage = 4.1 / displayed value
 
 unsigned long lastBatterySample = 0; // smooth remote voltage
 
