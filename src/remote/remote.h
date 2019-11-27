@@ -36,9 +36,9 @@
   const int CENTER_HALL = 752;
   const int MAX_HALL = 1023;
   // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
-    int FRONTLIGHT_BRIGHTNESS = 100;
-    int BACKLIGHT_BRIGHTNESS = 100;
-    int BRAKELIGHT_BRIGHTNESS = 255;
+    int FRONTLIGHT_BRIGHTNESS = 100;  //TEMP : testing Rx settings update from Tx
+    int BACKLIGHT_BRIGHTNESS = 100;  //TEMP : testing Rx settings update from Tx
+    int BRAKELIGHT_BRIGHTNESS = 255;  //TEMP : testing Rx settings update from Tx
 
     RoadLightState myRoadLightState = OFF;  //current roadlight mode activated (OFF : default at startup)
     int myLightSettingValue;
@@ -74,8 +74,8 @@ struct RemoteSettings {
   short maxHallValue = MAX_HALL;
   uint32_t boardID = 0;
   // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
-  short frontLightBrightnessValue = FRONTLIGHT_BRIGHTNESS;
-  short backLightBrightnessValue = BACKLIGHT_BRIGHTNESS;
+  //short frontLightBrightnessValue = FRONTLIGHT_BRIGHTNESS;
+  //short backLightBrightnessValue = BACKLIGHT_BRIGHTNESS;
   // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
 } settings;
 
@@ -338,6 +338,9 @@ float localOptParamValueArray[optionParamArrayLength];
 
 void setOptParamValue(uint8_t myOptParamIndex, float value);
 float getOptParamValue(uint8_t myOptParamIndex);
+
+void sendOptParamToReceiver(uint8_t myOptParamIndex);
+void loadOptParamFromReceiver(uint8_t myOptParamIndex);
 //***********  RemotePacket::option parameter implementation  ***********
 
 

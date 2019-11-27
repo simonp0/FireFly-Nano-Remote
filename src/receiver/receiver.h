@@ -129,6 +129,9 @@ float localOptParamValueArray[optionParamArrayLength];
 void setOptParamValue(uint8_t myOptParamIndex, float value);
 float getOptParamValue(uint8_t myOptParamIndex);
 
+//void sendOptParamToRemote(uint8_t myOptParamIndex);
+//void loadOptParamFromRemote(uint8_t myOptParamIndex);
+
 void updateOptParamVariables();
 //***********  RemotePacket::option parameter implementation  ***********
 

@@ -77,9 +77,6 @@ const int WHEEL_PULLEY = 1;
 const int MOTOR_PULLEY = 1;
 
 #ifdef ROADLIGHT_CONNECTED  // ********** LED ROADLIGHTS IMPLEMENTATION ***********************************************
-//    const int FRONTLIGHT_BRIGHTNESS = 100;        // -Moved in remote.h
-//    const int BACKLIGHT_BRIGHTNESS = 100;         // -Moved in remote.h
-
     enum RoadLightState{
         OFF,
         ON,
@@ -137,11 +134,14 @@ enum OptionParamCommand {
 
 // RemotePacket.optParamIndex :
 enum OptionParamIndex {
-    LED_BRIGHTNESS_FRONT,
-    LED_BRIGHTNESS_BACK,
-    LED_BRIGHTNESS_BRAKE,
-    OPT_PARAM_4,
-    OPT_PARAM_5
+    OPT_LED_BRIGHTNESS_FRONT,
+    OPT_LED_BRIGHTNESS_BACK,
+    OPT_LED_BRIGHTNESS_BRAKE,
+    OPT_LED_ROADLIGHT_MODE,     //ToDo : move RemotePacketCommand::SET_LIGHT functionalities into OptionParamIndex::LED_ROADLIGHT_MODE
+    OPT_PARAM_5,
+    OPT_PARAM_6,
+    OPT_PARAM_7,
+    OPT_PARAM_8
 };
 
 

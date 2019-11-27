@@ -1478,6 +1478,13 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                                 //myRoadlightSetting_page_stage = ADJUSTING_FRONTLIGHT_BRIGHTNESS; //let's keep the last used one instead
                                 //nothing else to do
                                 //backToMainMenu(); //we don't exit yet - we want to display the drawLightSettingsPage()
+                                //download 3 current values from receiver:
+                                /*
+                                loadOptParamFromReceiver(OPT_LED_BRIGHTNESS_FRONT);
+                                loadOptParamFromReceiver(OPT_LED_BRIGHTNESS_BACK);
+                                loadOptParamFromReceiver(OPT_LED_BRIGHTNESS_BRAKES);
+                                */
+
                             break;
                         }
                     break;
@@ -1997,6 +2004,26 @@ float getOptParamValue(uint8_t myOptParamIndex){ // Get settings value by index 
    return value;
    //float localOptParamValueArray[] ;
 }
+
+void sendOptParamToReceiver(uint8_t myOptParamIndex){
+    uint8_t arrayIndex = myOptParamIndex;
+    //setOptParamValue(myOptIndex, myLightSettingValue);  //store the value locally
+    remPacket.command = OPT_PARAM_MODE; //prepare the next packet to update receiver's value
+    remPacket.optParamCommand = SET_OPT_PARAM_VALUE;
+    remPacket.optParamIndex = arrayIndex;
+    remPacket.packOptParamValue(getOptParamValue(arrayIndex));
+    requestSendOptParamPacket = true;    //send the value to the receiver
+}
+
+void loadOptParamFromReceiver(uint8_t myOptParamIndex){
+    uint8_t arrayIndex = myOptParamIndex;
+    //setOptParamValue(myOptIndex, myLightSettingValue);  //store the value locally
+    remPacket.command = OPT_PARAM_MODE; //prepare the next packet to update receiver's value
+    remPacket.optParamCommand = GET_OPT_PARAM_VALUE;
+    remPacket.optParamIndex = arrayIndex;
+    remPacket.packOptParamValue(0); //(getOptParamValue(arrayIndex));
+    requestSendOptParamPacket = true;    //send the value to the receiver
+}
 //***********  RemotePacket::option parameter implementation  ***********
 
 
@@ -2007,15 +2034,15 @@ void drawLightSettingsPage(){
     switch (myRoadlightSetting_page_stage) {
         case ADJUSTING_FRONTLIGHT_BRIGHTNESS:
             myLightSettingValue = myFrontLightBrightness;
-            myOptIndex = LED_BRIGHTNESS_FRONT;
+            myOptIndex = OPT_LED_BRIGHTNESS_FRONT;
         break;
         case ADJUSTING_BACKLIGHT_BRIGHTNESS:
             myLightSettingValue = myBackLightBrightness;
-            myOptIndex = LED_BRIGHTNESS_BACK;
+            myOptIndex = OPT_LED_BRIGHTNESS_BACK;
         break;
         case ADJUSTING_BRAKELIGHT_BRIGHTNESS:
             myLightSettingValue = myBrakeLightBrightness;
-            myOptIndex = LED_BRIGHTNESS_BRAKE;
+            myOptIndex = OPT_LED_BRIGHTNESS_BRAKE;
         break;
     }
 

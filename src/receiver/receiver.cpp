@@ -58,6 +58,11 @@ void setup(){ //runs once after powerOn
     ledcSetup(led_pwm_channel_backLight, led_pwm_frequency, led_pwm_resolution); // configure LED PWM functionalitites
     ledcAttachPin(PIN_BACKLIGHT, led_pwm_channel_backLight); // attach the channel to the GPIO to be controlled
     //myRoadLightState = OFF; //default setting when switching on the board // in header file
+
+    //initialise array values with default local variables values
+    localOptParamValueArray[OPT_LED_BRIGHTNESS_FRONT] = dutyCycle_frontLightOn;
+    localOptParamValueArray[OPT_LED_BRIGHTNESS_BACK] = dutyCycle_backLightOn;
+    localOptParamValueArray[OPT_LED_BRIGHTNESS_BRAKE] = dutyCycle_brakeLight;
 #endif
 // ******** LED ROADLIGHTS IMPLEMENTATION ********
 
@@ -1213,13 +1218,43 @@ float getOptParamValue(uint8_t myOptParamIndex){ // Get settings value by index 
    return value;
    //float localOptParamValueArray[] ;
 }
+/*
+void sendOptParamToRemote(uint8_t myOptParamIndex){
+    uint8_t arrayIndex = myOptParamIndex;
+    //setOptParamValue(myOptIndex, myLightSettingValue);  //store the value locally
+    remPacket.command = OPT_PARAM_MODE; //prepare the next packet to update receiver's value
+    remPacket.optParamCommand = SET_OPT_PARAM_VALUE;
+    remPacket.optParamIndex = arrayIndex;
+    remPacket.packOptParamValue(getOptParamValue(arrayIndex));
+    requestSendOptParamPacket = true;    //send the value to the receiver
+}
+
+void loadOptParamFromRemote(uint8_t myOptParamIndex){
+    uint8_t arrayIndex = myOptParamIndex;
+    //setOptParamValue(myOptIndex, myLightSettingValue);  //store the value locally
+    remPacket.command = OPT_PARAM_MODE; //prepare the next packet to update receiver's value
+    remPacket.optParamCommand = GET_OPT_PARAM_VALUE;
+    remPacket.optParamIndex = arrayIndex;
+    remPacket.packOptParamValue(0); //(getOptParamValue(arrayIndex));
+    requestSendOptParamPacket = true;    //send the value to the receiver
+}
+*/
 
 // Update local variables from new OptParamValues
 void updateOptParamVariables(){
     //dutyCycle_backLightOn = (int) round(getOptParamValue(LED_BRIGHTNESS_BACK)); //localOptParamValueArray[1];
-    dutyCycle_frontLightOn = getOptParamValue(LED_BRIGHTNESS_FRONT);
-    dutyCycle_backLightOn = getOptParamValue(LED_BRIGHTNESS_BACK);
-    dutyCycle_brakeLight = getOptParamValue(LED_BRIGHTNESS_BRAKE);
+    dutyCycle_frontLightOn = getOptParamValue(OPT_LED_BRIGHTNESS_FRONT);
+    dutyCycle_backLightOn = getOptParamValue(OPT_LED_BRIGHTNESS_BACK);
+    dutyCycle_brakeLight = getOptParamValue(OPT_LED_BRIGHTNESS_BRAKE);
+
+    //load all values into the local array
+    /*
+    float* localVarAddresses[] //array of pointers
+    localVarAddresses[OPT_LED_BRIGHTNESS_FRONT] = &dutyCycle_frontLightOn     //store local variable addresses in an array
+    *localValAddresses[OPT_LED_BRIGHTNESS_FRONT] = (dereference) value stored at contained address      
+    
+    
+    */
 }
 //***********  RemotePacket::option parameter implementation  ***********
 
