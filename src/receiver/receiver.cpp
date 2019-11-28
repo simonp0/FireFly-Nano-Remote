@@ -260,7 +260,7 @@ float batteryPackPercentage( float voltage ) { // Calculate the battery level of
 
             case ENDLESS:
                 display.setTextColor(WHITE);
-                display.setFont(fontDigital);
+                display.setFont(fontDesc); //fontDigital
                 display.setCursor(0, 20);
                 display.println("CUR: " + String(telemetry.getMotorCurrent(), 1) + " A");
                 display.println("SPD: " + String(telemetry.getSpeed(),1));
@@ -280,7 +280,7 @@ float batteryPackPercentage( float voltage ) { // Calculate the battery level of
                 }
                 else { // riding
                     display.setTextColor(WHITE);
-                    display.setFont(fontDigital);
+                    display.setFont(fontDesc);  //fontDigital
                     display.setCursor(0, 20);
                     display.println("THR: " + String(map(throttle, 0, 255, -100, 100)) + "%");
                     display.println("SPD: " + String(telemetry.getSpeed(),1) + " k");
@@ -312,7 +312,7 @@ float batteryPackPercentage( float voltage ) { // Calculate the battery level of
             display.setCursor(0, 10);
             display.print("No UART data");
   // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
-              display.print(" L:" + String(myRoadLightState) + String(dutyCycle_backLightOn));
+              display.print(" L:" + String(myRoadLightState) );
               //display.print(" Lp" + String(digitalRead(PIN_BACKLIGHT)) );
   // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
 
@@ -543,10 +543,6 @@ bool sendData(uint8_t response) { //Answers to (response) type by sending the co
     optParamPacket.header.type = response;
     optParamPacket.header.chain = remPacket.counter;
     
-    //optParamPacket.optParamCommand = 0;
-    //optParamPacket.optParamIndex = 0;
-    //optParamPacket.optParamValue = 0;
-
     if (sendPacket(&optParamPacket, sizeof(optParamPacket))) {
       return true;
     }
@@ -819,22 +815,28 @@ void stateMachine() { // handle auto-stop, endless mode, etc...
       break;
 
     case STOPPING: // emergency brake when remote has disconnected
-
       // start braking from zero throttle
       if (throttle > default_throttle) {
         throttle = default_throttle;
       }
+      if ((currentSpeedValue < 0) && (throttle < default_throttle)){  //going backwards
+        throttle = default_throttle;
+      }
 
       if (secondsSince(lastBrakeTime) > AUTO_BRAKE_INTERVAL) {
-
-        // decrease throttle to brake  127 / 5 * 0.1
-        float brakeForce = constrain(default_throttle / AUTO_BRAKE_TIME * AUTO_BRAKE_INTERVAL, 0, 10);
-
-        // apply brakes
-        if (throttle > brakeForce) throttle -= brakeForce; else throttle = 0;
-        setThrottle(throttle);
-
-        lastBrakeTime = millis();
+          // decrease throttle to brake  127 / 5 * 0.1
+          float brakeForce = constrain(default_throttle / AUTO_BRAKE_TIME * AUTO_BRAKE_INTERVAL, 0, 10);
+          currentSpeedValue = telemetry.getSpeed();
+          // apply brakes
+          if(currentSpeedValue > 0){  //going forwards
+              if (throttle > brakeForce) throttle -= brakeForce; else throttle = 0;
+              setThrottle(throttle);
+          }
+          if(currentSpeedValue < 0){  //going backwards
+              if (throttle < brakeForce) throttle += brakeForce; else throttle = 0;
+              setThrottle(throttle);
+          }
+          lastBrakeTime = millis();
       }
 
       // check speed
@@ -842,10 +844,8 @@ void stateMachine() { // handle auto-stop, endless mode, etc...
         setState(STOPPED);
       }
 
-      //avoids going backwards after stopping if auto-reverse is enabled within VESC app
-      /*
-      currentSpeedValue = telemetry.getSpeed();
-      if (currentSpeedValue < lastSpeedValue){
+      //avoids going backwards after stopping if auto-reverse is enabled within VESC app 
+      if (abs(currentSpeedValue) < abs(lastSpeedValue)){
         lastSpeedValue = currentSpeedValue;
       }
 
@@ -854,12 +854,8 @@ void stateMachine() { // handle auto-stop, endless mode, etc...
         if(abs(currentSpeedValue) < AUTO_BRAKE_ABORT_MAXSPEED){
           setState(IDLE);   //If speed is low enough -> abort break procedure
         }
-      }*/
-
-      if(currentSpeedValue < 0){  //going backwards --> ABORT
-        setThrottle(default_throttle);
-        setState(IDLE);
       }
+
 
       break;
 

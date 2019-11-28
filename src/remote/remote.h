@@ -340,7 +340,7 @@ void setOptParamValue(uint8_t myOptParamIndex, float value);
 float getOptParamValue(uint8_t myOptParamIndex);
 
 void sendOptParamToReceiver(uint8_t myOptParamIndex);
-void loadOptParamFromReceiver(uint8_t myOptParamIndex);
+bool loadOptParamFromReceiver(uint8_t myOptParamIndex);
 //***********  RemotePacket::option parameter implementation  ***********
 
 

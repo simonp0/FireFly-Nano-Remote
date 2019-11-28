@@ -2009,7 +2009,7 @@ void sendOptParamToReceiver(uint8_t myOptParamIndex){
     requestSendOptParamPacket = true;    //send the value to the receiver
 }
 
-void loadOptParamFromReceiver(uint8_t myOptParamIndex){
+bool loadOptParamFromReceiver(uint8_t myOptParamIndex){   //returns TRUE if the local OPT_PARAM is updated within 100ms
     uint8_t arrayIndex = myOptParamIndex;
     setOptParamValue(myOptParamIndex, -1);  //sets the local value to -1 and watch for update
     //setOptParamValue(myOptIndex, myLightSettingValue);  //store the value locally
@@ -2021,9 +2021,22 @@ void loadOptParamFromReceiver(uint8_t myOptParamIndex){
 
     for (int i=0; i<20 ; i++){  //waits until the local value has been updated. Abort if delay is more than 100ms.
       delay(5);
-      if (getOptParamValue(myOptParamIndex) != -1) {break;}
+      if (getOptParamValue(myOptParamIndex) != -1) {
+        return true;
+        }
     }
+    return false;
 }
+/*
+void loadAllOptParamFromReceiver(){
+  for (int i = 0; i < optionParamArrayLength; i++){
+    loadOptParamFromReceiver(i);
+  }
+
+}
+
+}
+*/
 //***********  RemotePacket::option parameter implementation  ***********
 
 
