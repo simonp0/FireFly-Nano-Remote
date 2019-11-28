@@ -320,8 +320,10 @@ float batteryPackPercentage( float voltage ) { // Calculate the battery level of
             display.setCursor(0, 25);
             if (!connected)
                 display.print("Remote not connected");
-            else
-                display.print("Signal: " + String(lastRssi, 0) + " dB");
+            else{
+                signalStrength = constrain(map(lastRssi, -100, -50, 0, 100), 0, 100);
+                display.print("Signal: " + String(lastRssi, 0) + "dB " + String(signalStrength,0) + "%");
+                }
             //    display.setCursor(0, 40);
             //    display.print("Delay: " + String(lastDelay));
         return;
@@ -413,7 +415,7 @@ bool receiveData(){ // copies buffer data into remPacket
       buf[i] = LoRa.read();
       bytes++;
     }
-    // lastRssi = LoRa.packetRssi();
+    lastRssi = LoRa.packetRssi();
     len = bytes;
     received = true;
 
