@@ -543,9 +543,9 @@ bool sendData(uint8_t response) { //Answers to (response) type by sending the co
     optParamPacket.header.type = response;
     optParamPacket.header.chain = remPacket.counter;
     
-    optParamPacket.optParamCommand = 0;
-    optParamPacket.optParamIndex = 0;
-    optParamPacket.optParamValue = 0;
+    //optParamPacket.optParamCommand = 0;
+    //optParamPacket.optParamIndex = 0;
+    //optParamPacket.optParamValue = 0;
 
     if (sendPacket(&optParamPacket, sizeof(optParamPacket))) {
       return true;
@@ -1207,13 +1207,11 @@ int getSettingValue(uint8_t index){//TODO     // Get settings value by index (us
 
 //***********  RemotePacket::option parameter implementation  ***********
 void setOptParamValue(uint8_t myOptParamIndex, float value){ // Set a value of a specific setting by index in the local table.
-   //uint8_t arrayIndex = myOptParamIndex;
    localOptParamValueArray[myOptParamIndex] = value;
 }
 
 float getOptParamValue(uint8_t myOptParamIndex){ // Get settings value by index from the local table.
    float value;
-   //uint8_t arrayIndex = myOptParamIndex;
    value = localOptParamValueArray[myOptParamIndex];
    return value;
    //float localOptParamValueArray[] ;

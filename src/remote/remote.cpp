@@ -1474,17 +1474,11 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                                 myRoadLightState = BRAKES_ONLY;
                                 backToMainMenu();
                             case ROADLIGHT_SETTINGS:
-                                //initiate default light to adjust when entering the setup page
-                                //myRoadlightSetting_page_stage = ADJUSTING_FRONTLIGHT_BRIGHTNESS; //let's keep the last used one instead
-                                //nothing else to do
                                 //backToMainMenu(); //we don't exit yet - we want to display the drawLightSettingsPage()
                                 //download 3 current values from receiver:
-                                /*
                                 loadOptParamFromReceiver(OPT_LED_BRIGHTNESS_FRONT);
                                 loadOptParamFromReceiver(OPT_LED_BRIGHTNESS_BACK);
-                                loadOptParamFromReceiver(OPT_LED_BRIGHTNESS_BRAKES);
-                                */
-
+                                loadOptParamFromReceiver(OPT_LED_BRIGHTNESS_BRAKE);
                             break;
                         }
                     break;
@@ -2017,12 +2011,18 @@ void sendOptParamToReceiver(uint8_t myOptParamIndex){
 
 void loadOptParamFromReceiver(uint8_t myOptParamIndex){
     uint8_t arrayIndex = myOptParamIndex;
+    setOptParamValue(myOptParamIndex, -1);  //sets the local value to -1 and watch for update
     //setOptParamValue(myOptIndex, myLightSettingValue);  //store the value locally
     remPacket.command = OPT_PARAM_MODE; //prepare the next packet to update receiver's value
     remPacket.optParamCommand = GET_OPT_PARAM_VALUE;
     remPacket.optParamIndex = arrayIndex;
     remPacket.packOptParamValue(0); //(getOptParamValue(arrayIndex));
     requestSendOptParamPacket = true;    //send the value to the receiver
+
+    for (int i=0; i<20 ; i++){  //waits until the local value has been updated. Abort if delay is more than 100ms.
+      delay(5);
+      if (getOptParamValue(myOptParamIndex) != -1) {break;}
+    }
 }
 //***********  RemotePacket::option parameter implementation  ***********
 
@@ -2030,6 +2030,9 @@ void loadOptParamFromReceiver(uint8_t myOptParamIndex){
 // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
 void drawLightSettingsPage(){
     uint8_t myOptIndex;
+    myFrontLightBrightness = getOptParamValue(OPT_LED_BRIGHTNESS_FRONT);
+    myBackLightBrightness = getOptParamValue(OPT_LED_BRIGHTNESS_BACK);
+    myBrakeLightBrightness = getOptParamValue(OPT_LED_BRIGHTNESS_BRAKE);
 
     switch (myRoadlightSetting_page_stage) {
         case ADJUSTING_FRONTLIGHT_BRIGHTNESS:
@@ -2038,6 +2041,7 @@ void drawLightSettingsPage(){
         break;
         case ADJUSTING_BACKLIGHT_BRIGHTNESS:
             myLightSettingValue = myBackLightBrightness;
+           // loadOptParamFromReceiver(OPT_LED_BRIGHTNESS_BACK);
             myOptIndex = OPT_LED_BRIGHTNESS_BACK;
         break;
         case ADJUSTING_BRAKELIGHT_BRIGHTNESS:
@@ -2060,11 +2064,7 @@ void drawLightSettingsPage(){
     if (lastPositionIndex != nextPositionIndex){
       vibe(0); //short vibration each time we change the selected menu item
       setOptParamValue(myOptIndex, myLightSettingValue);  //store the value locally
-      remPacket.command = OPT_PARAM_MODE; //prepare the next packet to update receiver's value
-      remPacket.optParamCommand = SET_OPT_PARAM_VALUE;
-      remPacket.optParamIndex = myOptIndex;
-      remPacket.packOptParamValue(myLightSettingValue);
-      requestSendOptParamPacket = true;    //send the value to the receiver
+      sendOptParamToReceiver(myOptIndex);
       }  
     // ---------------------------------------------
     //myLightSettingValue = nextPositionIndex;
