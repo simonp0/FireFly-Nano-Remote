@@ -51,7 +51,7 @@ void setup(){ //runs once after powerOn
     pinMode(PIN_LED, OUTPUT); //LED onBoard
 
 
-// ******** LED ROADLIGHTS IMPLEMENTATION ********
+// ******** LED ROADLIGHTS ********
 #ifdef ROADLIGHT_CONNECTED
     ledcSetup(led_pwm_channel_frontLight, led_pwm_frequency, led_pwm_resolution); // configure LED PWM functionalitites
     ledcAttachPin(PIN_FRONTLIGHT, led_pwm_channel_frontLight); // attach the channel to the GPIO to be controlled
@@ -64,14 +64,14 @@ void setup(){ //runs once after powerOn
     localOptParamValueArray[OPT_LED_BRIGHTNESS_BACK] = dutyCycle_backLightOn;
     localOptParamValueArray[OPT_LED_BRIGHTNESS_BRAKE] = dutyCycle_brakeLight;
 #endif
-// ******** LED ROADLIGHTS IMPLEMENTATION ********
+// ******** LED ROADLIGHTS ********
 
-// ******** PWM THROTTLE OUTPUT IMPLEMENTATION ********
-#ifdef OUTPUT_PWM_THROTTLE
+// ******** PPM THROTTLE OUTPUT ********
+#ifdef OUTPUT_PPM_THROTTLE
     ledcSetup(pwm_throttle_channel, pwm_throttle_frequency, pwm_throttle_resolution); //configure THROTTLE PWM functionalitites
-    ledcAttachPin(PIN_PWM_THROTTLE, pwm_throttle_channel); // attach the channel to the GPIO to be controlled
+    ledcAttachPin(PIN_PPM_THROTTLE, pwm_throttle_channel); // attach the channel to the GPIO to be controlled
 #endif
-// ******** PWM THROTTLE OUTPUT IMPLEMENTATION ********
+// ******** PPM THROTTLE OUTPUT ********
 
     batterySensor.begin(SMOOTHED_EXPONENTIAL, 10);     // 10 seconds average
     motorCurrent.begin(SMOOTHED_AVERAGE, 2);    // 1 sec average
@@ -311,10 +311,10 @@ float batteryPackPercentage( float voltage ) { // Calculate the battery level of
             display.setFont();
             display.setCursor(0, 10);
             display.print("No UART data");
-  // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
+  // **************************************** LED ROADLIGHTS *****************************
               display.print(" L:" + String(myRoadLightState) );
               //display.print(" Lp" + String(digitalRead(PIN_BACKLIGHT)) );
-  // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
+  // **************************************** LED ROADLIGHTS *****************************
 
             // remote info
             display.setCursor(0, 25);
@@ -658,7 +658,7 @@ void radioExchange() {   //receive packet, execute SET_ or GET_ request, send an
                     response = CONFIG;
                 break;
 
-            #ifdef ROADLIGHT_CONNECTED  // ************* LED ROADLIGHTS IMPLEMENTATION*********************
+            #ifdef ROADLIGHT_CONNECTED  // ************* LED ROADLIGHTS*********************
                 case SET_LIGHT:
                     // vibrate(2000); TODO : launch via an independant task to avoid introducing any delay here
                     response = ACK_ONLY;
@@ -677,7 +677,7 @@ void radioExchange() {   //receive packet, execute SET_ or GET_ request, send an
                 break;
             #endif
 
-                //***********  RemotePacket::option parameter implementation  ***********
+                //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
                 case OPT_PARAM_MODE:
                     //response = CONFIG;
                     switch (remPacket.optParamCommand) {
@@ -694,7 +694,7 @@ void radioExchange() {   //receive packet, execute SET_ or GET_ request, send an
                         break;
                     } // end switch
                 break;
-                //***********  RemotePacket::option parameter implementation  ***********
+                //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
 
             } // end switch
 
@@ -963,9 +963,9 @@ void setThrottle(uint16_t value){
       #endif
     #endif
 
-    // ******** PWM THROTTLE OUTPUT IMPLEMENTATION ********
-    #ifdef OUTPUT_PWM_THROTTLE
-      updatePwmThrottleOutput();
+    // ******** PPM THROTTLE OUTPUT ********
+    #ifdef OUTPUT_PPM_THROTTLE
+      updatePpmThrottleOutput();
     #endif
 
     // remember throttle for smooth auto stop
@@ -1207,7 +1207,7 @@ int getSettingValue(uint8_t index){//TODO     // Get settings value by index (us
 }
 
 
-//***********  RemotePacket::option parameter implementation  ***********
+//***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
 void setOptParamValue(uint8_t myOptParamIndex, float value){ // Set a value of a specific setting by index in the local table.
    localOptParamValueArray[myOptParamIndex] = value;
 }
@@ -1256,13 +1256,13 @@ void updateOptParamVariables(){
     
     */
 }
-//***********  RemotePacket::option parameter implementation  ***********
+//***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
 
 bool inRange(int val, int minimum, int maximum){ //checks if value is within MIN - MAX range
   return ((minimum <= val) && (val <= maximum));
 }
 
-// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
+// **************************************** LED ROADLIGHTS *****************************
 //void drawLightPage(); // uint8_t lightBrightnessValue
 
 #ifdef ROADLIGHT_CONNECTED
@@ -1325,13 +1325,13 @@ bool inRange(int val, int minimum, int maximum){ //checks if value is within MIN
     }
 
 #endif
-// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
+// **************************************** LED ROADLIGHTS *****************************
 
-// ******** PWM THROTTLE OUTPUT IMPLEMENTATION ********
-#ifdef OUTPUT_PWM_THROTTLE
-        void updatePwmThrottleOutput(){
+// ******** PPM THROTTLE OUTPUT ********
+#ifdef OUTPUT_PPM_THROTTLE
+        void updatePpmThrottleOutput(){
             uint_fast32_t pwm_throttle_dutyCycle_value = map(throttle, 0, 255, 3276, 6552); //throttle; //map(throttle, 0, 255, 1ms, 2ms);
             ledcWrite(pwm_throttle_channel, pwm_throttle_dutyCycle_value);
         }
 #endif
-// ******** PWM THROTTLE OUTPUT IMPLEMENTATION ********
+// ******** PPM THROTTLE OUTPUT ********

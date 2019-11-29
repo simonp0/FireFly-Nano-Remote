@@ -122,7 +122,7 @@ String uint64ToString(uint64_t number);
 void updateEEPROMSettings();
 void updateSetting(uint8_t setting, uint64_t value);
 
-//***********  RemotePacket::option parameter implementation  ***********
+//***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
 const uint8_t optionParamArrayLength = 128;
 float localOptParamValueArray[optionParamArrayLength];
 
@@ -133,10 +133,10 @@ float getOptParamValue(uint8_t myOptParamIndex);
 //void loadOptParamFromRemote(uint8_t myOptParamIndex);
 
 void updateOptParamVariables();
-//***********  RemotePacket::option parameter implementation  ***********
+//***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
 
 
-// ******************************** LED ROADLIGHTS IMPLEMENTATION - Receiver *****************************
+// ******************************** LED ROADLIGHTS - Receiver *****************************
 // we have PIN_FRONTLIGHT attributed on what is PIN_VIBRO on the remote control side
 // we have PIN_BACKLIGHT attributed on what is PIN_PWRBUTTON on the remote control side
 
@@ -162,16 +162,16 @@ void updateOptParamVariables();
     void switchLightBrakesOnly();
     void updateBrakeLight();
     void emitBrakeLightPulse(uint_fast32_t value);
-#endif  // ******************************** LED ROADLIGHTS IMPLEMENTATION - Receiver *****************************
+#endif  // ******************************** LED ROADLIGHTS - Receiver *****************************
 
-// ******** PWM THROTTLE OUTPUT IMPLEMENTATION ********
-#ifdef OUTPUT_PWM_THROTTLE
+// ******** PPM THROTTLE OUTPUT ********
+#ifdef OUTPUT_PPM_THROTTLE
     const double pwm_throttle_frequency = 50; //50Hz standard RC freq - pulse 1 to 2 ms with 1.5ms = neutral
     const uint8_t pwm_throttle_channel = 2; //GPIO channel to use
     const uint8_t pwm_throttle_resolution = 16;//16bits -> 0 to 65535
     //20ms (50Hz) = 65535 ---> 1ms = 3276 & 2ms = 6552
     // MAP throttleValue(0 to 255) -> 3276 to 6552
     uint_fast32_t pwm_throttle_dutyCycle_value;
-    void updatePwmThrottleOutput();
+    void updatePpmThrottleOutput();
 #endif
-// ******** PWM THROTTLE OUTPUT IMPLEMENTATION ********
+// ******** PPM THROTTLE OUTPUT ********

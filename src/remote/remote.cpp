@@ -127,7 +127,7 @@ void setup() {
         0);  /* Core where the task should run */
     #endif
 
-// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
+// **************************************** LED ROADLIGHTS *****************************
 
 }
 
@@ -308,13 +308,13 @@ void handleButtons() { //executes action depending on PWR_BUTTON state ( CLICK -
             calibrationStage = CALIBRATE_CENTER;
             return backToMainMenu();
           }
-  // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
+  // **************************************** LED ROADLIGHTS *****************************
   //    DEFAULT BEHAVIOUR -> quit the page, bakcToMainMenu();
   //  if (menuPage ==  MENU_LIGHT){
 
   //  }
 
-  // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
+  // **************************************** LED ROADLIGHTS *****************************
 
           // exit menu
           state = menuWasUsed ? IDLE : NORMAL;
@@ -826,7 +826,7 @@ void prepatePacket() {
                 break;
             }
 
-// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
+// **************************************** LED ROADLIGHTS *****************************
             if (requestSwitchLight) {
                 //vibe(4);
                 //xTaskCreate(vibeTask, "vibeTask", 100, NULL, 2, &TaskHandle1);
@@ -836,9 +836,9 @@ void prepatePacket() {
                 requestSwitchLight = false;
                 break;
             }
-// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
+// **************************************** LED ROADLIGHTS *****************************
 
-            //***********  RemotePacket::option parameter implementation  ***********
+            //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
 
             if (requestSendOptParamPacket){   //only in MENU mode
                 debug("requestSendOptParamPacket");
@@ -858,7 +858,7 @@ void prepatePacket() {
 
             }
 
-            //***********  RemotePacket::option parameter implementation  ***********
+            //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
 
             else {
                 remPacket.command = SET_THROTTLE;
@@ -1454,7 +1454,7 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                         }
                     break;
 
-// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
+// **************************************** LED ROADLIGHTS *****************************
                     case MENU_LIGHT:
                         switch (subMenuItem){
                             //requestSwitchLight = true; //flag signaling a SET_LIGHT command for the next remotePacket sent
@@ -1482,7 +1482,7 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                             break;
                         }
                     break;
-// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
+// **************************************** LED ROADLIGHTS *****************************
                 }
             }
 
@@ -1513,7 +1513,7 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                     }
                 break;
 
-                // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
+                // **************************************** LED ROADLIGHTS *****************************
                 case MENU_LIGHT: //if we want to display a specific page and stay on it for some menu items
                     switch (subMenuItem){
                         case SWITCH_LIGHT_ON:
@@ -1531,7 +1531,7 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                         break;
                     }
                 break;
-                // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
+                // **************************************** LED ROADLIGHTS *****************************
 
 
             }//end switch
@@ -1983,7 +1983,7 @@ void vibe(int vibeMode){    //vibrate() combos
     if (vibeMode == 4){vibrate(50); delay(25); vibrate(50); delay(25); vibrate(50);}
 }
 
-//***********  RemotePacket::option parameter implementation  ***********
+//***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
 //void setOptParamValue(OptionParamIndex myOptParamIndex, float value){  // Set a value of a specific setting by index in the local table.
 void setOptParamValue(uint8_t myOptParamIndex, float value){  // Set a value of a specific setting by index in the local table.
    uint8_t arrayIndex = myOptParamIndex;
@@ -2037,10 +2037,10 @@ void loadAllOptParamFromReceiver(){
 
 }
 */
-//***********  RemotePacket::option parameter implementation  ***********
+//***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
 
 
-// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
+// **************************************** LED ROADLIGHTS *****************************
 void drawLightSettingsPage(){
     uint8_t myOptIndex;
     myFrontLightBrightness = getOptParamValue(OPT_LED_BRIGHTNESS_FRONT);
@@ -2143,4 +2143,4 @@ void drawLightSettingsPage(){
     //    drawString(String(telemetry.tempFET) + " C    "
     //    + String(telemetry.tempMotor) + " C", -1, 114, fontPico);
 
-}// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
+}// **************************************** LED ROADLIGHTS *****************************

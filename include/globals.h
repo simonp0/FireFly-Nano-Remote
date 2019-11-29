@@ -6,14 +6,13 @@
 
 // ********** OPTIONAL FEATURES ***********************************************
 
-//#define FAKE_UART // Comment out after pairing the remote and connecting VESC
-//#define DEBUG // Uncomment DEBUG if you need to debug the remote
+//#define FAKE_UART                         // Comment out after pairing the remote and connecting VESC
+//#define DEBUG                             // Uncomment DEBUG if you need to debug the remote
 //const uint32_t boardAddress = 0xA9BF713C;
 //#include <analogWrite.h>
-#define ROADLIGHT_CONNECTED //FRONT LIGHT and BACKLIGHT option. Reconfigure 2 pins on the receiver side for FRONTLIGHT and BACKLIGHT
-
-//#define OUTPUT_PWM_THROTTLE //RECEIVER outputs a THROTTLE PWM signal on PIN_PWM_THROTTLE
-//#define DISABLE_UART_THROTTLE_OUTPUT //RECEIVER disables setThrottle() via UART
+#define ROADLIGHT_CONNECTED                 // FRONT LIGHT and BACKLIGHT option. Reconfigure 2 pins on the receiver side for FRONTLIGHT and BACKLIGHT
+//#define OUTPUT_PPM_THROTTLE               // RECEIVER outputs a THROTTLE PPM/PWM signal on PIN_PPM_THROTTLE
+//#define DISABLE_UART_THROTTLE_OUTPUT      // RECEIVER disables setThrottle() via UART
 
 // ********** * * * * * * * * * ***********************************************
 
@@ -76,7 +75,7 @@ const int WHEEL_DIAMETER = 105;
 const int WHEEL_PULLEY = 1;
 const int MOTOR_PULLEY = 1;
 
-#ifdef ROADLIGHT_CONNECTED  // ********** LED ROADLIGHTS IMPLEMENTATION ***********************************************
+#ifdef ROADLIGHT_CONNECTED  // ********** LED ROADLIGHTS ***********************************************
     enum RoadLightState{
         OFF,
         ON,
@@ -86,7 +85,7 @@ const int MOTOR_PULLEY = 1;
 
 //    RoadLightState myRoadLightState; //default value on startupTime
 
-#endif                      // ********** LED ROADLIGHTS IMPLEMENTATION ***********************************************
+#endif                      // ********** LED ROADLIGHTS ***********************************************
 
 
 
@@ -102,7 +101,7 @@ struct RemotePacket {
     uint8_t  counter;
     // --------------
 
-    //***********  RemotePacket::option parameter implementation  ***********
+    //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
     int8_t  optParamCommand;//test transmission with biggerPackets
     int8_t  optParamIndex;
     int16_t optParamValue;
@@ -254,12 +253,12 @@ struct ConfigPacket {  //extends ReceiverPacket
     int16_t r1;  // battery amps * 100
     int16_t r2;
     // -------------------
-    // ********** LED ROADLIGHTS IMPLEMENTATION ***********
+    // ********** LED ROADLIGHTS ***********
 //    uint8_t  roadlightAppMode;
 //    uint8_t  frontLightBrightness_val;
 //    uint8_t  backLightBrightness_val;
 //    uint8_t  anythingElseToAdd;
-    // ********** LED ROADLIGHTS IMPLEMENTATION ***********
+    // ********** LED ROADLIGHTS ***********
     //
     float getMaxSpeed() { return (maxSpeed) / 100; }
     void setMaxSpeed(float f) { maxSpeed = f * 100; }
@@ -268,7 +267,7 @@ struct ConfigPacket {  //extends ReceiverPacket
 struct OptionParamPacket {  //extends ReceiverPacket
     ReceiverPacket header;
     // --------------  // keep 4 byte alignment!
-    //***********  RemotePacket::option parameter implementation  ***********
+    //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
     uint8_t  optParamCommand;//test transmission with biggerPackets
     uint8_t  optParamIndex;
     int16_t optParamValue;
@@ -284,7 +283,7 @@ struct OptionParamPacket {  //extends ReceiverPacket
 
     float unpackOptParamValue() { return w2fi(optParamValue); }
     void packOptParamValue(float f) { optParamValue = f2wi(f); }
-    //***********  RemotePacket::option parameter implementation  ***********
+    //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
 }; //end struct declaration
 
 const int default_throttle = 127;

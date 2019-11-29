@@ -35,7 +35,7 @@
   const int MIN_HALL = 0;
   const int CENTER_HALL = 752;
   const int MAX_HALL = 1023;
-  // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
+  // **************************************** LED ROADLIGHTS *****************************
     int FRONTLIGHT_BRIGHTNESS = 100;  //TEMP : testing Rx settings update from Tx
     int BACKLIGHT_BRIGHTNESS = 100;  //TEMP : testing Rx settings update from Tx
     int BRAKELIGHT_BRIGHTNESS = 255;  //TEMP : testing Rx settings update from Tx
@@ -57,9 +57,9 @@
     } myRoadlightSetting_page_stage = ADJUSTING_FRONTLIGHT_BRIGHTNESS; //default mode at startup
 
 
-  // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
+  // **************************************** LED ROADLIGHTS *****************************
   
-  //***********  RemotePacket::option parameter implementation  ***********
+  //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
   bool requestSendOptParamPacket = false; //flag for putting a OPT_PARAM command in the next remotePacket
 
 
@@ -73,10 +73,10 @@ struct RemoteSettings {
   short centerHallValue = CENTER_HALL;
   short maxHallValue = MAX_HALL;
   uint32_t boardID = 0;
-  // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
+  // **************************************** LED ROADLIGHTS *****************************
   //short frontLightBrightnessValue = FRONTLIGHT_BRIGHTNESS;
   //short backLightBrightnessValue = BACKLIGHT_BRIGHTNESS;
-  // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
+  // **************************************** LED ROADLIGHTS *****************************
 } settings;
 
 RemoteSettings tempSettings;
@@ -116,7 +116,7 @@ enum ui_page {
   PAGE_MENU,
   PAGE_MAX,
   PAGE_DEBUG,
-  PAGE_LIGHT_SETTINGS   // **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
+  PAGE_LIGHT_SETTINGS   // **************************************** LED ROADLIGHTS *****************************
 
 } page = PAGE_MAIN;
 
@@ -192,14 +192,14 @@ String MENUS[mainMenus][subMenus] = {
     { "Remote", "Calibrate", "Pair", "Auto off", "", ""},
     { "Board", "WIFIupdate",  "Max Speed", "Range", "Cells", "Battery"},
     { "Lights", "Switch ON", "Switch OFF", "Brake Only", "Settings"}
-    // *** LED ROADLIGHTS IMPLEMENTATION ***
+    // *** LED ROADLIGHTS ***
   };
 
 enum menu_main { MENU_INFO, MENU_REMOTE, MENU_BOARD, MENU_LIGHT };
 enum menu_info { INFO_DEBUG };
 enum menu_remote { REMOTE_CALIBRATE, REMOTE_PAIR, REMOTE_SLEEP_TIMER };
 enum menu_board { BOARD_UPDATE };
-enum menu_light { SWITCH_LIGHT_ON, SWITCH_LIGHT_OFF, SWITCH_LIGHT_BRAKES_ONLY, ROADLIGHT_SETTINGS }; // *** LED ROADLIGHTS IMPLEMENTATION ***
+enum menu_light { SWITCH_LIGHT_ON, SWITCH_LIGHT_OFF, SWITCH_LIGHT_BRAKES_ONLY, ROADLIGHT_SETTINGS }; // *** LED ROADLIGHTS ***
 
 float currentMenu = 0;
 int subMenu = 0;
@@ -332,7 +332,7 @@ void vibrate(int ms);
 
 void vibe(int vibeMode); //vibrations combos
 
-//***********  RemotePacket::option parameter implementation  ***********
+//***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
 const uint8_t optionParamArrayLength = 128;
 float localOptParamValueArray[optionParamArrayLength];
 
@@ -341,12 +341,12 @@ float getOptParamValue(uint8_t myOptParamIndex);
 
 void sendOptParamToReceiver(uint8_t myOptParamIndex);
 bool loadOptParamFromReceiver(uint8_t myOptParamIndex);
-//***********  RemotePacket::option parameter implementation  ***********
+//***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
 
 
-// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
+// **************************************** LED ROADLIGHTS *****************************
 
 void drawLightSettingsPage();//test
 //void switchLightOn(); //on receiver side only.
 //void switchLightOff(); //on receiver side only.
-// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
+// **************************************** LED ROADLIGHTS *****************************

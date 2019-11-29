@@ -18,7 +18,7 @@
 #define PIN_PWRBUTTON 12
 #define PIN_BACKLIGHT 12  //PWRBUTTON PIN is free on the RECEIVER side, we'll use it for PIN_BACKLIGHT
 
-#define PIN_PWM_THROTTLE 32 //PWM throttle output on RECEIVER side
+#define PIN_PPM_THROTTLE 32 //PPM/PWM throttle output on RECEIVER side
 
 
 #define PIN_TRIGGER   32
