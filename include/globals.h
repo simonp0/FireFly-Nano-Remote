@@ -12,8 +12,8 @@
 //#include <analogWrite.h>
 #define ROADLIGHT_CONNECTED //FRONT LIGHT and BACKLIGHT option. Reconfigure 2 pins on the receiver side for FRONTLIGHT and BACKLIGHT
 
-#define OUTPUT_PWM_THROTTLE //RECEIVER outputs a THROTTLE PWM signal on PIN_PWM_THROTTLE
-#define DISABLE_UART_THROTTLE_OUTPUT //RECEIVER disables setThrottle() via UART
+//#define OUTPUT_PWM_THROTTLE //RECEIVER outputs a THROTTLE PWM signal on PIN_PWM_THROTTLE
+//#define DISABLE_UART_THROTTLE_OUTPUT //RECEIVER disables setThrottle() via UART
 
 // ********** * * * * * * * * * ***********************************************
 
@@ -40,7 +40,7 @@ const float CRUISE_CURRENT_LOW = 5.0;   // Amps
 const float MAX_PUSHING_SPEED = 20.0;   // km/h
 
 // Auto stop (in seconds)
-const float AUTO_BRAKE_TIME = 5.0;    // time to apply the full brakes
+const float AUTO_BRAKE_TIME = 5;    // time to apply the full brakes
 const int AUTO_BRAKE_RELEASE = 3;     // time to release brakes after the full stop
 const float AUTO_BRAKE_ABORT_MAXSPEED = 3; // speed under which it's safe to abort auto brake procedure
 

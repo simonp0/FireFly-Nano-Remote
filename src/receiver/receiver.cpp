@@ -804,7 +804,7 @@ void stateMachine() { // handle auto-stop, endless mode, etc...
         // No speed is received within the timeout limit.
         connected = false;
         timeoutTimer = millis();
-
+        lastBrakeTime=millis();
         //  Set last speed
         lastSpeedValue = telemetry.getSpeed();
 
@@ -817,8 +817,10 @@ void stateMachine() { // handle auto-stop, endless mode, etc...
       break;
 
     case STOPPING: // emergency brake when remote has disconnected
+          
+      currentSpeedValue = telemetry.getSpeed();
       // start braking from zero throttle
-      if (throttle > default_throttle) {
+      if ((currentSpeedValue > 0) && (throttle > default_throttle)) {
         throttle = default_throttle;
       }
       if ((currentSpeedValue < 0) && (throttle < default_throttle)){  //going backwards
@@ -828,14 +830,13 @@ void stateMachine() { // handle auto-stop, endless mode, etc...
       if (secondsSince(lastBrakeTime) > AUTO_BRAKE_INTERVAL) {
           // decrease throttle to brake  127 / 5 * 0.1
           float brakeForce = constrain(default_throttle / AUTO_BRAKE_TIME * AUTO_BRAKE_INTERVAL, 0, 10);
-          currentSpeedValue = telemetry.getSpeed();
           // apply brakes
           if(currentSpeedValue > 0){  //going forwards
               if (throttle > brakeForce) throttle -= brakeForce; else throttle = 0;
               setThrottle(throttle);
           }
           if(currentSpeedValue < 0){  //going backwards
-              if (throttle < brakeForce) throttle += brakeForce; else throttle = 0;
+              if (throttle > brakeForce) throttle += brakeForce; else throttle = 10;
               setThrottle(throttle);
           }
           lastBrakeTime = millis();
@@ -845,13 +846,16 @@ void stateMachine() { // handle auto-stop, endless mode, etc...
       if (throttle == 0 && !isMoving()) {
         setState(STOPPED);
       }
+      if (throttle == 255 && !isMoving()) {
+        setState(STOPPED);
+      }
 
       //avoids going backwards after stopping if auto-reverse is enabled within VESC app 
       if (abs(currentSpeedValue) < abs(lastSpeedValue)){
         lastSpeedValue = currentSpeedValue;
       }
 
-      if(abs(currentSpeedValue) > abs(lastSpeedValue*1.5)){   //absolute speed has increased by 50% --> abort coz we're probably going backwards!
+      if(abs(currentSpeedValue) > abs(lastSpeedValue*1.5)){   //absolute speed has increased by 50% --> retry once then abort
         setThrottle(default_throttle); //restart break procedure from zero throttle
         if(abs(currentSpeedValue) < AUTO_BRAKE_ABORT_MAXSPEED){
           setState(IDLE);   //If speed is low enough -> abort break procedure
