@@ -87,6 +87,52 @@ const int MOTOR_PULLEY = 1;
 
 #endif                      // ********** LED ROADLIGHTS ***********************************************
 
+//  ######## Flash Storage structure for saving all parameters - ESP32 ########
+//  https://github.com/espressif/arduino-esp32/blob/master/libraries/Preferences
+/*
+struct FlashStorageSettings {
+    bool valid;
+    short minHallValue = MIN_HALL;
+    short centerHallValue = CENTER_HALL;
+    short maxHallValue = MAX_HALL;
+    uint32_t boardID = 0;
+
+    //OPT_LED_BRIGHTNESS_FRONT,
+    //OPT_LED_BRIGHTNESS_BACK,
+    //OPT_LED_BRIGHTNESS_BRAKE,
+    //OPT_LED_ROADLIGHT_MODE
+ 
+
+    bool  AUTO_CRUISE_ON = ::AUTO_CRUISE_ON;     // disabled by default
+    float PUSHING_SPEED = ::PUSHING_SPEED;       // km/h
+    float PUSHING_TIME = ::PUSHING_TIME;         // seconds
+    float CRUISE_CURRENT_SPIKE = ::CRUISE_CURRENT_SPIKE; // Amps
+
+    // boad will stop after 30s if current is low
+    float AUTO_CRUISE_TIME = 30.0;    // seconds
+    float CRUISE_CURRENT_LOW = 5.0;   // Amps
+
+    // auto stop if remote is off and speed is over 20 km/h
+    float MAX_PUSHING_SPEED = 20.0;   // km/h
+
+    // VESC current, for graphs only
+    int MOTOR_MIN = -30;
+    int MOTOR_MAX = 30;
+    int BATTERY_MIN = -30;
+    int BATTERY_MAX = 30;
+
+    // default board configuration
+    int MAX_SPEED = 30;       // KM/H
+    int MAX_RANGE = 30;       // KM
+    int BATTERY_CELLS = 10;
+    int BATTERY_TYPE = 0;     // 0: LI-ION | 1: LIPO
+    int MOTOR_POLES = 28;
+    int WHEEL_DIAMETER = 105;
+    int WHEEL_PULLEY = 1;
+    int MOTOR_PULLEY = 1;
+};
+*/
+//  ######## Flash Storage structure for saving all parameters - ESP32 ########
 
 
 #define VERSION 3

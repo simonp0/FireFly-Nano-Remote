@@ -136,6 +136,57 @@ void updateOptParamVariables();
 //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
 
 
+//  ######## Flash Storage structure for saving all parameters - ESP32 ########
+/*
+Preferences recFSSPreferences;
+FlashStorageSettings recFSSettings;
+void setFSSettingValue(uint8_t myOptParamIndex, float value);
+float getFSSettingValue(uint8_t myOptParamIndex);
+void saveFSSettings();
+void loadFSSettings();
+
+void saveFSSettings(){
+    recFSSPreferences.begin("FireFlyNano", false);
+
+    recFSSPreferences.putShort("AUTO_CRUISE_ON",  recFSSettings.AUTO_CRUISE_ON);
+    recFSSPreferences.putShort("PUSHING_SPEED", recFSSettings.PUSHING_SPEED);
+    recFSSPreferences.putShort("PUSHING_TIME", recFSSettings.PUSHING_TIME);
+    recFSSPreferences.putLong("CRUISE_CURRENT_SPIKE", recFSSettings.CRUISE_CURRENT_SPIKE);
+
+    recFSSPreferences.end();
+}
+
+
+void loadFSSettings(){
+    recFSSPreferences.begin("FireFlyNano", false);
+
+    recFSSettings.AUTO_CRUISE_ON = recFSSPreferences.getShort("AUTO_CRUISE_ON", ::AUTO_CRUISE_ON);
+    recFSSettings.PUSHING_SPEED = recFSSPreferences.getShort("PUSHING_SPEED", ::PUSHING_SPEED);
+    recFSSettings.PUSHING_TIME = recFSSPreferences.getShort("PUSHING_TIME", ::PUSHING_TIME);
+    recFSSettings.CRUISE_CURRENT_SPIKE = recFSSPreferences.getLong("CRUISE_CURRENT_SPIKE", ::CRUISE_CURRENT_SPIKE);
+
+    recFSSPreferences.end();
+}
+
+void loadFSSetting(uint8_t myOptParamIndex){
+    float value;
+    recFSSPreferences.begin("FireFlyNano", false);
+      localOptParamValueArray[myOptParamIndex] = recFSSPreferences.getLong(String(myOptParamIndex), defaultValue);
+    recFSSPreferences.end();
+}
+
+void saveFSSetting(uint8_t myOptParamIndex, float value){
+    recFSSPreferences.begin("FireFlyNano", false);
+      recFSSPreferences.putLong(String(myOptParamIndex), localOptParamValueArray[myOptParamIndex]);
+    recFSSPreferences.end();
+}
+*/
+
+
+
+//  ######## Flash Storage structure for saving all parameters - ESP32 ########
+
+
 // ******************************** LED ROADLIGHTS - Receiver *****************************
 // we have PIN_FRONTLIGHT attributed on what is PIN_VIBRO on the remote control side
 // we have PIN_BACKLIGHT attributed on what is PIN_PWRBUTTON on the remote control side
