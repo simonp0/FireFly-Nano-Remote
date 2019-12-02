@@ -51,6 +51,9 @@ void setup(){ //runs once after powerOn
     pinMode(PIN_LED, OUTPUT); //LED onBoard
 
 
+
+    refreshAllSettingsFromFlashData();  //loads the settings from flash memory (if any)
+
 // ******** LED ROADLIGHTS ********
 #ifdef ROADLIGHT_CONNECTED
     ledcSetup(led_pwm_channel_frontLight, led_pwm_frequency, led_pwm_resolution); // configure LED PWM functionalitites
@@ -58,11 +61,14 @@ void setup(){ //runs once after powerOn
     ledcSetup(led_pwm_channel_backLight, led_pwm_frequency, led_pwm_resolution); // configure LED PWM functionalitites
     ledcAttachPin(PIN_BACKLIGHT, led_pwm_channel_backLight); // attach the channel to the GPIO to be controlled
     //myRoadLightState = OFF; //default setting when switching on the board // in header file
-
     //initialise array values with default local variables values
-    localOptParamValueArray[OPT_LED_BRIGHTNESS_FRONT] = dutyCycle_frontLightOn;
-    localOptParamValueArray[OPT_LED_BRIGHTNESS_BACK] = dutyCycle_backLightOn;
-    localOptParamValueArray[OPT_LED_BRIGHTNESS_BRAKE] = dutyCycle_brakeLight;
+
+    /*  should be done via refreshAllSettingsFromFlashData();
+    localOptParamValueArray[IDX_LED_BRIGHTNESS_FRONT] = LED_BRIGHTNESS_FRONT;
+    localOptParamValueArray[IDX_LED_BRIGHTNESS_BACK] = LED_BRIGHTNESS_BACK;
+    localOptParamValueArray[IDX_LED_BRIGHTNESS_BRAKE] = LED_BRIGHTNESS_BRAKE;
+    */
+   
 #endif
 // ******** LED ROADLIGHTS ********
 
@@ -1208,19 +1214,22 @@ int getSettingValue(uint8_t index){//TODO     // Get settings value by index (us
 
 
 //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
-void setOptParamValue(uint8_t myOptParamIndex, float value){ // Set a value of a specific setting by index in the local table.
-   localOptParamValueArray[myOptParamIndex] = value;
+
+// Set a value of a specific setting in the localOptParamValueArray[] & updates the flash memory.
+void setOptParamValue(uint8_t myGlobalSettingIndex, float value){ 
+    localOptParamValueArray[myGlobalSettingIndex] = value;
+    saveFlashSetting(myGlobalSettingIndex, value);//save to flash memory
 }
 
-float getOptParamValue(uint8_t myOptParamIndex){ // Get settings value by index from the local table.
-   float value;
-   value = localOptParamValueArray[myOptParamIndex];
-   return value;
-   //float localOptParamValueArray[] ;
+ // Get a setting value by index from the localOptParamValueArray[]
+float getOptParamValue(uint8_t myGlobalSettingIndex){
+    float value = localOptParamValueArray[myGlobalSettingIndex];
+    return value;
 }
+
 /*
-void sendOptParamToRemote(uint8_t myOptParamIndex){
-    uint8_t arrayIndex = myOptParamIndex;
+void sendOptParamToRemote(uint8_t myGlobalSettingIndex){
+    uint8_t arrayIndex = myGlobalSettingIndex;
     //setOptParamValue(myOptIndex, myLightSettingValue);  //store the value locally
     remPacket.command = OPT_PARAM_MODE; //prepare the next packet to update receiver's value
     remPacket.optParamCommand = SET_OPT_PARAM_VALUE;
@@ -1229,8 +1238,8 @@ void sendOptParamToRemote(uint8_t myOptParamIndex){
     requestSendOptParamPacket = true;    //send the value to the receiver
 }
 
-void loadOptParamFromRemote(uint8_t myOptParamIndex){
-    uint8_t arrayIndex = myOptParamIndex;
+void loadOptParamFromRemote(uint8_t myGlobalSettingIndex){
+    uint8_t arrayIndex = myGlobalSettingIndex;
     //setOptParamValue(myOptIndex, myLightSettingValue);  //store the value locally
     remPacket.command = OPT_PARAM_MODE; //prepare the next packet to update receiver's value
     remPacket.optParamCommand = GET_OPT_PARAM_VALUE;
@@ -1242,21 +1251,104 @@ void loadOptParamFromRemote(uint8_t myOptParamIndex){
 
 // Update local variables from new OptParamValues
 void updateOptParamVariables(){
-    //dutyCycle_backLightOn = (int) round(getOptParamValue(LED_BRIGHTNESS_BACK)); //localOptParamValueArray[1];
-    dutyCycle_frontLightOn = getOptParamValue(OPT_LED_BRIGHTNESS_FRONT);
-    dutyCycle_backLightOn = getOptParamValue(OPT_LED_BRIGHTNESS_BACK);
-    dutyCycle_brakeLight = getOptParamValue(OPT_LED_BRIGHTNESS_BRAKE);
+    //LED_BRIGHTNESS_BACK = (int) round(getOptParamValue(IDX_LED_BRIGHTNESS_BACK)); //localOptParamValueArray[1];
+    LED_BRIGHTNESS_FRONT = getOptParamValue(IDX_LED_BRIGHTNESS_FRONT);
+    LED_BRIGHTNESS_BACK = getOptParamValue(IDX_LED_BRIGHTNESS_BACK);
+    LED_BRIGHTNESS_BRAKE = getOptParamValue(IDX_LED_BRIGHTNESS_BRAKE);
 
     //load all values into the local array
     /*
     float* localVarAddresses[] //array of pointers
-    localVarAddresses[OPT_LED_BRIGHTNESS_FRONT] = &dutyCycle_frontLightOn     //store local variable addresses in an array
-    *localValAddresses[OPT_LED_BRIGHTNESS_FRONT] = (dereference) value stored at contained address      
+    localVarAddresses[IDX_LED_BRIGHTNESS_FRONT] = &LED_BRIGHTNESS_FRONT     //store local variable addresses in an array
+    *localValAddresses[IDX_LED_BRIGHTNESS_FRONT] = (dereference) value stored at contained address      
     
     
     */
 }
 //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
+
+//  ######## Flash Storage structure for saving all parameters - ESP32 ########
+
+#include <sstream>
+#include <string.h>
+//using namespace std;
+
+// Load a setting (index & value)pair from flash memory and update the corresponding global variable and localOptParamValueArray[]
+float loadFlashSetting(uint8_t myGlobalSettingIndex, float defaultValue){
+    float value;
+    stringstream strs;       //convert an int into a char[]
+    strs << myGlobalSettingIndex;
+    string temp_str = strs.str();
+    char const* pchar = temp_str.c_str(); //dont use cast
+    receiverPreferences.begin("FireFlyNano", false);
+    localOptParamValueArray[myGlobalSettingIndex] = receiverPreferences.getFloat(pchar, defaultValue);
+    value = receiverPreferences.getFloat(pchar, defaultValue);
+    receiverPreferences.end();
+    return value;
+}
+
+// Save a setting (index & value)pair into flash memory
+void saveFlashSetting(uint8_t myGlobalSettingIndex, float value){
+    stringstream strs;       //convert an int into a char[]
+    strs << myGlobalSettingIndex;
+    string temp_str = strs.str();
+    char const* pchar = temp_str.c_str(); //dont use cast
+    receiverPreferences.begin("FireFlyNano", false);
+    receiverPreferences.putFloat(pchar, localOptParamValueArray[myGlobalSettingIndex]);
+    receiverPreferences.end();
+}
+
+// SETTINGS INITIALIZATION - copy flash data into local variables. If nothing saved, used GLOBALS.H hardcoded values instead
+void refreshAllSettingsFromFlashData(){
+/*
+    MIN_HALL = loadFlashSetting(IDX_MIN_HALL, (float)MIN_HALL);
+    IDX_CENTER_HALL,
+    IDX_MAX_HALL,
+    IDX_BOARD_ID,
+    IDX_AUTO_CRUISE_ON,
+*/
+    PUSHING_SPEED = loadFlashSetting(IDX_PUSHING_SPEED, (float) PUSHING_SPEED);
+/*
+    IDX_PUSHING_TIME,
+    IDX_CRUISE_CURRENT_SPIKE,
+    IDX_AUTO_CRUISE_TIME,
+    IDX_CRUISE_CURRENT_LOW,
+    IDX_MAX_PUSHING_SPEED,
+    IDX_AUTO_BRAKE_TIME,
+    IDX_AUTO_BRAKE_RELEASE,
+    IDX_AUTO_BRAKE_ABORT_MAXSPEED,
+    IDX_UART_SPEED,
+    IDX_uartPullInterval,
+    IDX_UART_TIMEOUT,
+    IDX_REMOTE_RX_TIMEOUT,
+    IDX_REMOTE_RADIOLOOP_DELAY,
+    IDX_REMOTE_LOCK_TIMEOUT,
+    IDX_REMOTE_SLEEP_TIMEOUT,
+    IDX_DISPLAY_BATTERY_MIN,
+    IDX_MOTOR_MIN,
+    IDX_MOTOR_MAX,
+    IDX_BATTERY_MIN,
+    IDX_BATTERY_MAX,
+    IDX_MAX_SPEED,
+    IDX_MAX_RANGE,
+    IDX_BATTERY_CELLS,
+    IDX_BATTERY_TYPE,
+    IDX_MOTOR_POLES,
+    IDX_WHEEL_DIAMETER,
+    IDX_WHEEL_PULLEY,
+    IDX_MOTOR_PULLEY,
+*/
+    LED_BRIGHTNESS_FRONT = loadFlashSetting(IDX_LED_BRIGHTNESS_FRONT, (float) LED_BRIGHTNESS_FRONT);
+    LED_BRIGHTNESS_BACK = loadFlashSetting(IDX_LED_BRIGHTNESS_BACK, (float) LED_BRIGHTNESS_BACK);
+    LED_BRIGHTNESS_BRAKE = loadFlashSetting(IDX_LED_BRIGHTNESS_BRAKE, (float) LED_BRIGHTNESS_BRAKE);
+/*
+    IDX_LED_BRIGHTNESS_OFF
+    IDX_LED_ROADLIGHT_MODE
+*/
+}
+//  ######## Flash Storage structure for saving all parameters - ESP32 ########
+
+
 
 bool inRange(int val, int minimum, int maximum){ //checks if value is within MIN - MAX range
   return ((minimum <= val) && (val <= maximum));
@@ -1267,20 +1359,20 @@ bool inRange(int val, int minimum, int maximum){ //checks if value is within MIN
 
 #ifdef ROADLIGHT_CONNECTED
     void switchLightOn(){
-        ledcWrite(led_pwm_channel_frontLight, dutyCycle_frontLightOn);
-        ledcWrite(led_pwm_channel_backLight, dutyCycle_backLightOn);
+        ledcWrite(led_pwm_channel_frontLight, LED_BRIGHTNESS_FRONT);
+        ledcWrite(led_pwm_channel_backLight, LED_BRIGHTNESS_BACK);
         myRoadLightState = ON;
     }
 
     void switchLightOff(){
-        ledcWrite(led_pwm_channel_frontLight, dutyCycle_lightOff);
-        ledcWrite(led_pwm_channel_backLight, dutyCycle_lightOff);
+        ledcWrite(led_pwm_channel_frontLight, LED_BRIGHTNESS_OFF);
+        ledcWrite(led_pwm_channel_backLight, LED_BRIGHTNESS_OFF);
         myRoadLightState = OFF;
     }
 
     void switchLightBrakesOnly(){
-        ledcWrite(led_pwm_channel_frontLight, dutyCycle_lightOff);
-        ledcWrite(led_pwm_channel_backLight, dutyCycle_lightOff);
+        ledcWrite(led_pwm_channel_frontLight, LED_BRIGHTNESS_OFF);
+        ledcWrite(led_pwm_channel_backLight, LED_BRIGHTNESS_OFF);
         myRoadLightState = BRAKES_ONLY;
     }
 
@@ -1292,11 +1384,11 @@ bool inRange(int val, int minimum, int maximum){ //checks if value is within MIN
             break;
 
             case ON:
-                emitBrakeLightPulse(dutyCycle_backLightOn); //activate brakeLight flashes while ON (normal brightness) in between
+                emitBrakeLightPulse(LED_BRIGHTNESS_BACK); //activate brakeLight flashes while ON (normal brightness) in between
             break;
 
             case BRAKES_ONLY:
-                emitBrakeLightPulse(dutyCycle_lightOff); //activate brakeLight flashes while OFF in between
+                emitBrakeLightPulse(LED_BRIGHTNESS_OFF); //activate brakeLight flashes while OFF in between
             break;
         }
     }
@@ -1304,7 +1396,7 @@ bool inRange(int val, int minimum, int maximum){ //checks if value is within MIN
     void emitBrakeLightPulse(uint_fast32_t dutyCycle_returnToNormal){    //emits a brakeLight flash and go back to the previous state
         uint8_t pwm_channel = led_pwm_channel_backLight;
         uint_fast32_t returnDutyCycle = dutyCycle_returnToNormal;
-        uint_fast32_t flashDutyCycle = dutyCycle_brakeLight;
+        uint_fast32_t flashDutyCycle = LED_BRIGHTNESS_BRAKE;
 
             if (millisSince(lastBrakeLightPulse) >= brakeLightPulseInterval) {    // check when was the last brake flash triggered
                 if(lastThrottle<(default_throttle*0.75)){

@@ -1476,9 +1476,9 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                             case ROADLIGHT_SETTINGS:
                                 //backToMainMenu(); //we don't exit yet - we want to display the drawLightSettingsPage()
                                 //download 3 current values from receiver:
-                                loadOptParamFromReceiver(OPT_LED_BRIGHTNESS_FRONT);
-                                loadOptParamFromReceiver(OPT_LED_BRIGHTNESS_BACK);
-                                loadOptParamFromReceiver(OPT_LED_BRIGHTNESS_BRAKE);
+                                loadOptParamFromReceiver(IDX_LED_BRIGHTNESS_FRONT);
+                                loadOptParamFromReceiver(IDX_LED_BRIGHTNESS_BACK);
+                                loadOptParamFromReceiver(IDX_LED_BRIGHTNESS_BRAKE);
                             break;
                         }
                     break;
@@ -1984,23 +1984,23 @@ void vibe(int vibeMode){    //vibrate() combos
 }
 
 //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
-//void setOptParamValue(OptionParamIndex myOptParamIndex, float value){  // Set a value of a specific setting by index in the local table.
-void setOptParamValue(uint8_t myOptParamIndex, float value){  // Set a value of a specific setting by index in the local table.
-   uint8_t arrayIndex = myOptParamIndex;
+//void setOptParamValue(OptionParamIndex myGlobalSettingIndex, float value){  // Set a value of a specific setting by index in the local table.
+void setOptParamValue(uint8_t myGlobalSettingIndex, float value){  // Set a value of a specific setting by index in the local table.
+   uint8_t arrayIndex = myGlobalSettingIndex;
    localOptParamValueArray[arrayIndex] = value;
 }
 
-//float getOptParamValue(OptionParamIndex myOptParamIndex){ // Get settings value by index from the local table.
-float getOptParamValue(uint8_t myOptParamIndex){ // Get settings value by index from the local table.
+//float getOptParamValue(OptionParamIndex myGlobalSettingIndex){ // Get settings value by index from the local table.
+float getOptParamValue(uint8_t myGlobalSettingIndex){ // Get settings value by index from the local table.
    float value;
-   uint8_t arrayIndex = myOptParamIndex;
+   uint8_t arrayIndex = myGlobalSettingIndex;
    value = localOptParamValueArray[arrayIndex];
    return value;
    //float localOptParamValueArray[] ;
 }
 
-void sendOptParamToReceiver(uint8_t myOptParamIndex){
-    uint8_t arrayIndex = myOptParamIndex;
+void sendOptParamToReceiver(uint8_t myGlobalSettingIndex){
+    uint8_t arrayIndex = myGlobalSettingIndex;
     //setOptParamValue(myOptIndex, myLightSettingValue);  //store the value locally
     remPacket.command = OPT_PARAM_MODE; //prepare the next packet to update receiver's value
     remPacket.optParamCommand = SET_OPT_PARAM_VALUE;
@@ -2009,9 +2009,9 @@ void sendOptParamToReceiver(uint8_t myOptParamIndex){
     requestSendOptParamPacket = true;    //send the value to the receiver
 }
 
-bool loadOptParamFromReceiver(uint8_t myOptParamIndex){   //returns TRUE if the local OPT_PARAM is updated within 100ms
-    uint8_t arrayIndex = myOptParamIndex;
-    setOptParamValue(myOptParamIndex, -1);  //sets the local value to -1 and watch for update
+bool loadOptParamFromReceiver(uint8_t myGlobalSettingIndex){   //returns TRUE if the local OPT_PARAM is updated within 100ms
+    uint8_t arrayIndex = myGlobalSettingIndex;
+    setOptParamValue(myGlobalSettingIndex, -1);  //sets the local value to -1 and watch for update
     //setOptParamValue(myOptIndex, myLightSettingValue);  //store the value locally
     remPacket.command = OPT_PARAM_MODE; //prepare the next packet to update receiver's value
     remPacket.optParamCommand = GET_OPT_PARAM_VALUE;
@@ -2021,7 +2021,7 @@ bool loadOptParamFromReceiver(uint8_t myOptParamIndex){   //returns TRUE if the 
 
     for (int i=0; i<20 ; i++){  //waits until the local value has been updated. Abort if delay is more than 100ms.
       delay(5);
-      if (getOptParamValue(myOptParamIndex) != -1) {
+      if (getOptParamValue(myGlobalSettingIndex) != -1) {
         return true;
         }
     }
@@ -2043,23 +2043,23 @@ void loadAllOptParamFromReceiver(){
 // **************************************** LED ROADLIGHTS *****************************
 void drawLightSettingsPage(){
     uint8_t myOptIndex;
-    myFrontLightBrightness = getOptParamValue(OPT_LED_BRIGHTNESS_FRONT);
-    myBackLightBrightness = getOptParamValue(OPT_LED_BRIGHTNESS_BACK);
-    myBrakeLightBrightness = getOptParamValue(OPT_LED_BRIGHTNESS_BRAKE);
+    myFrontLightBrightness = getOptParamValue(IDX_LED_BRIGHTNESS_FRONT);
+    myBackLightBrightness = getOptParamValue(IDX_LED_BRIGHTNESS_BACK);
+    myBrakeLightBrightness = getOptParamValue(IDX_LED_BRIGHTNESS_BRAKE);
 
     switch (myRoadlightSetting_page_stage) {
         case ADJUSTING_FRONTLIGHT_BRIGHTNESS:
             myLightSettingValue = myFrontLightBrightness;
-            myOptIndex = OPT_LED_BRIGHTNESS_FRONT;
+            myOptIndex = IDX_LED_BRIGHTNESS_FRONT;
         break;
         case ADJUSTING_BACKLIGHT_BRIGHTNESS:
             myLightSettingValue = myBackLightBrightness;
-           // loadOptParamFromReceiver(OPT_LED_BRIGHTNESS_BACK);
-            myOptIndex = OPT_LED_BRIGHTNESS_BACK;
+           // loadOptParamFromReceiver(IDX_LED_BRIGHTNESS_BACK);
+            myOptIndex = IDX_LED_BRIGHTNESS_BACK;
         break;
         case ADJUSTING_BRAKELIGHT_BRIGHTNESS:
             myLightSettingValue = myBrakeLightBrightness;
-            myOptIndex = OPT_LED_BRIGHTNESS_BRAKE;
+            myOptIndex = IDX_LED_BRIGHTNESS_BRAKE;
         break;
     }
 

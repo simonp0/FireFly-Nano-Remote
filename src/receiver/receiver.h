@@ -1,10 +1,11 @@
 #include <Arduino.h>
 #include <Smoothed.h>
 #include "CPU.h"
-#include "globals.h"
+#include <globals.h>
 #include "radio.h"
 #include "utils.h"
 #include "VescUart.h"
+#include <Preferences.h>
 
 //#include <analogWrite.h>
 
@@ -123,66 +124,42 @@ void updateEEPROMSettings();
 void updateSetting(uint8_t setting, uint64_t value);
 
 //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
-const uint8_t optionParamArrayLength = 128;
-float localOptParamValueArray[optionParamArrayLength];
+//const uint8_t optionParamArrayLength = 128;
+//float localOptParamValueArray[optionParamArrayLength];
 
-void setOptParamValue(uint8_t myOptParamIndex, float value);
-float getOptParamValue(uint8_t myOptParamIndex);
+void setOptParamValue(uint8_t myGlobalSettingIndex, float value);
+float getOptParamValue(uint8_t myGlobalSettingIndex);
 
-//void sendOptParamToRemote(uint8_t myOptParamIndex);
-//void loadOptParamFromRemote(uint8_t myOptParamIndex);
+//void sendOptParamToRemote(uint8_t myGlobalSettingIndex);
+//void loadOptParamFromRemote(uint8_t myGlobalSettingIndex);
 
 void updateOptParamVariables();
 //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
 
 
 //  ######## Flash Storage structure for saving all parameters - ESP32 ########
-/*
-Preferences recFSSPreferences;
-FlashStorageSettings recFSSettings;
-void setFSSettingValue(uint8_t myOptParamIndex, float value);
-float getFSSettingValue(uint8_t myOptParamIndex);
-void saveFSSettings();
-void loadFSSettings();
 
-void saveFSSettings(){
-    recFSSPreferences.begin("FireFlyNano", false);
+Preferences receiverPreferences;
 
-    recFSSPreferences.putShort("AUTO_CRUISE_ON",  recFSSettings.AUTO_CRUISE_ON);
-    recFSSPreferences.putShort("PUSHING_SPEED", recFSSettings.PUSHING_SPEED);
-    recFSSPreferences.putShort("PUSHING_TIME", recFSSettings.PUSHING_TIME);
-    recFSSPreferences.putLong("CRUISE_CURRENT_SPIKE", recFSSettings.CRUISE_CURRENT_SPIKE);
+float loadFlashSetting(uint8_t myGlobalSettingIndex);
+void saveFlashSetting(uint8_t myGlobalSettingIndex, float value);
 
-    recFSSPreferences.end();
-}
+void refreshAllSettingsFromFlashData();
 
+//void saveFSSettings();
+//void loadFSSettings();
 
-void loadFSSettings(){
-    recFSSPreferences.begin("FireFlyNano", false);
-
-    recFSSettings.AUTO_CRUISE_ON = recFSSPreferences.getShort("AUTO_CRUISE_ON", ::AUTO_CRUISE_ON);
-    recFSSettings.PUSHING_SPEED = recFSSPreferences.getShort("PUSHING_SPEED", ::PUSHING_SPEED);
-    recFSSettings.PUSHING_TIME = recFSSPreferences.getShort("PUSHING_TIME", ::PUSHING_TIME);
-    recFSSettings.CRUISE_CURRENT_SPIKE = recFSSPreferences.getLong("CRUISE_CURRENT_SPIKE", ::CRUISE_CURRENT_SPIKE);
-
-    recFSSPreferences.end();
-}
-
-void loadFSSetting(uint8_t myOptParamIndex){
-    float value;
-    recFSSPreferences.begin("FireFlyNano", false);
-      localOptParamValueArray[myOptParamIndex] = recFSSPreferences.getLong(String(myOptParamIndex), defaultValue);
-    recFSSPreferences.end();
-}
-
-void saveFSSetting(uint8_t myOptParamIndex, float value){
-    recFSSPreferences.begin("FireFlyNano", false);
-      recFSSPreferences.putLong(String(myOptParamIndex), localOptParamValueArray[myOptParamIndex]);
-    recFSSPreferences.end();
-}
-*/
-
-
+//void saveFSSettings(){
+//    receiverPreferences.begin("FireFlyNano", false);
+//    receiverPreferences.putShort("AUTO_CRUISE_ON",  recFSSettings.AUTO_CRUISE_ON);
+//    receiverPreferences.end();
+//}
+//void loadFSSettings(){
+//    receiverPreferences.begin("FireFlyNano", false);
+//    recFSSettings.AUTO_CRUISE_ON = receiverPreferences.getShort("AUTO_CRUISE_ON", ::AUTO_CRUISE_ON);
+//    recFSSettings.PUSHING_SPEED = receiverPreferences.getShort("PUSHING_SPEED", ::
+//    receiverPreferences.end();
+//}
 
 //  ######## Flash Storage structure for saving all parameters - ESP32 ########
 
@@ -199,10 +176,10 @@ void saveFSSetting(uint8_t myOptParamIndex, float value){
     const uint8_t led_pwm_channel_backLight = 1; //GPIO channel to use
     const uint8_t led_pwm_resolution = 8;
 
-    uint_fast32_t dutyCycle_lightOff = 0;
-    uint_fast32_t dutyCycle_frontLightOn = 90;   //TODO : value can be changed via the remote menu
-    uint_fast32_t dutyCycle_backLightOn = 90;    //TODO : value can be changed via the remote menu
-    uint_fast32_t dutyCycle_brakeLight = 255;   //TODO : value can be changed via the remote menu
+//    uint_fast32_t dutyCycle_lightOff = 0;
+//    uint_fast32_t dutyCycle_frontLightOn = 90;   //TODO : value can be changed via the remote menu
+//    uint_fast32_t dutyCycle_backLightOn = 90;    //TODO : value can be changed via the remote menu
+//    uint_fast32_t dutyCycle_brakeLight = 255;   //TODO : value can be changed via the remote menu
 
     unsigned long lastBrakeLightPulse = 0;
     unsigned long brakeLightPulseInterval = 100; //ms between each brakeLightPulse initiation

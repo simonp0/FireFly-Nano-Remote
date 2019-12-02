@@ -26,61 +26,66 @@ const COMM_PACKET_ID VESC_COMMAND = COMM_GET_VALUES; // VESC
   Slide the board backwards while standing on it or foot brake
   to produce a spike in the current and stop the board.
 */
-const bool  AUTO_CRUISE_ON = false;     // disabled by default
-const float PUSHING_SPEED = 12.0;       // km/h
-const float PUSHING_TIME = 3.0;         // seconds
-const float CRUISE_CURRENT_SPIKE = 5.0; // Amps
+static bool  AUTO_CRUISE_ON = false;     // disabled by default
+static float PUSHING_SPEED = 12.0;       // km/h
+static float PUSHING_TIME = 3.0;         // seconds
+static float CRUISE_CURRENT_SPIKE = 5.0; // Amps
 
 // boad will stop after 30s if current is low
-const float AUTO_CRUISE_TIME = 30.0;    // seconds
-const float CRUISE_CURRENT_LOW = 5.0;   // Amps
+static float AUTO_CRUISE_TIME = 30.0;    // seconds
+static float CRUISE_CURRENT_LOW = 5.0;   // Amps
 
 // auto stop if remote is off and speed is over 20 km/h
-const float MAX_PUSHING_SPEED = 20.0;   // km/h
+static float MAX_PUSHING_SPEED = 20.0;   // km/h
 
 // Auto stop (in seconds)
-const float AUTO_BRAKE_TIME = 5;    // time to apply the full brakes
-const int AUTO_BRAKE_RELEASE = 3;     // time to release brakes after the full stop
-const float AUTO_BRAKE_ABORT_MAXSPEED = 3; // speed under which it's safe to abort auto brake procedure
+static float AUTO_BRAKE_TIME = 5;    // time to apply the full brakes
+static int AUTO_BRAKE_RELEASE = 3;     // time to release brakes after the full stop
+static float AUTO_BRAKE_ABORT_MAXSPEED = 3; // speed under which it's safe to abort auto brake procedure
 
 // UART
-const int UART_SPEED = 115200;
+static int UART_SPEED = 115200;
 //const int UART_SPEED = 9600;
 
 
-const uint16_t uartPullInterval = 150;
-const int UART_TIMEOUT = 25; // 10ms for 115200 bauds, 100ms for 9600 bauds
-const int REMOTE_RX_TIMEOUT = 25; // ms (was 20)
-const int REMOTE_RADIOLOOP_DELAY = 50; //ms sending THROTTLE each xx millisecond to the receiver
+static uint16_t uartPullInterval = 150;
+static int UART_TIMEOUT = 25; // 10ms for 115200 bauds, 100ms for 9600 bauds
+static int REMOTE_RX_TIMEOUT = 25; // ms (was 20)
+static int REMOTE_RADIOLOOP_DELAY = 50; //ms sending THROTTLE each xx millisecond to the receiver
 
-const int REMOTE_LOCK_TIMEOUT = 10; // seconds to lock throttle when idle
-const int REMOTE_SLEEP_TIMEOUT = 180; // seconds to go to sleep mode
+static int REMOTE_LOCK_TIMEOUT = 10; // seconds to lock throttle when idle
+static int REMOTE_SLEEP_TIMEOUT = 180; // seconds to go to sleep mode
 
 // turn off display if battery < 15%
-const int DISPLAY_BATTERY_MIN = 15;
+static int DISPLAY_BATTERY_MIN = 15;
 
 // VESC current, for graphs only
-const int MOTOR_MIN = -30;
-const int MOTOR_MAX = 30;
-const int BATTERY_MIN = -30;
-const int BATTERY_MAX = 30;
+static int MOTOR_MIN = -30;
+static int MOTOR_MAX = 30;
+static int BATTERY_MIN = -30;
+static int BATTERY_MAX = 30;
 
 // default board configuration
-const int MAX_SPEED = 30;       // KM/H
-const int MAX_RANGE = 30;       // KM
-const int BATTERY_CELLS = 10;
-const int BATTERY_TYPE = 0;     // 0: LI-ION | 1: LIPO
-const int MOTOR_POLES = 28;
-const int WHEEL_DIAMETER = 105;
-const int WHEEL_PULLEY = 1;
-const int MOTOR_PULLEY = 1;
+static int MAX_SPEED = 30;       // KM/H
+static int MAX_RANGE = 30;       // KM
+static int BATTERY_CELLS = 10;
+static int BATTERY_TYPE = 0;     // 0: LI-ION | 1: LIPO
+static int MOTOR_POLES = 28;
+static int WHEEL_DIAMETER = 105;
+static int WHEEL_PULLEY = 1;
+static int MOTOR_PULLEY = 1;
+
+static int LED_BRIGHTNESS_FRONT = 90;
+static int LED_BRIGHTNESS_BACK = 90;
+static int LED_BRIGHTNESS_BRAKE = 255;
+static int LED_BRIGHTNESS_OFF = 0;
+static int LED_ROADLIGHT_MODE = 0;
 
 #ifdef ROADLIGHT_CONNECTED  // ********** LED ROADLIGHTS ***********************************************
     enum RoadLightState{
         OFF,
         ON,
-        BRAKES_ONLY,
-        DISCO // yes baby !
+        BRAKES_ONLY
     };
 
 //    RoadLightState myRoadLightState; //default value on startupTime
@@ -177,7 +182,13 @@ enum OptionParamCommand {
     GET_OPT_PARAM_VALUE
 };
 
+//***********  OPT_PARAM - local array to store settings INDEX and VALUE  ***********
+const uint8_t optionParamArrayLength = 64;
+static float localOptParamValueArray[optionParamArrayLength];
+
+
 // RemotePacket.optParamIndex :
+/*
 enum OptionParamIndex {
     OPT_LED_BRIGHTNESS_FRONT,
     OPT_LED_BRIGHTNESS_BACK,
@@ -187,6 +198,50 @@ enum OptionParamIndex {
     OPT_PARAM_6,
     OPT_PARAM_7,
     OPT_PARAM_8
+};
+*/
+
+// GlobalSettingsIndex to be stored in flash memory via Preferences library
+enum GlobalSettingsIndex {
+    IDX_MIN_HALL,
+    IDX_CENTER_HALL,
+    IDX_MAX_HALL,
+    IDX_BOARD_ID,
+    IDX_AUTO_CRUISE_ON,
+    IDX_PUSHING_SPEED,
+    IDX_PUSHING_TIME,
+    IDX_CRUISE_CURRENT_SPIKE,
+    IDX_AUTO_CRUISE_TIME,
+    IDX_CRUISE_CURRENT_LOW,
+    IDX_MAX_PUSHING_SPEED,
+    IDX_AUTO_BRAKE_TIME,
+    IDX_AUTO_BRAKE_RELEASE,
+    IDX_AUTO_BRAKE_ABORT_MAXSPEED,
+    IDX_UART_SPEED,
+    IDX_uartPullInterval,
+    IDX_UART_TIMEOUT,
+    IDX_REMOTE_RX_TIMEOUT,
+    IDX_REMOTE_RADIOLOOP_DELAY,
+    IDX_REMOTE_LOCK_TIMEOUT,
+    IDX_REMOTE_SLEEP_TIMEOUT,
+    IDX_DISPLAY_BATTERY_MIN,
+    IDX_MOTOR_MIN,
+    IDX_MOTOR_MAX,
+    IDX_BATTERY_MIN,
+    IDX_BATTERY_MAX,
+    IDX_MAX_SPEED,
+    IDX_MAX_RANGE,
+    IDX_BATTERY_CELLS,
+    IDX_BATTERY_TYPE,
+    IDX_MOTOR_POLES,
+    IDX_WHEEL_DIAMETER,
+    IDX_WHEEL_PULLEY,
+    IDX_MOTOR_PULLEY,
+    IDX_LED_BRIGHTNESS_FRONT,
+    IDX_LED_BRIGHTNESS_BACK,
+    IDX_LED_BRIGHTNESS_BRAKE,
+    IDX_LED_BRIGHTNESS_OFF,
+    IDX_LED_ROADLIGHT_MODE
 };
 
 

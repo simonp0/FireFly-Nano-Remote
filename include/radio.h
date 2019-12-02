@@ -4,7 +4,7 @@
 // #include <LoRa.h>
 
 // Change to allowed frequency
-#define RF_FREQ 434.0
+#define RF_FREQ 868.0
 
 #ifdef ESP32
 

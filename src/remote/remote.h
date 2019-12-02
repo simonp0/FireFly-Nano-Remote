@@ -1,7 +1,7 @@
 
 #include <Arduino.h>
 #include "CPU.h"
-#include "globals.h"
+#include <globals.h>
 #include "utils.h"
 
 #include <Adafruit_GFX.h>
@@ -333,14 +333,14 @@ void vibrate(int ms);
 void vibe(int vibeMode); //vibrations combos
 
 //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
-const uint8_t optionParamArrayLength = 128;
-float localOptParamValueArray[optionParamArrayLength];
+//const uint8_t optionParamArrayLength = 128;
+//float localOptParamValueArray[optionParamArrayLength];
 
-void setOptParamValue(uint8_t myOptParamIndex, float value);
-float getOptParamValue(uint8_t myOptParamIndex);
+void setOptParamValue(uint8_t myGlobalSettingIndex, float value);
+float getOptParamValue(uint8_t myGlobalSettingIndex);
 
-void sendOptParamToReceiver(uint8_t myOptParamIndex);
-bool loadOptParamFromReceiver(uint8_t myOptParamIndex);
+void sendOptParamToReceiver(uint8_t myGlobalSettingIndex);
+bool loadOptParamFromReceiver(uint8_t myGlobalSettingIndex);
 //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
 
 
