@@ -89,54 +89,6 @@ static int LED_ROADLIGHT_MODE = 0;
     };
 #endif                      // ********** LED ROADLIGHTS ***********************************************
 
-//  ######## Settings Flash Storage - ESP32 ########
-//  https://github.com/espressif/arduino-esp32/blob/master/libraries/Preferences
-/*
-struct FlashStorageSettings {
-    bool valid;
-    short minHallValue = MIN_HALL;
-    short centerHallValue = CENTER_HALL;
-    short maxHallValue = MAX_HALL;
-    uint32_t boardID = 0;
-
-    //OPT_LED_BRIGHTNESS_FRONT,
-    //OPT_LED_BRIGHTNESS_BACK,
-    //OPT_LED_BRIGHTNESS_BRAKE,
-    //OPT_LED_ROADLIGHT_MODE
- 
-
-    bool  AUTO_CRUISE_ON = ::AUTO_CRUISE_ON;     // disabled by default
-    float PUSHING_SPEED = ::PUSHING_SPEED;       // km/h
-    float PUSHING_TIME = ::PUSHING_TIME;         // seconds
-    float CRUISE_CURRENT_SPIKE = ::CRUISE_CURRENT_SPIKE; // Amps
-
-    // boad will stop after 30s if current is low
-    float AUTO_CRUISE_TIME = 30.0;    // seconds
-    float CRUISE_CURRENT_LOW = 5.0;   // Amps
-
-    // auto stop if remote is off and speed is over 20 km/h
-    float MAX_PUSHING_SPEED = 20.0;   // km/h
-
-    // VESC current, for graphs only
-    int MOTOR_MIN = -30;
-    int MOTOR_MAX = 30;
-    int BATTERY_MIN = -30;
-    int BATTERY_MAX = 30;
-
-    // default board configuration
-    int MAX_SPEED = 30;       // KM/H
-    int MAX_RANGE = 30;       // KM
-    int BATTERY_CELLS = 10;
-    int BATTERY_TYPE = 0;     // 0: LI-ION | 1: LIPO
-    int MOTOR_POLES = 28;
-    int WHEEL_DIAMETER = 105;
-    int WHEEL_PULLEY = 1;
-    int MOTOR_PULLEY = 1;
-};
-*/
-//  ######## Settings Flash Storage - ESP32 ########
-
-
 #define VERSION 3
 
 // Remote > receiver
@@ -184,10 +136,10 @@ static float localOptParamValueArray[optionParamArrayLength];
 
 // GlobalSettingsIndex sort all parameters by index for Tx <-> Rx exchange and storage in flash memory via Preferences library
 enum GlobalSettingsIndex {
-    IDX_MIN_HALL,
-    IDX_CENTER_HALL,
-    IDX_MAX_HALL,
-    IDX_BOARD_ID,
+    IDX_MIN_HALL,//remote-CONFIGpacket
+    IDX_CENTER_HALL,//remote-CONFIGpacket
+    IDX_MAX_HALL,//remote-CONFIGpacket
+    IDX_BOARD_ID,//remote-CONFIGpacket
     IDX_AUTO_CRUISE_ON,
     IDX_PUSHING_SPEED,
     IDX_PUSHING_TIME,
@@ -201,15 +153,15 @@ enum GlobalSettingsIndex {
     IDX_UART_SPEED,
     IDX_uartPullInterval,
     IDX_UART_TIMEOUT,
-    IDX_REMOTE_RX_TIMEOUT,
-    IDX_REMOTE_RADIOLOOP_DELAY,
-    IDX_REMOTE_LOCK_TIMEOUT,
-    IDX_REMOTE_SLEEP_TIMEOUT,
-    IDX_DISPLAY_BATTERY_MIN,
-    IDX_MOTOR_MIN,
-    IDX_MOTOR_MAX,
-    IDX_BATTERY_MIN,
-    IDX_BATTERY_MAX,
+    IDX_REMOTE_RX_TIMEOUT, //remote
+    IDX_REMOTE_RADIOLOOP_DELAY,//remote
+    IDX_REMOTE_LOCK_TIMEOUT,//remote
+    IDX_REMOTE_SLEEP_TIMEOUT,//remote
+    IDX_DISPLAY_BATTERY_MIN,//remote
+    IDX_MOTOR_MIN,//remote
+    IDX_MOTOR_MAX,//remote
+    IDX_BATTERY_MIN,//remote
+    IDX_BATTERY_MAX,//remote
     IDX_MAX_SPEED,
     IDX_MAX_RANGE,
     IDX_BATTERY_CELLS,

@@ -342,6 +342,7 @@ float getOptParamValue(uint8_t myGlobalSettingIndex);
 void sendOptParamToReceiver(uint8_t myGlobalSettingIndex);
 bool loadOptParamFromReceiver(uint8_t myGlobalSettingIndex);
 
+bool retrieveAllOptParamFromReceiverAtStartup = true;
 void retrieveAllOptParamFromReceiver();
 //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
 
