@@ -79,7 +79,7 @@ void setup() {
     // while (!Serial) { ; }
 
     loadSettings();
-
+//retrieveAllOptParamFromReceiver();
     #ifdef PIN_VIBRO
         pinMode(PIN_VIBRO, OUTPUT);
         digitalWrite(PIN_VIBRO, LOW);
@@ -1476,6 +1476,7 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                             case ROADLIGHT_SETTINGS:
                                 //backToMainMenu(); //we don't exit yet - we want to display the drawLightSettingsPage()
                                 //download 3 current values from receiver:
+
                                 loadOptParamFromReceiver(IDX_LED_BRIGHTNESS_FRONT);
                                 loadOptParamFromReceiver(IDX_LED_BRIGHTNESS_BACK);
                                 loadOptParamFromReceiver(IDX_LED_BRIGHTNESS_BRAKE);
@@ -1984,21 +1985,30 @@ void vibe(int vibeMode){    //vibrate() combos
 }
 
 //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
-//void setOptParamValue(OptionParamIndex myGlobalSettingIndex, float value){  // Set a value of a specific setting by index in the local table.
-void setOptParamValue(uint8_t myGlobalSettingIndex, float value){  // Set a value of a specific setting by index in the local table.
+    /* GENERAL USE  :
+
+    1. temporary: - loadOptParamFromReceiver(IDX_MY_PARAM); //get the value from the receiver
+                  - MY_PARAM = localOptParamValueArray[IDX_MY_PARAM]  //update local variables
+    1. TODO - all values in localOptParamValueArray[] are retrieved at startup from the receiver's memory, or default hardcoded values
+
+    2.  - myParam = getOptParamValue(IDX_MY_PARAM);
+    3.  - modify myParam to new value 
+    4.  - setOptParamValue(IDX_MY_PARAM, myParamValue);  //store the value locally
+    5.  - sendOptParamToReceiver(IDX_MY_PARAM); //send to receiver which updates local value and saved into flash memory
+    */
+void setOptParamValue(uint8_t myGlobalSettingIndex, float value){ // Set a value of a specific setting by index in the local table.
    uint8_t arrayIndex = myGlobalSettingIndex;
    localOptParamValueArray[arrayIndex] = value;
 }
 
-//float getOptParamValue(OptionParamIndex myGlobalSettingIndex){ // Get settings value by index from the local table.
 float getOptParamValue(uint8_t myGlobalSettingIndex){ // Get settings value by index from the local table.
    float value;
    uint8_t arrayIndex = myGlobalSettingIndex;
    value = localOptParamValueArray[arrayIndex];
    return value;
-   //float localOptParamValueArray[] ;
 }
 
+// Send a parameter to receiver with the next packet. Receiver will update it's local localOptParamValueArray[] and save to flash automatically.
 void sendOptParamToReceiver(uint8_t myGlobalSettingIndex){
     uint8_t arrayIndex = myGlobalSettingIndex;
     //setOptParamValue(myOptIndex, myLightSettingValue);  //store the value locally
@@ -2009,6 +2019,7 @@ void sendOptParamToReceiver(uint8_t myGlobalSettingIndex){
     requestSendOptParamPacket = true;    //send the value to the receiver
 }
 
+// Retrieve a parameter from the receiver. Wait until localOptParamValueArray[] is updated with the received value.
 bool loadOptParamFromReceiver(uint8_t myGlobalSettingIndex){   //returns TRUE if the local OPT_PARAM is updated within 100ms
     uint8_t arrayIndex = myGlobalSettingIndex;
     setOptParamValue(myGlobalSettingIndex, -1);  //sets the local value to -1 and watch for update
@@ -2027,16 +2038,103 @@ bool loadOptParamFromReceiver(uint8_t myGlobalSettingIndex){   //returns TRUE if
     }
     return false;
 }
+
+
+//  TODO : LOAD ALL SETTINGS FROM RECEIVER FLASH MEMORY AT STARTUP and update localOptParamValueArray[] and local variables
+void retrieveAllOptParamFromReceiver(){
+
+                                //loadOptParamFromReceiver(IDX_LED_BRIGHTNESS_FRONT);
+                                //loadOptParamFromReceiver(IDX_LED_BRIGHTNESS_BACK);
+                                //loadOptParamFromReceiver(IDX_LED_BRIGHTNESS_BRAKE);
 /*
-void loadAllOptParamFromReceiver(){
-  for (int i = 0; i < optionParamArrayLength; i++){
-    loadOptParamFromReceiver(i);
-  }
-
-}
-
-}
+    if (loadOptParamFromReceiver(IDX_AUTO_CRUISE_ON)) AUTO_CRUISE_ON = localOptParamValueArray[IDX_AUTO_CRUISE_ON];
+    if (loadOptParamFromReceiver(IDX_PUSHING_SPEED)) PUSHING_SPEED = localOptParamValueArray[IDX_PUSHING_SPEED];
+    if (loadOptParamFromReceiver(IDX_PUSHING_TIME)) PUSHING_TIME = localOptParamValueArray[IDX_PUSHING_TIME];
+    if (loadOptParamFromReceiver(IDX_CRUISE_CURRENT_SPIKE)) CRUISE_CURRENT_SPIKE = localOptParamValueArray[IDX_CRUISE_CURRENT_SPIKE];
+    if (loadOptParamFromReceiver(IDX_AUTO_CRUISE_TIME)) AUTO_CRUISE_TIME = localOptParamValueArray[IDX_AUTO_CRUISE_TIME];
+    if (loadOptParamFromReceiver(IDX_CRUISE_CURRENT_LOW)) CRUISE_CURRENT_LOW = localOptParamValueArray[IDX_CRUISE_CURRENT_LOW];
+    if (loadOptParamFromReceiver(IDX_MAX_PUSHING_SPEED)) MAX_PUSHING_SPEED = localOptParamValueArray[IDX_MAX_PUSHING_SPEED];
+    if (loadOptParamFromReceiver(IDX_AUTO_BRAKE_TIME)) AUTO_BRAKE_TIME = localOptParamValueArray[IDX_AUTO_BRAKE_TIME];
+    if (loadOptParamFromReceiver(IDX_AUTO_BRAKE_RELEASE)) AUTO_BRAKE_RELEASE = localOptParamValueArray[IDX_AUTO_BRAKE_RELEASE];
+    if (loadOptParamFromReceiver(IDX_AUTO_BRAKE_ABORT_MAXSPEED)) AUTO_BRAKE_ABORT_MAXSPEED = localOptParamValueArray[IDX_AUTO_BRAKE_ABORT_MAXSPEED];
+    if (loadOptParamFromReceiver(IDX_UART_SPEED)) UART_SPEED = localOptParamValueArray[IDX_UART_SPEED];
+    if (loadOptParamFromReceiver(IDX_uartPullInterval)) uartPullInterval = localOptParamValueArray[IDX_uartPullInterval];
+    if (loadOptParamFromReceiver(IDX_UART_TIMEOUT)) UART_TIMEOUT = localOptParamValueArray[IDX_UART_TIMEOUT];
+    if (loadOptParamFromReceiver(IDX_REMOTE_RX_TIMEOUT)) REMOTE_RX_TIMEOUT = localOptParamValueArray[IDX_REMOTE_RX_TIMEOUT];
+    if (loadOptParamFromReceiver(IDX_REMOTE_RADIOLOOP_DELAY)) REMOTE_RADIOLOOP_DELAY = localOptParamValueArray[IDX_REMOTE_RADIOLOOP_DELAY];
+    if (loadOptParamFromReceiver(IDX_REMOTE_LOCK_TIMEOUT)) REMOTE_LOCK_TIMEOUT = localOptParamValueArray[IDX_REMOTE_LOCK_TIMEOUT];
+    if (loadOptParamFromReceiver(IDX_REMOTE_SLEEP_TIMEOUT)) REMOTE_SLEEP_TIMEOUT = localOptParamValueArray[IDX_REMOTE_SLEEP_TIMEOUT];
+    if (loadOptParamFromReceiver(IDX_DISPLAY_BATTERY_MIN)) DISPLAY_BATTERY_MIN = localOptParamValueArray[IDX_DISPLAY_BATTERY_MIN];
+    if (loadOptParamFromReceiver(IDX_MOTOR_MIN)) MOTOR_MIN = localOptParamValueArray[IDX_MOTOR_MIN];
+    if (loadOptParamFromReceiver(IDX_MOTOR_MAX)) MOTOR_MAX = localOptParamValueArray[IDX_MOTOR_MAX];
+    if (loadOptParamFromReceiver(IDX_BATTERY_MIN)) BATTERY_MIN = localOptParamValueArray[IDX_BATTERY_MIN];
+    if (loadOptParamFromReceiver(IDX_BATTERY_MAX)) BATTERY_MAX = localOptParamValueArray[IDX_BATTERY_MAX];
+    if (loadOptParamFromReceiver(IDX_MAX_SPEED)) MAX_SPEED = localOptParamValueArray[IDX_MAX_SPEED];
+    if (loadOptParamFromReceiver(IDX_MAX_RANGE)) MAX_RANGE = localOptParamValueArray[IDX_MAX_RANGE];
+    if (loadOptParamFromReceiver(IDX_BATTERY_CELLS)) BATTERY_CELLS = localOptParamValueArray[IDX_BATTERY_CELLS];
+    if (loadOptParamFromReceiver(IDX_BATTERY_TYPE)) BATTERY_TYPE = localOptParamValueArray[IDX_BATTERY_TYPE];
+    if (loadOptParamFromReceiver(IDX_MOTOR_POLES)) MOTOR_POLES = localOptParamValueArray[IDX_MOTOR_POLES];
+    if (loadOptParamFromReceiver(IDX_WHEEL_DIAMETER)) WHEEL_DIAMETER = localOptParamValueArray[IDX_WHEEL_DIAMETER];
+    if (loadOptParamFromReceiver(IDX_WHEEL_PULLEY)) WHEEL_PULLEY = localOptParamValueArray[IDX_WHEEL_PULLEY];
+    if (loadOptParamFromReceiver(IDX_MOTOR_PULLEY)) MOTOR_PULLEY = localOptParamValueArray[IDX_MOTOR_PULLEY];
+    if (loadOptParamFromReceiver(IDX_LED_BRIGHTNESS_FRONT)) LED_BRIGHTNESS_FRONT = localOptParamValueArray[IDX_LED_BRIGHTNESS_FRONT];
+    if (loadOptParamFromReceiver(IDX_LED_BRIGHTNESS_BACK)) LED_BRIGHTNESS_BACK = localOptParamValueArray[IDX_LED_BRIGHTNESS_BACK];
+    if (loadOptParamFromReceiver(IDX_LED_BRIGHTNESS_BRAKE)) LED_BRIGHTNESS_BRAKE = localOptParamValueArray[IDX_LED_BRIGHTNESS_BRAKE];
+    if (loadOptParamFromReceiver(IDX_LED_BRIGHTNESS_OFF)) LED_BRIGHTNESS_OFF = localOptParamValueArray[IDX_LED_BRIGHTNESS_OFF];
+    if (loadOptParamFromReceiver(IDX_LED_ROADLIGHT_MODE)) LED_ROADLIGHT_MODE = localOptParamValueArray[IDX_LED_ROADLIGHT_MODE];
 */
+
+    //if (loadOptParamFromReceiver(IDX_))  = localOptParamValueArray[IDX_];
+
+    //for (int i = 0; i < optionParamArrayLength; i++){
+    //    if (loadOptParamFromReceiver(i)) LED_BRIGHTNESS_FRONT = localOptParamValueArray[i];
+    //}
+
+
+    /*
+    MIN_HALL
+    CENTER_HALL
+    MAX_HALL
+    BOARD_ID
+    AUTO_CRUISE_ON
+    PUSHING_SPEED
+    PUSHING_TIME
+    CRUISE_CURRENT_SPIKE
+    AUTO_CRUISE_TIME
+    CRUISE_CURRENT_LOW
+    MAX_PUSHING_SPEED
+    AUTO_BRAKE_TIME
+    AUTO_BRAKE_RELEASE
+    AUTO_BRAKE_ABORT_MAXSPEED
+    UART_SPEED
+    uartPullInterval
+    UART_TIMEOUT
+    REMOTE_RX_TIMEOUT
+    REMOTE_RADIOLOOP_DELAY
+    REMOTE_LOCK_TIMEOUT
+    REMOTE_SLEEP_TIMEOUT
+    DISPLAY_BATTERY_MIN
+    MOTOR_MIN
+    MOTOR_MAX
+    BATTERY_MIN
+    BATTERY_MAX
+    MAX_SPEED
+    MAX_RANGE
+    BATTERY_CELLS
+    BATTERY_TYPE
+    MOTOR_POLES
+    WHEEL_DIAMETER
+    WHEEL_PULLEY
+    MOTOR_PULLEY
+    LED_BRIGHTNESS_FRONT
+    LED_BRIGHTNESS_BACK
+    LED_BRIGHTNESS_BRAKE
+    LED_BRIGHTNESS_OFF
+    LED_ROADLIGHT_MODE
+    */
+
+}
+
 //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
 
 
@@ -2054,7 +2152,6 @@ void drawLightSettingsPage(){
         break;
         case ADJUSTING_BACKLIGHT_BRIGHTNESS:
             myLightSettingValue = myBackLightBrightness;
-           // loadOptParamFromReceiver(IDX_LED_BRIGHTNESS_BACK);
             myOptIndex = IDX_LED_BRIGHTNESS_BACK;
         break;
         case ADJUSTING_BRAKELIGHT_BRIGHTNESS:

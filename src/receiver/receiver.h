@@ -33,9 +33,6 @@ OptionParamPacket optParamPacket;
 
 AppState state = IDLE;
 
-//OptionParamCommand optParamCommand; already declared inside "struct RemotePacket{}"
-// OptionParamIndex optParamIndex; declared in globals.h
-// float localOptParamValueArray[]; declared in globals.h
 
 // get MAC address / CPU serial
 uint32_t boardID;
@@ -124,27 +121,20 @@ void updateEEPROMSettings();
 void updateSetting(uint8_t setting, uint64_t value);
 
 //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
-//const uint8_t optionParamArrayLength = 128;
-//float localOptParamValueArray[optionParamArrayLength];
-
-void setOptParamValue(uint8_t myGlobalSettingIndex, float value);
-float getOptParamValue(uint8_t myGlobalSettingIndex);
-
-//void sendOptParamToRemote(uint8_t myGlobalSettingIndex);
-//void loadOptParamFromRemote(uint8_t myGlobalSettingIndex);
-
-void updateOptParamVariables();
+void setOptParamValue(uint8_t myGlobalSettingIndex, float value); // Set a value of a specific setting in the localOptParamValueArray[] & updates the flash memory.
+float getOptParamValue(uint8_t myGlobalSettingIndex); // Get a setting value by index from the localOptParamValueArray[]
+void updateOptParamVariables(); // Update all local variables from the localOptParamValueArray[] values
 //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
 
 
-//  ######## Flash Storage structure for saving all parameters - ESP32 ########
-
+//  ######## Settings Flash Storage - ESP32 ########
 Preferences receiverPreferences;
 
-float loadFlashSetting(uint8_t myGlobalSettingIndex);
-void saveFlashSetting(uint8_t myGlobalSettingIndex, float value);
+float loadFlashSetting(uint8_t myGlobalSettingIndex);// Load a setting (index & value)pair from flash memory and update the localOptParamValueArray[] value. Returns the setting (float) value. 
+void saveFlashSetting(uint8_t myGlobalSettingIndex, float value);// Save a setting (index & value)pair into flash memory
 
-void refreshAllSettingsFromFlashData();
+void refreshAllSettingsFromFlashData();// SETTINGS INITIALIZATION - copy flash data into local variables & into localOptParamValueArray[] . If nothing saved in flash, GLOBALS.H hardcoded default values are used instead
+
 
 //void saveFSSettings();
 //void loadFSSettings();
@@ -161,7 +151,7 @@ void refreshAllSettingsFromFlashData();
 //    receiverPreferences.end();
 //}
 
-//  ######## Flash Storage structure for saving all parameters - ESP32 ########
+//  ######## Settings Flash Storage - ESP32 ########
 
 
 // ******************************** LED ROADLIGHTS - Receiver *****************************

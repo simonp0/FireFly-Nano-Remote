@@ -10,9 +10,9 @@
 //#define DEBUG                             // Uncomment DEBUG if you need to debug the remote
 //const uint32_t boardAddress = 0xA9BF713C;
 //#include <analogWrite.h>
-#define ROADLIGHT_CONNECTED                 // FRONT LIGHT and BACKLIGHT option. Reconfigure 2 pins on the receiver side for FRONTLIGHT and BACKLIGHT
+#define ROADLIGHT_CONNECTED                 // FRONT LIGHT and BACKLIGHT option. Reconfigure 2 pins on the receiver side for FRONTLIGHT and BACKLIGHT PWM signal
 //#define OUTPUT_PPM_THROTTLE               // RECEIVER outputs a THROTTLE PPM/PWM signal on PIN_PPM_THROTTLE
-//#define DISABLE_UART_THROTTLE_OUTPUT      // RECEIVER disables setThrottle() via UART
+//#define DISABLE_UART_THROTTLE_OUTPUT      // RECEIVER disables setThrottle() via UART (VescUart::UART.nunchuck)
 
 // ********** * * * * * * * * * ***********************************************
 
@@ -57,7 +57,7 @@ static int REMOTE_LOCK_TIMEOUT = 10; // seconds to lock throttle when idle
 static int REMOTE_SLEEP_TIMEOUT = 180; // seconds to go to sleep mode
 
 // turn off display if battery < 15%
-static int DISPLAY_BATTERY_MIN = 15;
+static int DISPLAY_BATTERY_MIN = 15;// ######### change to 0 if remote screen doesnt turn ON ###########
 
 // VESC current, for graphs only
 static int MOTOR_MIN = -30;
@@ -87,12 +87,9 @@ static int LED_ROADLIGHT_MODE = 0;
         ON,
         BRAKES_ONLY
     };
-
-//    RoadLightState myRoadLightState; //default value on startupTime
-
 #endif                      // ********** LED ROADLIGHTS ***********************************************
 
-//  ######## Flash Storage structure for saving all parameters - ESP32 ########
+//  ######## Settings Flash Storage - ESP32 ########
 //  https://github.com/espressif/arduino-esp32/blob/master/libraries/Preferences
 /*
 struct FlashStorageSettings {
@@ -137,7 +134,7 @@ struct FlashStorageSettings {
     int MOTOR_PULLEY = 1;
 };
 */
-//  ######## Flash Storage structure for saving all parameters - ESP32 ########
+//  ######## Settings Flash Storage - ESP32 ########
 
 
 #define VERSION 3
@@ -145,15 +142,15 @@ struct FlashStorageSettings {
 // Remote > receiver
 struct RemotePacket {
     uint32_t address;   //LoRa packets : max payload = 255bytes 
-    // --------------  // keep 4 byte alignment!
-    uint8_t  version;  // 1
-    uint8_t  command;	 // Throttle | Light | Settings
-    uint8_t  data;     // e.g. throttle value
+    // --------------   // keep 4 byte alignment!
+    uint8_t  version;
+    uint8_t  command;   // e.g. SET_THROTTLE
+    uint8_t  data;      // e.g. throttle value
     uint8_t  counter;
     // --------------
 
     //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
-    int8_t  optParamCommand;//test transmission with biggerPackets
+    int8_t  optParamCommand;
     int8_t  optParamIndex;
     int16_t optParamValue;
 
@@ -162,8 +159,6 @@ struct RemotePacket {
 
     float unpackOptParamValue() { return w2fi(optParamValue); }
     void packOptParamValue(float f) { optParamValue = f2wi(f); }
-    //***********  RemotePacket::opt parameter implementation  ***********
-
 }; //end struct declaration
 
 // RemotePacket.COMMANDS :
@@ -182,26 +177,12 @@ enum OptionParamCommand {
     GET_OPT_PARAM_VALUE
 };
 
-//***********  OPT_PARAM - local array to store settings INDEX and VALUE  ***********
+//***********  OPT_PARAM - local array to store settings as (INDEX# and VALUE)pair  ***********
 const uint8_t optionParamArrayLength = 64;
 static float localOptParamValueArray[optionParamArrayLength];
 
 
-// RemotePacket.optParamIndex :
-/*
-enum OptionParamIndex {
-    OPT_LED_BRIGHTNESS_FRONT,
-    OPT_LED_BRIGHTNESS_BACK,
-    OPT_LED_BRIGHTNESS_BRAKE,
-    OPT_LED_ROADLIGHT_MODE,     //ToDo : move RemotePacketCommand::SET_LIGHT functionalities into OptionParamIndex::LED_ROADLIGHT_MODE
-    OPT_PARAM_5,
-    OPT_PARAM_6,
-    OPT_PARAM_7,
-    OPT_PARAM_8
-};
-*/
-
-// GlobalSettingsIndex to be stored in flash memory via Preferences library
+// GlobalSettingsIndex sort all parameters by index for Tx <-> Rx exchange and storage in flash memory via Preferences library
 enum GlobalSettingsIndex {
     IDX_MIN_HALL,
     IDX_CENTER_HALL,
@@ -354,13 +335,7 @@ struct ConfigPacket {  //extends ReceiverPacket
     int16_t r1;  // battery amps * 100
     int16_t r2;
     // -------------------
-    // ********** LED ROADLIGHTS ***********
-//    uint8_t  roadlightAppMode;
-//    uint8_t  frontLightBrightness_val;
-//    uint8_t  backLightBrightness_val;
-//    uint8_t  anythingElseToAdd;
-    // ********** LED ROADLIGHTS ***********
-    //
+
     float getMaxSpeed() { return (maxSpeed) / 100; }
     void setMaxSpeed(float f) { maxSpeed = f * 100; }
 };  //end struct declaration
@@ -369,7 +344,7 @@ struct OptionParamPacket {  //extends ReceiverPacket
     ReceiverPacket header;
     // --------------  // keep 4 byte alignment!
     //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
-    uint8_t  optParamCommand;//test transmission with biggerPackets
+    uint8_t  optParamCommand;
     uint8_t  optParamIndex;
     int16_t optParamValue;
     //------------------

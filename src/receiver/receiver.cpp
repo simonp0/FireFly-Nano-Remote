@@ -51,7 +51,6 @@ void setup(){ //runs once after powerOn
     pinMode(PIN_LED, OUTPUT); //LED onBoard
 
 
-
     refreshAllSettingsFromFlashData();  //loads the settings from flash memory (if any)
 
 // ******** LED ROADLIGHTS ********
@@ -63,12 +62,6 @@ void setup(){ //runs once after powerOn
     //myRoadLightState = OFF; //default setting when switching on the board // in header file
     //initialise array values with default local variables values
 
-    /*  should be done via refreshAllSettingsFromFlashData();
-    localOptParamValueArray[IDX_LED_BRIGHTNESS_FRONT] = LED_BRIGHTNESS_FRONT;
-    localOptParamValueArray[IDX_LED_BRIGHTNESS_BACK] = LED_BRIGHTNESS_BACK;
-    localOptParamValueArray[IDX_LED_BRIGHTNESS_BRAKE] = LED_BRIGHTNESS_BRAKE;
-    */
-   
 #endif
 // ******** LED ROADLIGHTS ********
 
@@ -1249,31 +1242,29 @@ void loadOptParamFromRemote(uint8_t myGlobalSettingIndex){
 }
 */
 
-// Update local variables from new OptParamValues
+// Update all local variables from the localOptParamValueArray[] values
 void updateOptParamVariables(){
     //LED_BRIGHTNESS_BACK = (int) round(getOptParamValue(IDX_LED_BRIGHTNESS_BACK)); //localOptParamValueArray[1];
     LED_BRIGHTNESS_FRONT = getOptParamValue(IDX_LED_BRIGHTNESS_FRONT);
     LED_BRIGHTNESS_BACK = getOptParamValue(IDX_LED_BRIGHTNESS_BACK);
     LED_BRIGHTNESS_BRAKE = getOptParamValue(IDX_LED_BRIGHTNESS_BRAKE);
+}
 
     //load all values into the local array
     /*
     float* localVarAddresses[] //array of pointers
     localVarAddresses[IDX_LED_BRIGHTNESS_FRONT] = &LED_BRIGHTNESS_FRONT     //store local variable addresses in an array
     *localValAddresses[IDX_LED_BRIGHTNESS_FRONT] = (dereference) value stored at contained address      
-    
-    
     */
-}
 //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
 
-//  ######## Flash Storage structure for saving all parameters - ESP32 ########
+//  ######## Settings Flash Storage - ESP32 ########
 
 #include <sstream>
 #include <string.h>
 //using namespace std;
 
-// Load a setting (index & value)pair from flash memory and update the corresponding global variable and localOptParamValueArray[]
+// Load a setting (index & value)pair from flash memory and update the localOptParamValueArray[] value. Returns the setting (float) value. 
 float loadFlashSetting(uint8_t myGlobalSettingIndex, float defaultValue){
     float value;
     stringstream strs;       //convert an int into a char[]
@@ -1298,7 +1289,7 @@ void saveFlashSetting(uint8_t myGlobalSettingIndex, float value){
     receiverPreferences.end();
 }
 
-// SETTINGS INITIALIZATION - copy flash data into local variables. If nothing saved, used GLOBALS.H hardcoded values instead
+// SETTINGS INITIALIZATION - copy flash data into local variables & into localOptParamValueArray[] . If nothing saved in flash, GLOBALS.H hardcoded default values are used instead
 void refreshAllSettingsFromFlashData(){
 /*
     MIN_HALL = loadFlashSetting(IDX_MIN_HALL, (float)MIN_HALL);
@@ -1346,7 +1337,7 @@ void refreshAllSettingsFromFlashData(){
     IDX_LED_ROADLIGHT_MODE
 */
 }
-//  ######## Flash Storage structure for saving all parameters - ESP32 ########
+//  ######## Settings Flash Storage - ESP32 ########
 
 
 
