@@ -1469,6 +1469,34 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                         }
                     break;
 // **************************************** LED ROADLIGHTS *****************************
+                    case MENU_RECEIVER:
+                        switch (subMenuItem){
+                            case THROTTLE_MODE:
+                                loadOptParamFromReceiver(IDX_THROTTLE_VIA_PPM);
+                            break;
+                            /*
+                            case SWITCH_LIGHT_OFF:
+                                requestSwitchLight = true;
+                                myRoadLightState = OFF;
+                                //drawDebugPage();
+                                backToMainMenu();
+                            break;
+                            case SWITCH_LIGHT_BRAKES_ONLY:
+                                requestSwitchLight = true;
+                                myRoadLightState = BRAKES_ONLY;
+                                backToMainMenu();
+                            case ROADLIGHT_SETTINGS:
+                                //backToMainMenu(); //we don't exit yet - we want to display the drawLightSettingsPage()
+                                //download 3 current values from receiver:
+                               loadOptParamFromReceiver(IDX_LED_BRIGHTNESS_FRONT);
+                               loadOptParamFromReceiver(IDX_LED_BRIGHTNESS_BACK);
+                               loadOptParamFromReceiver(IDX_LED_BRIGHTNESS_BRAKE);
+                            break;
+                            */
+                        }
+                    break;
+
+
                 }
             }
 
@@ -1512,12 +1540,30 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                             //nothing to display
                         break;
                         case ROADLIGHT_SETTINGS:
-                            //myRoadlightSetting_page_stage = ADJUSTING_FRONTLIGHT_BRIGHTNESS; //movedTo MENU_LIGHT submenu_case
                             drawLightSettingsPage();
                         break;
                     }
                 break;
                 // **************************************** LED ROADLIGHTS *****************************
+                case MENU_RECEIVER: //if we want to display a specific page and stay on it for some menu items
+                    switch (subMenuItem){
+                        case THROTTLE_MODE:
+                            drawThrottleModePage();
+                        break;
+                        /*
+                        case SWITCH_LIGHT_OFF:
+                            //nothing to display
+                        break;
+                        case SWITCH_LIGHT_BRAKES_ONLY:
+                            //nothing to display
+                        break;
+                        case ROADLIGHT_SETTINGS:
+                            //myRoadlightSetting_page_stage = ADJUSTING_FRONTLIGHT_BRIGHTNESS; //movedTo MENU_LIGHT submenu_case
+                            drawLightSettingsPage();
+                        break;
+                        */
+                    }
+                break;
 
 
             }//end switch
@@ -2166,3 +2212,79 @@ void drawLightSettingsPage(){
     //    + String(telemetry.tempMotor) + " C", -1, 114, fontPico);
 
 }// **************************************** LED ROADLIGHTS *****************************
+
+
+int currentValue;
+float myFloat = 0;
+void drawThrottleModePage(){
+    uint8_t myOptIndex;
+    int deadBand = 10;
+    int minValue = -100;
+    int maxValue = +100;
+
+    int position = readThrottlePosition();
+    int lastPositionIndex = currentValue;
+    int nextPositionIndex = lastPositionIndex;
+
+    int waitTimeMs = constrain( ( 3000 / pow( (double)(abs(position - default_throttle)/5), 1.8) - deadBand ), 0, 500);
+    
+    // --------- wheel control ---------------------
+    if (position > default_throttle + deadBand) {
+        if (currentValue < maxValue){ currentValue = constrain((currentValue + 1),minValue,maxValue);
+        myFloat = myFloat+1;
+        }
+    }
+    if (position < default_throttle - deadBand) {
+        if (currentValue > minValue){ currentValue = constrain((currentValue - 1),minValue,maxValue);
+        myFloat --;
+        }
+    }
+
+
+
+    const int gap = 20;
+
+    int x = 5;
+    int y = 12;
+    //float value;
+    int bars;
+    //bool isHighlighted
+    drawHLine(2, y, 64-2);
+        bars = map(currentValue, minValue, maxValue, 0, 10);
+    //    drawBars_2(x, y, bars, String(bars), "Front", (true));
+    //  int y = 10;
+
+    drawString(String(currentValue, DEC), -1, y, fontDesc);
+
+    y = 35;
+    drawStringCenter(String(currentValue), " ms", y);
+
+    y += 25;
+    drawStringCenter(String( ( ((double)myFloat) /10) , 2), " db", y);
+
+    y += 25;
+    drawStringCenter(String(readThrottlePosition()), String(waitTimeMs), y);
+
+
+    nextPositionIndex = currentValue;
+    if (lastPositionIndex != nextPositionIndex){
+      delay(waitTimeMs);
+      vibe(0); //short vibration each time we change the selected menu item
+      //setOptParamValue(myOptIndex, myValue);  //store the value locally
+      //sendOptParamToReceiver(myOptIndex);
+      }  
+    // ---------------------------------------------
+    //myValue = nextPositionIndex;
+
+    if (pressed(PIN_TRIGGER)) {
+        // apply calibration values
+        waitRelease(PIN_TRIGGER);
+        
+    }
+
+
+    // FET & motor temperature
+    //    drawString(String(telemetry.tempFET) + " C    "
+    //    + String(telemetry.tempMotor) + " C", -1, 114, fontPico);
+
+}

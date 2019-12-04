@@ -954,17 +954,19 @@ void setThrottle(uint16_t value){
 
     // UART
     #ifndef FAKE_UART
-      #ifndef DISABLE_UART_THROTTLE_OUTPUT
+      if (!THROTTLE_VIA_PPM){
         UART.nunchuck.valueY = value;
         UART.nunchuck.upperButton = false;
         UART.nunchuck.lowerButton = false;
         UART.setNunchuckValues();
-      #endif
+       }
     #endif
 
     // ******** PPM THROTTLE OUTPUT ********
     #ifdef OUTPUT_PPM_THROTTLE
+    if (THROTTLE_VIA_PPM){
       updatePpmThrottleOutput();
+     }
     #endif
 
     // remember throttle for smooth auto stop
@@ -980,12 +982,12 @@ void setThrottle(uint16_t value){
 void setCruise(uint8_t speed) {
     // UART
     #ifndef FAKE_UART
-      #ifndef DISABLE_UART_THROTTLE_OUTPUT
+      if (!THROTTLE_VIA_PPM){
         UART.nunchuck.valueY = 127;
         UART.nunchuck.upperButton = false;
         UART.nunchuck.lowerButton = true;
         UART.setNunchuckValues();
-      #endif
+       }
     #endif
 }
 

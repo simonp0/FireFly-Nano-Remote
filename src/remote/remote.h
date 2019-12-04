@@ -117,7 +117,6 @@ enum ui_page {
   PAGE_MAX,
   PAGE_DEBUG,
   PAGE_LIGHT_SETTINGS   // **************************************** LED ROADLIGHTS *****************************
-
 } page = PAGE_MAIN;
 
 // Battery monitoring
@@ -185,21 +184,23 @@ enum menu_page {
 //size_t sizeArray;
 
 const byte subMenus = 7;
-const byte mainMenus = 4;
+const byte mainMenus = 5;
 
 String MENUS[mainMenus][subMenus] = {
     { "Info", "Debug", "TestDebug", "Specs"},
     { "Remote", "Calibrate", "Pair", "Auto off", "", ""},
     { "Board", "WIFIupdate",  "Max Speed", "Range", "Cells", "Battery"},
-    { "Lights", "Switch ON", "Switch OFF", "Brake Only", "Settings"}
+    { "Lights", "Switch ON", "Switch OFF", "Brake Only", "Settings"},
+    { "Receiver", "App Mode", "", "", "", ""}
     // *** LED ROADLIGHTS ***
   };
 
-enum menu_main { MENU_INFO, MENU_REMOTE, MENU_BOARD, MENU_LIGHT };
+enum menu_main { MENU_INFO, MENU_REMOTE, MENU_BOARD, MENU_LIGHT, MENU_RECEIVER };
 enum menu_info { INFO_DEBUG };
 enum menu_remote { REMOTE_CALIBRATE, REMOTE_PAIR, REMOTE_SLEEP_TIMER };
 enum menu_board { BOARD_UPDATE };
 enum menu_light { SWITCH_LIGHT_ON, SWITCH_LIGHT_OFF, SWITCH_LIGHT_BRAKES_ONLY, ROADLIGHT_SETTINGS }; // *** LED ROADLIGHTS ***
+enum menu_receiver { THROTTLE_MODE };
 
 float currentMenu = 0;
 int subMenu = 0;
@@ -353,3 +354,4 @@ void drawLightSettingsPage();//test
 //void switchLightOn(); //on receiver side only.
 //void switchLightOff(); //on receiver side only.
 // **************************************** LED ROADLIGHTS *****************************
+void drawThrottleModePage();

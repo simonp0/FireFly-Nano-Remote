@@ -11,9 +11,7 @@
 //const uint32_t boardAddress = 0xA9BF713C;
 //#include <analogWrite.h>
 #define ROADLIGHT_CONNECTED                 // FRONT LIGHT and BACKLIGHT option. Reconfigure 2 pins on the receiver side for FRONTLIGHT and BACKLIGHT PWM signal
-//#define OUTPUT_PPM_THROTTLE               // RECEIVER outputs a THROTTLE PPM/PWM signal on PIN_PPM_THROTTLE
-//#define DISABLE_UART_THROTTLE_OUTPUT      // RECEIVER disables setThrottle() via UART (VescUart::UART.nunchuck)
-
+#define OUTPUT_PPM_THROTTLE               // include receiver functions to be able to output a THROTTLE PPM/PWM signal on PIN_PPM_THROTTLE when flag THROTTLE_VIA_PPM = TRUE
 // ********** * * * * * * * * * ***********************************************
 
 const COMM_PACKET_ID VESC_COMMAND = COMM_GET_VALUES; // VESC
@@ -80,6 +78,8 @@ static int LED_BRIGHTNESS_BACK = 90;
 static int LED_BRIGHTNESS_BRAKE = 255;
 static int LED_BRIGHTNESS_OFF = 0;
 static int LED_ROADLIGHT_MODE = 0;
+
+static bool THROTTLE_VIA_PPM = false;   // False for UART, true for PPM
 
 #ifdef ROADLIGHT_CONNECTED  // ********** LED ROADLIGHTS ***********************************************
     enum RoadLightState{
@@ -174,7 +174,8 @@ enum GlobalSettingsIndex {
     IDX_LED_BRIGHTNESS_BACK,
     IDX_LED_BRIGHTNESS_BRAKE,
     IDX_LED_BRIGHTNESS_OFF,
-    IDX_LED_ROADLIGHT_MODE
+    IDX_LED_ROADLIGHT_MODE,
+    IDX_THROTTLE_VIA_PPM
 };
 
 
