@@ -355,3 +355,5 @@ void drawLightSettingsPage();//test
 //void switchLightOff(); //on receiver side only.
 // **************************************** LED ROADLIGHTS *****************************
 void drawThrottleModePage();
+void paramValueSelector(uint8_t myGlobalSettingIndex, String paramName, double minValue, double maxValue, double increment, int decimalPlace, String unitStr);
+void pvs();

@@ -1472,7 +1472,9 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                     case MENU_RECEIVER:
                         switch (subMenuItem){
                             case THROTTLE_MODE:
-                                loadOptParamFromReceiver(IDX_THROTTLE_VIA_PPM);
+                                //loadOptParamFromReceiver(IDX_THROTTLE_VIA_PPM);
+                                loadOptParamFromReceiver(IDX_AUTO_BRAKE_RELEASE);
+                                //currentParamAdjValue = getOptParamValue(IDX_AUTO_BRAKE_RELEASE);
                             break;
                             /*
                             case SWITCH_LIGHT_OFF:
@@ -1548,7 +1550,8 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                 case MENU_RECEIVER: //if we want to display a specific page and stay on it for some menu items
                     switch (subMenuItem){
                         case THROTTLE_MODE:
-                            drawThrottleModePage();
+                            //drawThrottleModePage();
+                            pvs();
                         break;
                         /*
                         case SWITCH_LIGHT_OFF:
@@ -2216,7 +2219,80 @@ void drawLightSettingsPage(){
 
 int currentValue;
 float myFloat = 0;
-void drawThrottleModePage(){
+
+//paramValueSelector(paramIndex, value min, value max, increment, int decimalPlace){}
+
+
+double currentParamAdjValue;
+bool initFlag = 1;
+
+void pvs(){
+    if (initFlag==1){
+        currentParamAdjValue = (double) getOptParamValue(IDX_AUTO_BRAKE_RELEASE);
+        initFlag = 0;}
+     paramValueSelector(GlobalSettingsIndex::IDX_AUTO_BRAKE_RELEASE, "Auto brake delay", -10,+12.1,0.01,2,"s");
+}
+
+
+//loadOptParamFromReceiver(IDX_AUTO_BRAKE_RELEASE);
+//getOptParamValue(IDX_AUTO_BRAKE_RELEASE);
+
+void paramValueSelector(uint8_t myGlobalSettingIndex, String paramName, double minAdjValue, double maxAdjValue, double adjIncrement, int decimalPlace, String unitStr){
+    //uint8_t myOptIndex;
+    int deadBand = 5;
+
+    int position = readThrottlePosition();
+    double lastPositionValue = currentParamAdjValue;
+    double nextPositionValue = lastPositionValue;
+    int waitTimeMs = constrain( ( 3000 / pow( (double)(abs(position - default_throttle)/5), 1.8) - deadBand ), 0, 500);
+    // --------- wheel control ---------------------
+    if (position > default_throttle + deadBand) {
+        if (currentParamAdjValue < maxAdjValue){ currentParamAdjValue = constrain((currentParamAdjValue + adjIncrement), minAdjValue, maxAdjValue);}
+    }
+    if (position < default_throttle - deadBand) {
+        if (currentParamAdjValue > minAdjValue){ currentParamAdjValue = constrain((currentParamAdjValue - adjIncrement), minAdjValue, maxAdjValue);}
+    }
+
+
+
+    int y = 12;
+    drawHLine(2, y, 64-2);
+    drawString(String(currentValue, DEC), -1, y, fontDesc);
+    
+    y=28;
+    drawString(paramName, 0, y, fontDesc);
+    
+    
+    y = 80;
+    drawStringCenter(String(currentParamAdjValue, decimalPlace), unitStr, y);
+    y += 25;
+    drawString("SAVE", 0, y, fontDesc);
+    y += 10;
+    drawString("CANCEL", 0, y, fontDesc);
+    //drawStringCenter(String( ( ((double)myFloat) /10) , decimalPlace), " db", y);
+    //y += 25;
+    //drawStringCenter(String(readThrottlePosition()), String(waitTimeMs), y);
+
+
+    nextPositionValue = currentParamAdjValue;
+    if (lastPositionValue != nextPositionValue){
+      delay(waitTimeMs);
+      vibe(0); //short vibration each time we change the selected menu item
+      //setOptParamValue(myOptIndex, myValue);  //store the value locally
+      //sendOptParamToReceiver(myOptIndex);
+      }  
+
+    if (pressed(PIN_TRIGGER)) {
+        // apply calibration values
+        waitRelease(PIN_TRIGGER);
+    }
+
+}
+
+
+
+
+void drawThrottleModePage(){    //original function
     uint8_t myOptIndex;
     int deadBand = 10;
     int minValue = -100;
