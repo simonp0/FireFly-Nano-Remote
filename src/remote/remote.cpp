@@ -2230,7 +2230,7 @@ void pvs(){
     if (initFlag==1){
         currentParamAdjValue = (double) getOptParamValue(IDX_AUTO_BRAKE_RELEASE);
         initFlag = 0;}
-     paramValueSelector(GlobalSettingsIndex::IDX_AUTO_BRAKE_RELEASE, "Auto brake delay", -10,+12.1,0.01,2,"s");
+     paramValueSelector(GlobalSettingsIndex::IDX_AUTO_BRAKE_RELEASE, "Auto brake delay", -1000,+1000,1,1,"s");
 }
 
 
