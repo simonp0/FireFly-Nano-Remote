@@ -184,23 +184,25 @@ enum menu_page {
 //size_t sizeArray;
 
 const byte subMenus = 7;
-const byte mainMenus = 5;
+const byte mainMenus = 6;
 
 String MENUS[mainMenus][subMenus] = {
     { "Info", "Debug", "TestDebug", "Specs"},
     { "Remote", "Calibrate", "Pair", "Auto off", "", ""},
     { "Board", "WIFIupdate",  "Max Speed", "Range", "Cells", "Battery"},
     { "Lights", "Switch ON", "Switch OFF", "Brake Only", "Settings"},
-    { "Receiver", "App Mode", "", "", "", ""}
+    { "Receiver", "App Mode", "", "", "", "", ""},
+    { "A-Cruise", "ON/OFF", "PushSpeed", "PushTime", "Curr.Spike", "CruiseTime", "CurrentLow" }
     // *** LED ROADLIGHTS ***
   };
 
-enum menu_main { MENU_INFO, MENU_REMOTE, MENU_BOARD, MENU_LIGHT, MENU_RECEIVER };
+enum menu_main { MENU_INFO, MENU_REMOTE, MENU_BOARD, MENU_LIGHT, MENU_RECEIVER, MENU_AUTO_CRUISE };
 enum menu_info { INFO_DEBUG };
 enum menu_remote { REMOTE_CALIBRATE, REMOTE_PAIR, REMOTE_SLEEP_TIMER };
 enum menu_board { BOARD_UPDATE };
 enum menu_light { SWITCH_LIGHT_ON, SWITCH_LIGHT_OFF, SWITCH_LIGHT_BRAKES_ONLY, ROADLIGHT_SETTINGS }; // *** LED ROADLIGHTS ***
 enum menu_receiver { THROTTLE_MODE };
+enum menu_auto_cruise { CRUISE_MENU_AUTO_CRUISE, CRUISE_MENU_PUSHING_SPEED , CRUISE_MENU_PUSHING_TIME, CRUISE_MENU_CRUISE_CURRENT_SPIKE, CRUISE_MENU_AUTO_CRUISE_TIME, CRUISE_MENU_CRUISE_CURRENT_LOW };
 
 float currentMenu = 0;
 int subMenu = 0;
@@ -343,8 +345,8 @@ float getOptParamValue(uint8_t myGlobalSettingIndex);
 void sendOptParamToReceiver(uint8_t myGlobalSettingIndex);
 bool loadOptParamFromReceiver(uint8_t myGlobalSettingIndex);
 
-bool retrieveAllOptParamFromReceiverAtStartup = true;
-void retrieveAllOptParamFromReceiver();
+//bool retrieveAllOptParamFromReceiverAtStartup = true;
+//void retrieveAllOptParamFromReceiver();
 //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
 
 
@@ -354,6 +356,10 @@ void drawLightSettingsPage();//test
 //void switchLightOn(); //on receiver side only.
 //void switchLightOff(); //on receiver side only.
 // **************************************** LED ROADLIGHTS *****************************
-void drawThrottleModePage();
+enum paramValueSelector_page_stage{
+  ADJUST_PVS_VALUE,
+  SAVE_PVS_VALUE,
+  CANCEL_PVS_VALUE
+} myPVSpage = ADJUST_PVS_VALUE;
 void paramValueSelector(uint8_t myGlobalSettingIndex, String paramName, double minValue, double maxValue, double increment, int decimalPlace, String unitStr);
-void pvs();
+

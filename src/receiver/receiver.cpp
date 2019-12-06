@@ -1247,9 +1247,45 @@ void loadOptParamFromRemote(uint8_t myGlobalSettingIndex){
 // Update all local variables from the localOptParamValueArray[] values
 void updateOptParamVariables(){
     //LED_BRIGHTNESS_BACK = (int) round(getOptParamValue(IDX_LED_BRIGHTNESS_BACK)); //localOptParamValueArray[1];
+    //LED_BRIGHTNESS_FRONT = getOptParamValue(IDX_LED_BRIGHTNESS_FRONT);
+    //LED_BRIGHTNESS_BACK = getOptParamValue(IDX_LED_BRIGHTNESS_BACK);
+    //LED_BRIGHTNESS_BRAKE = getOptParamValue(IDX_LED_BRIGHTNESS_BRAKE);
+    AUTO_CRUISE_ON = getOptParamValue(IDX_AUTO_CRUISE_ON);
+    PUSHING_SPEED = getOptParamValue(IDX_PUSHING_SPEED);
+    PUSHING_TIME = getOptParamValue(IDX_PUSHING_TIME);
+    CRUISE_CURRENT_SPIKE = getOptParamValue(IDX_CRUISE_CURRENT_SPIKE);
+    AUTO_CRUISE_TIME = getOptParamValue(IDX_AUTO_CRUISE_TIME);
+    CRUISE_CURRENT_LOW = getOptParamValue(IDX_CRUISE_CURRENT_LOW);
+    MAX_PUSHING_SPEED = getOptParamValue(IDX_MAX_PUSHING_SPEED);
+    AUTO_BRAKE_TIME = getOptParamValue(IDX_AUTO_BRAKE_TIME);
+    AUTO_BRAKE_RELEASE = getOptParamValue(IDX_AUTO_BRAKE_RELEASE);
+    AUTO_BRAKE_ABORT_MAXSPEED = getOptParamValue(IDX_AUTO_BRAKE_ABORT_MAXSPEED);
+    UART_SPEED = getOptParamValue(IDX_UART_SPEED);
+    uartPullInterval = getOptParamValue(IDX_uartPullInterval);
+    UART_TIMEOUT = getOptParamValue(IDX_UART_TIMEOUT);
+    REMOTE_RX_TIMEOUT = getOptParamValue(IDX_REMOTE_RX_TIMEOUT);
+    REMOTE_RADIOLOOP_DELAY = getOptParamValue(IDX_REMOTE_RADIOLOOP_DELAY);
+    REMOTE_LOCK_TIMEOUT = getOptParamValue(IDX_REMOTE_LOCK_TIMEOUT);
+    REMOTE_SLEEP_TIMEOUT = getOptParamValue(IDX_REMOTE_SLEEP_TIMEOUT);
+    DISPLAY_BATTERY_MIN = getOptParamValue(IDX_DISPLAY_BATTERY_MIN);
+    MOTOR_MIN = getOptParamValue(IDX_MOTOR_MIN);
+    MOTOR_MAX = getOptParamValue(IDX_MOTOR_MAX);
+    BATTERY_MIN = getOptParamValue(IDX_BATTERY_MIN);
+    BATTERY_MAX = getOptParamValue(IDX_BATTERY_MAX);
+    MAX_SPEED = getOptParamValue(IDX_MAX_SPEED);
+    MAX_RANGE = getOptParamValue(IDX_MAX_RANGE);
+    BATTERY_CELLS = getOptParamValue(IDX_BATTERY_CELLS);
+    BATTERY_TYPE = getOptParamValue(IDX_BATTERY_TYPE);
+    MOTOR_POLES = getOptParamValue(IDX_MOTOR_POLES);
+    WHEEL_DIAMETER = getOptParamValue(IDX_WHEEL_DIAMETER);
+    WHEEL_PULLEY = getOptParamValue(IDX_WHEEL_PULLEY);
+    MOTOR_PULLEY = getOptParamValue(IDX_MOTOR_PULLEY);
     LED_BRIGHTNESS_FRONT = getOptParamValue(IDX_LED_BRIGHTNESS_FRONT);
     LED_BRIGHTNESS_BACK = getOptParamValue(IDX_LED_BRIGHTNESS_BACK);
     LED_BRIGHTNESS_BRAKE = getOptParamValue(IDX_LED_BRIGHTNESS_BRAKE);
+    LED_BRIGHTNESS_OFF = getOptParamValue(IDX_LED_BRIGHTNESS_OFF);
+    LED_ROADLIGHT_MODE = getOptParamValue(IDX_LED_ROADLIGHT_MODE);
+    THROTTLE_VIA_PPM = getOptParamValue(IDX_THROTTLE_VIA_PPM);
 }
 
     //load all values into the local array
@@ -1293,51 +1329,49 @@ void saveFlashSetting(uint8_t myGlobalSettingIndex, float value){
 
 // SETTINGS INITIALIZATION - copy flash data into local variables & into localOptParamValueArray[] . If nothing saved in flash, GLOBALS.H hardcoded default values are used instead
 void refreshAllSettingsFromFlashData(){
-/*
-    MIN_HALL = loadFlashSetting(IDX_MIN_HALL, (float)MIN_HALL);
-    IDX_CENTER_HALL,
-    IDX_MAX_HALL,
-    IDX_BOARD_ID,
-    IDX_AUTO_CRUISE_ON,
-*/
+  /*
+    MIN_HALL = loadFlashSetting(IDX_MIN_HALL, (float) MIN_HALL);
+    CENTER_HALL = loadFlashSetting(IDX_CENTER_HALL, (float) CENTER_HALL);
+    MAX_HALL = loadFlashSetting(IDX_MAX_HALL, (float) MAX_HALL);
+    BOARD_ID = loadFlashSetting(IDX_BOARD_ID, (float) BOARD_ID);
+  */
+    AUTO_CRUISE_ON = loadFlashSetting(IDX_AUTO_CRUISE_ON, (float) AUTO_CRUISE_ON);
     PUSHING_SPEED = loadFlashSetting(IDX_PUSHING_SPEED, (float) PUSHING_SPEED);
-/*
-    IDX_PUSHING_TIME,
-    IDX_CRUISE_CURRENT_SPIKE,
-    IDX_AUTO_CRUISE_TIME,
-    IDX_CRUISE_CURRENT_LOW,
-    IDX_MAX_PUSHING_SPEED,
-    IDX_AUTO_BRAKE_TIME,
-    IDX_AUTO_BRAKE_RELEASE,
-    IDX_AUTO_BRAKE_ABORT_MAXSPEED,
-    IDX_UART_SPEED,
-    IDX_uartPullInterval,
-    IDX_UART_TIMEOUT,
-    IDX_REMOTE_RX_TIMEOUT,
-    IDX_REMOTE_RADIOLOOP_DELAY,
-    IDX_REMOTE_LOCK_TIMEOUT,
-    IDX_REMOTE_SLEEP_TIMEOUT,
-    IDX_DISPLAY_BATTERY_MIN,
-    IDX_MOTOR_MIN,
-    IDX_MOTOR_MAX,
-    IDX_BATTERY_MIN,
-    IDX_BATTERY_MAX,
-    IDX_MAX_SPEED,
-    IDX_MAX_RANGE,
-    IDX_BATTERY_CELLS,
-    IDX_BATTERY_TYPE,
-    IDX_MOTOR_POLES,
-    IDX_WHEEL_DIAMETER,
-    IDX_WHEEL_PULLEY,
-    IDX_MOTOR_PULLEY,
-*/
+    PUSHING_TIME = loadFlashSetting(IDX_PUSHING_TIME, (float) PUSHING_TIME);
+    CRUISE_CURRENT_SPIKE = loadFlashSetting(IDX_CRUISE_CURRENT_SPIKE, (float) CRUISE_CURRENT_SPIKE);
+    AUTO_CRUISE_TIME = loadFlashSetting(IDX_AUTO_CRUISE_TIME, (float) AUTO_CRUISE_TIME);
+    CRUISE_CURRENT_LOW = loadFlashSetting(IDX_CRUISE_CURRENT_LOW, (float) CRUISE_CURRENT_LOW);
+    MAX_PUSHING_SPEED = loadFlashSetting(IDX_MAX_PUSHING_SPEED, (float) MAX_PUSHING_SPEED);
+    AUTO_BRAKE_TIME = loadFlashSetting(IDX_AUTO_BRAKE_TIME, (float) AUTO_BRAKE_TIME);
+    AUTO_BRAKE_RELEASE = loadFlashSetting(IDX_AUTO_BRAKE_RELEASE, (float) AUTO_BRAKE_RELEASE);
+    AUTO_BRAKE_ABORT_MAXSPEED = loadFlashSetting(IDX_AUTO_BRAKE_ABORT_MAXSPEED, (float) AUTO_BRAKE_ABORT_MAXSPEED);
+    UART_SPEED = loadFlashSetting(IDX_UART_SPEED, (float) UART_SPEED);
+    uartPullInterval = loadFlashSetting(IDX_uartPullInterval, (float) uartPullInterval);
+    UART_TIMEOUT = loadFlashSetting(IDX_UART_TIMEOUT, (float) UART_TIMEOUT);
+    REMOTE_RX_TIMEOUT = loadFlashSetting(IDX_REMOTE_RX_TIMEOUT, (float) REMOTE_RX_TIMEOUT);
+    REMOTE_RADIOLOOP_DELAY = loadFlashSetting(IDX_REMOTE_RADIOLOOP_DELAY, (float) REMOTE_RADIOLOOP_DELAY);
+    REMOTE_LOCK_TIMEOUT = loadFlashSetting(IDX_REMOTE_LOCK_TIMEOUT, (float) REMOTE_LOCK_TIMEOUT);
+    REMOTE_SLEEP_TIMEOUT = loadFlashSetting(IDX_REMOTE_SLEEP_TIMEOUT, (float) REMOTE_SLEEP_TIMEOUT);
+    DISPLAY_BATTERY_MIN = loadFlashSetting(IDX_DISPLAY_BATTERY_MIN, (float) DISPLAY_BATTERY_MIN);
+    MOTOR_MIN = loadFlashSetting(IDX_MOTOR_MIN, (float) MOTOR_MIN);
+    MOTOR_MAX = loadFlashSetting(IDX_MOTOR_MAX, (float) MOTOR_MAX);
+    BATTERY_MIN = loadFlashSetting(IDX_BATTERY_MIN, (float) BATTERY_MIN);
+    BATTERY_MAX = loadFlashSetting(IDX_BATTERY_MAX, (float) BATTERY_MAX);
+    MAX_SPEED = loadFlashSetting(IDX_MAX_SPEED, (float) MAX_SPEED);
+    MAX_RANGE = loadFlashSetting(IDX_MAX_RANGE, (float) MAX_RANGE);
+    BATTERY_CELLS = loadFlashSetting(IDX_BATTERY_CELLS, (float) BATTERY_CELLS);
+    BATTERY_TYPE = loadFlashSetting(IDX_BATTERY_TYPE, (float) BATTERY_TYPE);
+    MOTOR_POLES = loadFlashSetting(IDX_MOTOR_POLES, (float) MOTOR_POLES);
+    WHEEL_DIAMETER = loadFlashSetting(IDX_WHEEL_DIAMETER, (float) WHEEL_DIAMETER);
+    WHEEL_PULLEY = loadFlashSetting(IDX_WHEEL_PULLEY, (float) WHEEL_PULLEY);
+    MOTOR_PULLEY = loadFlashSetting(IDX_MOTOR_PULLEY, (float) MOTOR_PULLEY);
     LED_BRIGHTNESS_FRONT = loadFlashSetting(IDX_LED_BRIGHTNESS_FRONT, (float) LED_BRIGHTNESS_FRONT);
     LED_BRIGHTNESS_BACK = loadFlashSetting(IDX_LED_BRIGHTNESS_BACK, (float) LED_BRIGHTNESS_BACK);
     LED_BRIGHTNESS_BRAKE = loadFlashSetting(IDX_LED_BRIGHTNESS_BRAKE, (float) LED_BRIGHTNESS_BRAKE);
-/*
-    IDX_LED_BRIGHTNESS_OFF
-    IDX_LED_ROADLIGHT_MODE
-*/
+    LED_BRIGHTNESS_OFF = loadFlashSetting(IDX_LED_BRIGHTNESS_OFF, (float) LED_BRIGHTNESS_OFF);
+    LED_ROADLIGHT_MODE = loadFlashSetting(IDX_LED_ROADLIGHT_MODE, (float) LED_ROADLIGHT_MODE);
+    THROTTLE_VIA_PPM = loadFlashSetting(IDX_THROTTLE_VIA_PPM, (float) THROTTLE_VIA_PPM);
+//     = loadFlashSetting(IDX_, (float) );
 }
 //  ######## Settings Flash Storage - ESP32 ########
 
