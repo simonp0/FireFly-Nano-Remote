@@ -126,9 +126,6 @@ void setup() {
         NULL,       /* Task handle. */
         0);  /* Core where the task should run */
     #endif
-
-// **************************************** LED ROADLIGHTS *****************************
-
 }
 
 #ifdef ESP32 // core 0
@@ -286,53 +283,43 @@ void isr() { } // Interrupt Service Routine
 
 void handleButtons() { //executes action depending on PWR_BUTTON state ( CLICK - DBL_CLICK - HOLD - LONG_HOLD )
 
-  switch (checkButton()) { //checks what PWR_BUTTON is doing and return it's state ( CLICK - DBL_CLICK - HOLD - LONG_HOLD )
+    switch (checkButton()) { //checks what PWR_BUTTON is doing and return it's state ( CLICK - DBL_CLICK - HOLD - LONG_HOLD )
 
-  case CLICK:
-    keepAlive();
+        case CLICK:
+            keepAlive();
+            switch (state) { //state is an AppState() type - (Remote control state)
+                case CONNECTING:
+                    state = PAIRING; // switch to pairing
+                break;
 
-    switch (state) { //state is an AppState() type - (Remote control state)
-      case CONNECTING:
-        state = PAIRING; // switch to pairing
+                case PAIRING:
+                    state = CONNECTING; // switch to connecting
+                break;
+
+                default:
+                    if (page == PAGE_MENU) { // in menu
+
+                        if (menuPage != MENU_MAIN) {
+                            display.setRotation(DISPLAY_ROTATION); // back to vertical
+                            calibrationStage = CALIBRATE_CENTER;
+                            return backToMainMenu();
+                        }
+                        // exit menu
+                        state = menuWasUsed ? IDLE : NORMAL;
+                    }
+
+                // switch pages
+                page = static_cast<ui_page>((page + 1) % PAGE_MAX);
+            }
         break;
 
-      case PAIRING:
-        state = CONNECTING; // switch to connecting
+        case HOLD: // start shutdown
         break;
 
-      default:
-        if (page == PAGE_MENU) { // in menu
-
-          if (menuPage != MENU_MAIN) {
-            display.setRotation(DISPLAY_ROTATION); // back to vertical
-            calibrationStage = CALIBRATE_CENTER;
-            return backToMainMenu();
-          }
-  // **************************************** LED ROADLIGHTS *****************************
-  //    DEFAULT BEHAVIOUR -> quit the page, bakcToMainMenu();
-  //  if (menuPage ==  MENU_LIGHT){
-
-  //  }
-
-  // **************************************** LED ROADLIGHTS *****************************
-
-          // exit menu
-          state = menuWasUsed ? IDLE : NORMAL;
-        }
-
-        // switch pages
-        page = static_cast<ui_page>((page + 1) % PAGE_MAX);
+        case LONG_HOLD: // shutdown confirmed
+            sleep();
+        return;
     }
-
-    break;
-
-  case HOLD: // start shutdown
-    break;
-
-  case LONG_HOLD: // shutdown confirmed
-    sleep();
-    return;
-  }
 
 }
 
@@ -612,37 +599,33 @@ bool triggerActiveSafe() {
 
 bool sendData() { // Transmit the remPacket
 
-  byte sz = sizeof(remPacket) + CRC_SIZE; // crc
-  uint8_t buf[sz];
-  memcpy (buf, &remPacket, sizeof(remPacket));
+    byte sz = sizeof(remPacket) + CRC_SIZE; // crc
+    uint8_t buf[sz];
+    memcpy (buf, &remPacket, sizeof(remPacket));
 
-  // calc crc
-  buf[sz-CRC_SIZE] = CRC8(&remPacket, sizeof(remPacket));
+    // calc crc
+    buf[sz-CRC_SIZE] = CRC8(&remPacket, sizeof(remPacket));
 
-  bool sent = false;
+    bool sent = false;
 
-  // debug("sending command: " + String(remPacket.command)
-  //       + ", data: " + String(remPacket.data)
-  //       + ", counter: " + String(remPacket.counter)
-  //    );
+    // debug("sending command: " + String(remPacket.command)
+    //       + ", data: " + String(remPacket.data)
+    //       + ", counter: " + String(remPacket.counter)
+    //    );
 
-  #ifdef ESP32
-
-    LoRa.beginPacket(sz);
-    int t = 0;
-    t = LoRa.write(buf, sz);
-    LoRa.endPacket();
-
-    // LoRa.receive(PACKET_SIZE + CRC_SIZE);
-
-    sent = t == sz;
-
-  #elif ARDUINO_SAMD_ZERO
+    #ifdef ESP32
+        LoRa.beginPacket(sz);
+        int t = 0;
+        t = LoRa.write(buf, sz);
+        LoRa.endPacket();
+        // LoRa.receive(PACKET_SIZE + CRC_SIZE);
+        sent = t == sz;
+    #elif ARDUINO_SAMD_ZERO
 
     sent = radio.send(buf, sz);
     if (sent) radio.waitPacketSent();
 
-  #endif
+    #endif
 
   return sent;
 }
@@ -1389,7 +1372,7 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
         case MENU_SUB:
             // --------- subMenus wheel control navigation---------------------
             if (position < default_throttle - 15) {
-//                if (currentMenu < ARRAYLEN(MENUS[subMenu])-2){currentMenu += 0.25;}
+    //                if (currentMenu < ARRAYLEN(MENUS[subMenu])-2){currentMenu += 0.25;}
                 if (currentMenu < ARRAYLEN(MENUS[subMenu])-2){currentMenu += 0.25;}
             }
             if (position > default_throttle + 15) {
@@ -1441,7 +1424,6 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                         }
                     break;
 
-// **************************************** LED ROADLIGHTS *****************************
                     case MENU_LIGHT:
                         switch (subMenuItem){
                             //requestSwitchLight = true; //flag signaling a SET_LIGHT command for the next remotePacket sent
@@ -1469,28 +1451,16 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                             break;
                         }
                     break;
-// **************************************** LED ROADLIGHTS *****************************
+
                     case MENU_RECEIVER:
                         switch (subMenuItem){
-                            case THROTTLE_MODE:
-                                loadOptParamFromReceiver(IDX_THROTTLE_VIA_PPM);
+                            case SUBM_THROTTLE_MODE:
+                                loadOptParamFromReceiver(IDX_THROTTLE_MODE);
                                 //currentParamAdjValue = getOptParamValue(IDX_AUTO_BRAKE_RELEASE);
                             break;
-                            /*
-                            case SWITCH_LIGHT_BRAKES_ONLY:
-                                requestSwitchLight = true;
-                                myRoadLightState = BRAKES_ONLY;
-                                backToMainMenu();
-                            case ROADLIGHT_SETTINGS:
-                                //backToMainMenu(); //we don't exit yet - we want to display the drawLightSettingsPage()
-                                //download 3 current values from receiver:
-                               loadOptParamFromReceiver(IDX_LED_BRIGHTNESS_FRONT);
-                               loadOptParamFromReceiver(IDX_LED_BRIGHTNESS_BACK);
-                               loadOptParamFromReceiver(IDX_LED_BRIGHTNESS_BRAKE);
-                            break;
-                            */
                         }
                     break;
+
                     case MENU_AUTO_CRUISE:
                         switch (subMenuItem){
                             case CRUISE_MENU_AUTO_CRUISE:
@@ -1544,7 +1514,6 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                     }
                 break;
 
-                // **************************************** LED ROADLIGHTS *****************************
                 case MENU_LIGHT: //if we want to display a specific page and stay on it for some menu items
                     switch (subMenuItem){
                         case SWITCH_LIGHT_ON:
@@ -1561,15 +1530,16 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                         break;
                     }
                 break;
-                // **************************************** LED ROADLIGHTS *****************************
+
                 case MENU_RECEIVER: //if we want to display a specific page and stay on it for some menu items
                     switch (subMenuItem){
-                        case THROTTLE_MODE:
+                        case SUBM_THROTTLE_MODE:
                             //drawThrottleModePage();
-                            paramValueSelector(IDX_THROTTLE_VIA_PPM, "App mode:\n0->UART\n1->PPM", 0,+1,1,0," ");
+                            paramValueSelector(IDX_THROTTLE_MODE, "App mode:\n0->UART\n1->PPM", 0,+2,1,0," ");// 2 : for testing purpose via other VescUART commands
                         break;
                     }
                 break;
+
                 case MENU_AUTO_CRUISE: //if we want to display a specific page and stay on it for some menu items
                     switch (subMenuItem){
                         case CRUISE_MENU_AUTO_CRUISE:
@@ -2140,9 +2110,10 @@ void retrieveAllOptParamFromReceiver(){   // TAKES TOO MUCH TIME
 // **************************************** LED ROADLIGHTS *****************************
 void drawLightSettingsPage(){
     uint8_t myOptIndex;
-    myFrontLightBrightness = getOptParamValue(IDX_LED_BRIGHTNESS_FRONT);
-    myBackLightBrightness = getOptParamValue(IDX_LED_BRIGHTNESS_BACK);
-    myBrakeLightBrightness = getOptParamValue(IDX_LED_BRIGHTNESS_BRAKE);
+    int myLightSettingValue;
+    int myFrontLightBrightness = getOptParamValue(IDX_LED_BRIGHTNESS_FRONT);
+    int myBackLightBrightness = getOptParamValue(IDX_LED_BRIGHTNESS_BACK);
+    int myBrakeLightBrightness = getOptParamValue(IDX_LED_BRIGHTNESS_BRAKE);
 
     switch (myRoadlightSetting_page_stage) {
         case ADJUSTING_FRONTLIGHT_BRIGHTNESS:
@@ -2250,17 +2221,29 @@ int waitTimeMs = 0;
 void paramValueSelector(uint8_t myGlobalSettingIndex, String paramName, double minAdjValue, double maxAdjValue, double adjIncrement, int decimalPlace, String unitStr){
 
     if (initFlag == 1){
+        currentParamAdjValue = -99875.98354; //random value -> wait for change
         currentParamAdjValue = (double) (getOptParamValue(myGlobalSettingIndex));
-        delay(5);
-        initFlag = 0;}
+        /*while(currentParamAdjValue == -99875.98354){
+            vTaskDelay(2);
+            //delay(5);
+        }*/
+        saveParamAdjValue = currentParamAdjValue;
+        initFlag = 0;
+        waitTimeMs = 0;
+    }
 
     int deadBand = 5;
     long timestamp = millis();
     while (millisSince(timestamp) < waitTimeMs){
             if (pressed(PIN_TRIGGER)) {
-              waitRelease(PIN_TRIGGER);
-              waitTimeMs = 0;
-              break;
+                waitRelease(PIN_TRIGGER);
+                waitTimeMs = 0;
+                break;
+            }
+            if (pressed(PIN_PWRBUTTON)) {
+                initFlag = 1;
+                waitTimeMs = 0;
+                break;
             }
     }
 
@@ -2329,23 +2312,30 @@ void paramValueSelector(uint8_t myGlobalSettingIndex, String paramName, double m
         waitRelease(PIN_TRIGGER);
         waitTimeMs = 0;
         switch (myPVSpage){
-          case ADJUST_PVS_VALUE:
-              myPVSpage = SAVE_PVS_VALUE;
-          break;
-          case SAVE_PVS_VALUE:
-              vibe(0);
-              setOptParamValue(myGlobalSettingIndex, (float)saveParamAdjValue);  //store the value locally
-              sendOptParamToReceiver(myGlobalSettingIndex);
-              myPVSpage = ADJUST_PVS_VALUE;
-              initFlag = 1;
-              backToMainMenu();
-          break;
-          case CANCEL_PVS_VALUE:
-              myPVSpage = ADJUST_PVS_VALUE;
-              initFlag = 1;
-              backToMainMenu();
-          break;
+            case ADJUST_PVS_VALUE:
+                myPVSpage = SAVE_PVS_VALUE;
+            break;
+            case SAVE_PVS_VALUE:
+                vibe(0);
+                setOptParamValue(myGlobalSettingIndex, (float)saveParamAdjValue);  //store the value locally
+                sendOptParamToReceiver(myGlobalSettingIndex);
+                myPVSpage = ADJUST_PVS_VALUE;
+                initFlag = 1;
+                backToMainMenu();
+            break;
+            case CANCEL_PVS_VALUE:
+                myPVSpage = ADJUST_PVS_VALUE;
+                initFlag = 1;
+                backToMainMenu();
+            break;
         }
     }
+    if (pressed(PIN_PWRBUTTON)) {
+        waitTimeMs = 0;
+        myPVSpage = ADJUST_PVS_VALUE;
+        initFlag = 1;
+        backToMainMenu();
+        //currentMenu = 0;
+    }   
 
 }

@@ -11,11 +11,32 @@
 //const uint32_t boardAddress = 0xA9BF713C;
 //#include <analogWrite.h>
 #define ROADLIGHT_CONNECTED                 // FRONT LIGHT and BACKLIGHT option. Reconfigure 2 pins on the receiver side for FRONTLIGHT and BACKLIGHT PWM signal
-#define OUTPUT_PPM_THROTTLE               // include receiver functions to be able to output a THROTTLE PPM/PWM signal on PIN_PPM_THROTTLE when flag THROTTLE_VIA_PPM = TRUE
+#define OUTPUT_PPM_THROTTLE               // include receiver functions to be able to output a THROTTLE PPM/PWM signal on PIN_PPM_THROTTLE when THROTTLE_MODE = VTM_PPM_PIN_OUT (1)
+
 // ********** * * * * * * * * * ***********************************************
+enum VescThrottleMode{
+    VTM_NUNCHUCK_UART,
+    VTM_PPM_PIN_OUT,
+    VTM_TEST_MODE_UART
+};
 
 const COMM_PACKET_ID VESC_COMMAND = COMM_GET_VALUES; // VESC
 // const COMM_PACKET_ID VESC_COMMAND = COMM_GET_UNITY_VALUES; // Enertion Unity
+
+//static int RECEIVER_VESC_COMMAND = VESC_COMMAND;
+/*
+typedef enum {
+	COMM_GET_VALUES = 4,
+	COMM_SET_DUTY = 5,
+	COMM_SET_CURRENT = 6,
+	COMM_SET_CURRENT_BRAKE = 7,
+	COMM_SET_HANDBRAKE = 10,
+	COMM_REBOOT = 29,
+	COMM_ALIVE = 30,
+	COMM_GET_DECODED_PPM = 31,
+  COMM_GET_UNITY_VALUES = 38
+} COMM_PACKET_ID;
+*/
 
 /* AUTOCRUISE SETTINGS
   Endless ride - when remote is off and speed is over 12 km/h for 3 seconds,
@@ -79,7 +100,7 @@ static int LED_BRIGHTNESS_BRAKE = 255;
 static int LED_BRIGHTNESS_OFF = 0;
 static int LED_ROADLIGHT_MODE = 0;
 
-static bool THROTTLE_VIA_PPM = false;   // False for UART, true for PPM
+static int THROTTLE_MODE = VTM_NUNCHUCK_UART;   //Default = UART.Nunchuck / 1=PPM 
 
 #ifdef ROADLIGHT_CONNECTED  // ********** LED ROADLIGHTS ***********************************************
     enum RoadLightState{
@@ -88,6 +109,7 @@ static bool THROTTLE_VIA_PPM = false;   // False for UART, true for PPM
         BRAKES_ONLY
     };
 #endif                      // ********** LED ROADLIGHTS ***********************************************
+
 
 #define VERSION 3
 
@@ -175,7 +197,7 @@ enum GlobalSettingsIndex {
     IDX_LED_BRIGHTNESS_BRAKE,
     IDX_LED_BRIGHTNESS_OFF,
     IDX_LED_ROADLIGHT_MODE,
-    IDX_THROTTLE_VIA_PPM
+    IDX_THROTTLE_MODE
 };
 
 

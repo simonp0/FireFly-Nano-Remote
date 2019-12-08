@@ -166,11 +166,6 @@ void refreshAllSettingsFromFlashData();// SETTINGS INITIALIZATION - copy flash d
     const uint8_t led_pwm_channel_backLight = 1; //GPIO channel to use
     const uint8_t led_pwm_resolution = 8;
 
-//    uint_fast32_t dutyCycle_lightOff = 0;
-//    uint_fast32_t dutyCycle_frontLightOn = 90;   //TODO : value can be changed via the remote menu
-//    uint_fast32_t dutyCycle_backLightOn = 90;    //TODO : value can be changed via the remote menu
-//    uint_fast32_t dutyCycle_brakeLight = 255;   //TODO : value can be changed via the remote menu
-
     unsigned long lastBrakeLightPulse = 0;
     unsigned long brakeLightPulseInterval = 100; //ms between each brakeLightPulse initiation
     unsigned long brakeLightPulseDuration = 50; //ms TBD
@@ -184,10 +179,10 @@ void refreshAllSettingsFromFlashData();// SETTINGS INITIALIZATION - copy flash d
 
 // ******** PPM THROTTLE OUTPUT ********
 #ifdef OUTPUT_PPM_THROTTLE
-    const double pwm_throttle_frequency = 50; //50Hz standard RC freq - pulse 1 to 2 ms with 1.5ms = neutral
+    const double pwm_throttle_frequency = 50; //50Hz standard RC freq - pulse width 1 to 2 ms with 1.5ms = neutral
     const uint8_t pwm_throttle_channel = 2; //GPIO channel to use
     const uint8_t pwm_throttle_resolution = 16;//16bits -> 0 to 65535
-    //20ms (50Hz) = 65535 ---> 1ms = 3276 & 2ms = 6552
+    // 20ms (50Hz) = 65535 ---> 1ms = 3276 & 2ms = 6552
     // MAP throttleValue(0 to 255) -> 3276 to 6552
     uint_fast32_t pwm_throttle_dutyCycle_value;
     void updatePpmThrottleOutput();

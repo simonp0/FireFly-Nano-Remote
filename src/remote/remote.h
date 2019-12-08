@@ -41,11 +41,7 @@
     int BRAKELIGHT_BRIGHTNESS = 255;  //TEMP : testing Rx settings update from Tx
 
     RoadLightState myRoadLightState = OFF;  //current roadlight mode activated (OFF : default at startup)
-    int myLightSettingValue;
-    int myFrontLightBrightness = FRONTLIGHT_BRIGHTNESS;
-    int myBackLightBrightness = BACKLIGHT_BRIGHTNESS;
-    int myBrakeLightBrightness = BRAKELIGHT_BRIGHTNESS;
-
+    
     bool requestSwitchLight = false; //flag for putting a SET_LIGHT request in the next remotePacket
 
     //bool requestAdjustLightBrightness = false; //flag for putting a SET_LIGHT_BRIGHTNESS request in the next remotePacket
@@ -201,7 +197,7 @@ enum menu_info { INFO_DEBUG };
 enum menu_remote { REMOTE_CALIBRATE, REMOTE_PAIR, REMOTE_SLEEP_TIMER };
 enum menu_board { BOARD_UPDATE };
 enum menu_light { SWITCH_LIGHT_ON, SWITCH_LIGHT_OFF, SWITCH_LIGHT_BRAKES_ONLY, ROADLIGHT_SETTINGS }; // *** LED ROADLIGHTS ***
-enum menu_receiver { THROTTLE_MODE };
+enum menu_receiver { SUBM_THROTTLE_MODE };
 enum menu_auto_cruise { CRUISE_MENU_AUTO_CRUISE, CRUISE_MENU_PUSHING_SPEED , CRUISE_MENU_PUSHING_TIME, CRUISE_MENU_CRUISE_CURRENT_SPIKE, CRUISE_MENU_AUTO_CRUISE_TIME, CRUISE_MENU_CRUISE_CURRENT_LOW };
 
 float currentMenu = 0;
