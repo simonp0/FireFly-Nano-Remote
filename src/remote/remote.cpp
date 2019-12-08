@@ -1535,7 +1535,7 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                     switch (subMenuItem){
                         case SUBM_THROTTLE_MODE:
                             //drawThrottleModePage();
-                            paramValueSelector(IDX_THROTTLE_MODE, "App mode:\n0->UART\n1->PPM", 0,+2,1,0," ");// 2 : for testing purpose via other VescUART commands
+                            paramValueSelector(IDX_THROTTLE_MODE, "App mode:\n0->UART\n1->PPM", 0,+5,1,0," ");// 2 : for testing purpose via other VescUART commands
                         break;
                     }
                 break;

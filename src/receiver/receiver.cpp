@@ -917,7 +917,11 @@ void setCruise ( bool cruise, uint16_t setPoint ){
 void setThrottle(uint16_t value){
     // update display
     throttle = value;
-
+    double mySpeed = telemetry.getSpeed();
+    int deadBand = 10;
+    float myCurrent;
+    float myRpm;
+    float myDuty;
     // UART
     #ifndef FAKE_UART
         switch(THROTTLE_MODE){
@@ -927,19 +931,17 @@ void setThrottle(uint16_t value){
                 UART.nunchuck.lowerButton = false;
                 UART.setNunchuckValues();
             break;
+
             case VTM_PPM_PIN_OUT:
                 // ******** PPM THROTTLE OUTPUT ********
                 #ifdef OUTPUT_PPM_THROTTLE
                     updatePpmThrottleOutput();
                 #endif
             break;
-            case VTM_TEST_MODE_UART:
-                float myCurrent;
-                double mySpeed = telemetry.getSpeed();
 
+            case VTM_CURRENT_UART:
                 myCurrent = map(value, 0, 255, -10, +10);
-                if (value > 117 && value < 137) myCurrent = 0;
-
+                if (value > (default_throttle - deadBand) && value < (default_throttle + deadBand)) myCurrent = 0;
                 UART.setCurrent(myCurrent);
                 /*
                 if ((mySpeed >= 0) && (value > default_throttle)) {  //going forwards
@@ -949,7 +951,28 @@ void setThrottle(uint16_t value){
                     UART.setBrakeCurrent(myCurrent);   // DOESNT WORK 
                 }
                 */
+            break;
 
+            case VTM_RPM_UART:
+                myRpm = map(value, 0, 255, -1000, +1000);
+                if (value > (default_throttle - deadBand) && value < (default_throttle + deadBand)) myRpm = 0;
+                UART.setRpm(myRpm);
+            break;
+
+            case VTM_DUTY_UART:
+                myDuty = map(value, 0, 255, 0, 1);
+                if (value > (default_throttle - deadBand) && value < (default_throttle + deadBand)) myDuty = 0;
+                UART.setDuty(myDuty);
+            break;
+
+            case VTM_REGEN_UART:
+                myCurrent = map(value, 0, 255, -10, +10);
+                if ( (mySpeed >= 0) && (value > (default_throttle + deadBand)) ) {  //going forwards
+                    UART.setCurrent(myCurrent);               
+                }
+                else if ( (mySpeed > 0.5) && (value < (default_throttle - deadBand)) ) {  //going forwards, braking
+                    UART.setBrakeCurrent(myCurrent);   // DOESNT WORK 
+                }                
             break;
         }
     #endif
@@ -974,11 +997,25 @@ void setCruise(uint8_t speed) {
                 UART.nunchuck.lowerButton = true;
                 UART.setNunchuckValues();
             break;
+
             case VTM_PPM_PIN_OUT:
                 updatePpmThrottleOutput();      // NOT TESTED !
             break;
-            case VTM_TEST_MODE_UART:
+
+            case VTM_CURRENT_UART:
             break;
+
+            case VTM_RPM_UART:
+
+            break;
+
+            case VTM_DUTY_UART:
+
+            break;
+
+            case VTM_REGEN_UART:
+
+            break;            
         }
     #endif
 }
