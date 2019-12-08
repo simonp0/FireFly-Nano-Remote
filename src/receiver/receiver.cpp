@@ -922,6 +922,8 @@ void setThrottle(uint16_t value){
     float myCurrent;
     float myRpm;
     float myDuty;
+    float myHandbrakeCurrent = 5;
+
     // UART
     #ifndef FAKE_UART
         switch(THROTTLE_MODE){
@@ -956,7 +958,7 @@ void setThrottle(uint16_t value){
             case VTM_RPM_UART:
                 myRpm = map(value, 0, 255, -1000, +1000);
                 if (value > (default_throttle - deadBand) && value < (default_throttle + deadBand)) myRpm = 0;
-                UART.setRpm(myRpm);
+                UART.setRPM(myRpm);
             break;
 
             case VTM_DUTY_UART:
@@ -974,6 +976,24 @@ void setThrottle(uint16_t value){
                     UART.setBrakeCurrent(myCurrent);   // DOESNT WORK 
                 }                
             break;
+
+            case VTM_HANDBRAKE_UART:
+                myCurrent = map(value, 0, 255, -10, +10);
+                if ( (mySpeed >= 0) && (value > (default_throttle + deadBand)) ) {  //going forwards
+                    UART.setCurrent(myCurrent);               
+                }
+                else if ( (mySpeed > 0.5) && (value < (default_throttle - deadBand)) ) {  //going forwards, braking
+                    UART.setHandbrake(myHandbrakeCurrent);   // TEST
+                }                
+            break;
+
+            case VTM_POS_UART:
+                float myPos = map(value, 0, 255, 0, +359);
+                if (value > (default_throttle - deadBand) && value < (default_throttle + deadBand)) myPos = 0;
+                UART.setPos(myPos); // TEST
+            break;
+
+
         }
     #endif
 
@@ -1006,16 +1026,20 @@ void setCruise(uint8_t speed) {
             break;
 
             case VTM_RPM_UART:
-
             break;
 
             case VTM_DUTY_UART:
-
             break;
 
             case VTM_REGEN_UART:
+            break;
 
-            break;            
+            case VTM_HANDBRAKE_UART:
+            break; 
+
+            case VTM_POS_UART:
+            break;
+
         }
     #endif
 }

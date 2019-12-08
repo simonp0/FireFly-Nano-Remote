@@ -423,6 +423,16 @@ void VescUart::setHandbrake(float handbrakeCurrent) {
 	packSendPayload(payload, 5);
 }
 
+void VescUart::setPos(float pidPos) {
+	int32_t index = 0;
+	uint8_t payload[5];
+
+	payload[index++] = COMM_SET_POS;
+	buffer_append_int32(payload, (int32_t)(pidPos * 1000000), &index);
+
+	packSendPayload(payload, 5);
+}
+
 void VescUart::setRPM(float rpm) {
 	int32_t index = 0;
 	uint8_t payload[5];

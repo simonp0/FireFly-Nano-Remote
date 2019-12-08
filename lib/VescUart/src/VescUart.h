@@ -96,6 +96,12 @@ class VescUart
 		void setHandbrake(float handbrakeCurrent);
 
 		/**
+		 * @brief      Set position
+		 * @param      pidPos	-	position
+		 */
+		void setPos(float pidPos);
+
+		/**
 		 * @brief      Set the rpm of the motor
 		 * @param      rpm  - The desired RPM (actually eRPM = RPM * poles)
 		 */
