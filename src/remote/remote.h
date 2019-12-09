@@ -347,7 +347,6 @@ bool loadOptParamFromReceiver(uint8_t myGlobalSettingIndex);
 
 
 // **************************************** LED ROADLIGHTS *****************************
-
 void drawLightSettingsPage();//test
 //void switchLightOn(); //on receiver side only.
 //void switchLightOff(); //on receiver side only.

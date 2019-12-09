@@ -918,14 +918,26 @@ void setCruise ( bool cruise, uint16_t setPoint ){
 } */
 
 void setThrottle(uint16_t value){
+    
     // update display
     throttle = value;
+    
+    int myThrottle = value;
+
     double mySpeed = telemetry.getSpeed();
     int deadBand = 10;
     float myCurrent;
     float myRpm;
     float myDuty;
     float myHandbrakeCurrent = 5;
+    float motor_max_current = 10;    //max current
+    float motor_min_current = -10;    //max negative current for active braking or cruising backwards
+    float motor_max_brake_current = 10;  //max absolute current for regenerative braking
+    float regen_brake_min_speed = 2;    // switch to active braking under this speed
+    float handbrakeMaxSpeed = 0.4;
+    bool reverseLocked = 0;
+
+    //TODO: test if regen braking value has to be signed and opposite to current direction - UART.setBrakeCurrent()
 
     // UART
     #ifndef FAKE_UART
@@ -944,19 +956,108 @@ void setThrottle(uint16_t value){
                     updatePpmThrottleOutput();
                 #endif
             break;
+
+/*
+VTM_CURRENT_UART_STATE:
+    VTM_IDLE:
+        if ((mySpeed > -5) && (myThrottle > default_throttle)) {  //start going forwards
+            myCurrent = map(myThrottle, default_throttle, 255, 0, motor_max_current);
+            UART.setCurrent(myCurrent);
+            VTM_CURRENT_UART_STATE = VTM_DRIVING;               
+        }
+        
+    VTM_STOPPED:
+                        //Start going forwards from stop                        
+                        if ((mySpeed >= 0) && (myThrottle > default_throttle)) {  //going forwards, cruising
+                            myCurrent = map(myThrottle, default_throttle, 255, 0, motor_max_current);
+                            UART.setCurrent(myCurrent);               
+                        }
+                        if (mySpeed>2) VTM_CURRENT_UART_STATE = VTM_DRIVING;
+
+    VTM_DRIVING:
+    bool has_reached_driving_speed = 1; //flag for statechange
+
+
+    VTM_REGEN_BRAKING:
+
+
+    VTM_ACTIVE_BRAKING:
+
+
+    VTM_HANDBRAKE:
+
+
+    VTM_BACKWARDS_DRIVING:
+*/
             //2
-            case VTM_CURRENT_UART:
-                myCurrent = map(value, 0, 255, -10, +10);
-                if (value > (default_throttle - deadBand) && value < (default_throttle + deadBand)) myCurrent = 0;
-                UART.setCurrent(myCurrent);
-                /*
-                if ((mySpeed >= 0) && (value > default_throttle)) {  //going forwards
-                    UART.setCurrent(myCurrent);               
+            case VTM_CURRENT_UART:  //current with regen brake & handbrake when stopped
+                //myCurrent = map(myThrottle, 0, 255, -abs(motor_max_brake_current), motor_max_current);
+                switch (state){
+                    case CONNECTED:
+                        //Idle
+                        if (myThrottle > (default_throttle - deadBand) && myThrottle < (default_throttle + deadBand)){ //IDLE - remote centered
+                            myCurrent = 0;
+                            UART.setCurrent(myCurrent);
+                        } 
+
+                        //Start going forward from stop                        
+                        if ((mySpeed >= 0) && (myThrottle > default_throttle)) {  //moving forwards, cruising
+                            myCurrent = map(myThrottle, default_throttle, 255, 0, motor_max_current);
+                            UART.setCurrent(myCurrent);               
+                        }
+
+                        //Braking while moving forwards
+                        if ((mySpeed >= regen_brake_min_speed) && (myThrottle < default_throttle)) {  //moving forwards, regen braking
+                            myCurrent = map(myThrottle, 0, default_throttle, -abs(motor_max_brake_current), 0);
+                            UART.setBrakeCurrent(myCurrent);   //
+                            reverseLocked = 1; 
+                        } else if ((mySpeed > 0) && (mySpeed < regen_brake_min_speed) && (myThrottle < default_throttle)) {  //moving forwards, slow, active braking
+                            myCurrent = map(myThrottle, 0, default_throttle, motor_min_current, 0);
+                            UART.setCurrent(myCurrent);   // 
+                        } 
+                        
+                        if (reverseLocked == 0){
+                            //Start going backward from stop
+                            if ( (mySpeed <= 0) && (myThrottle < (default_throttle - deadBand)) ){   //moving backwards
+                                myCurrent = map (myThrottle, 0, default_throttle, motor_min_current, 0);
+                                UART.setCurrent(myCurrent);
+                            }
+                        } else {    //Handbrake mode, we just stopped
+                            if ( (abs(mySpeed) < handbrakeMaxSpeed) && (myThrottle < (default_throttle - deadBand)) ){   //moving backwards
+                                myCurrent = myHandbrakeCurrent;
+                                UART.setHandbrake(myCurrent);
+                            }       //too steep, handbrake fails
+                            if ( (abs(mySpeed) >= handbrakeMaxSpeed) && (myThrottle < (default_throttle - deadBand)) ){   //handBrake slips -> active braking
+                                myCurrent = -(myHandbrakeCurrent/2 + pow(mySpeed+1,2)) ;
+                                UART.setCurrent(myCurrent);
+                            }
+                            // Release handbrake when throttle goes back to neutral
+                            if (myThrottle >= default_throttle){reverseLocked = 0;}
+                        }
+
+                        /*
+                        //Braking while moving backwards
+                        if ( (mySpeed < -regen_brake_min_speed) && (myThrottle > default_throttle) ) {    //moving backwards, regen braking
+                            myCurrent = map (myThrottle, default_throttle, 255, 0, abs(motor_max_brake_current));
+                            UART.setBrakeCurrent(myCurrent);
+                        } else if ((mySpeed < 0) && (mySpeed > -regen_brake_min_speed) && (myThrottle > default_throttle)) {  //moving backwards, slow, active braking
+                            myCurrent = map(myThrottle, default_throttle, 255, 0, motor_max_current);
+                            UART.setCurrent(myCurrent);   // 
+                        }
+                        */
+                       
+                        //deal with STOPPING state transition? timer?
+                        if (throttle == 0 && !isMoving()) { setState(STOPPED);}
+                        if (throttle == 255 && !isMoving()) { setState(STOPPED);}
+
+                    break;
+
+                    case STOPPING: // emergency brake when remote has disconnected  -> don't use regen, only active braking.
+                        myCurrent = map(myThrottle, 0, 255, motor_min_current, motor_max_current);
+                        UART.setCurrent(myCurrent);   
+                    break;
+
                 }
-                else if ((mySpeed > 0.5) && (value < default_throttle)) {  //going forwards, braking
-                    UART.setBrakeCurrent(myCurrent);   // DOESNT WORK 
-                }
-                */
             break;
             //3
             case VTM_RPM_UART:
@@ -977,7 +1078,7 @@ void setThrottle(uint16_t value){
                     UART.setCurrent(myCurrent);               
                 }
                 else if ( (mySpeed > 0.5) && (value < (default_throttle - deadBand)) ) {  //going forwards, braking
-                    UART.setBrakeCurrent(myCurrent);   // DOESNT WORK 
+                    UART.setBrakeCurrent(myCurrent);
                 }                
             break;
             //6
