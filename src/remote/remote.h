@@ -357,5 +357,25 @@ enum paramValueSelector_page_stage{
   SAVE_PVS_VALUE,
   CANCEL_PVS_VALUE
 } myPVSpage = ADJUST_PVS_VALUE;
-void paramValueSelector(uint8_t myGlobalSettingIndex, String paramName, double minValue, double maxValue, double increment, int decimalPlace, String unitStr);
 
+/*
+// #void paramValueSelector(uint8_t myGlobalSettingIndex, String paramName, double minValue, double maxValue, double increment, int decimalPlace, String unitStr);
+*/
+
+void paramValueSelector(uint8_t myGlobalSettingIndex, String paramName, double minAdjValue, double maxAdjValue, double adjIncrement, int decimalPlace, String unitStr, String label = " ");
+
+double currentParamAdjValue;
+double saveParamAdjValue;
+bool initFlag = 1;
+int waitTimeMs = 0;
+
+String VescThrottleMode_label[] = {
+    "VESC Remote\n(Nunchuk)",
+    "PPM",
+    "Current",
+    "RPM",
+    "Duty",
+    "Regen",
+    "Handbrake",
+    "POS"
+};

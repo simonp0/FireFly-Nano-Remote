@@ -1535,7 +1535,7 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                     switch (subMenuItem){
                         case SUBM_THROTTLE_MODE:
                             //drawThrottleModePage();
-                            paramValueSelector(IDX_THROTTLE_MODE, "App mode:\n0->UART\n1->PPM", 0,(VTM_ENUM_END-1),1,0," ");// 2 : for testing purpose via other VescUART commands
+                            paramValueSelector(IDX_THROTTLE_MODE, "App mode:", 0,(VTM_ENUM_END-1),1,0, " ", VescThrottleMode_label[(int)currentParamAdjValue]);// 2 : for testing purpose via other VescUART commands
                         break;
                     }
                 break;
@@ -2213,12 +2213,9 @@ void drawLightSettingsPage(){
 }// **************************************** LED ROADLIGHTS *****************************
 
 
-double currentParamAdjValue;
-double saveParamAdjValue;
-bool initFlag = 1;
-int waitTimeMs = 0;
+
 // e.g. paramValueSelector(IDX_AUTO_BRAKE_RELEASE, "Auto brake delay", -1000,+1000,0.1,1,"s");
-void paramValueSelector(uint8_t myGlobalSettingIndex, String paramName, double minAdjValue, double maxAdjValue, double adjIncrement, int decimalPlace, String unitStr){
+void paramValueSelector(uint8_t myGlobalSettingIndex, String paramName, double minAdjValue, double maxAdjValue, double adjIncrement, int decimalPlace, String unitStr, String label ){
 
     if (initFlag == 1){
         currentParamAdjValue = -99875.98354; //random value -> wait for change
@@ -2268,6 +2265,7 @@ void paramValueSelector(uint8_t myGlobalSettingIndex, String paramName, double m
                 if (currentParamAdjValue > minAdjValue){ currentParamAdjValue = constrain((currentParamAdjValue - adjIncrement), minAdjValue, maxAdjValue);}
             }
             saveParamAdjValue = currentParamAdjValue;
+            drawString(label, 0, 44, fontMicro);
             y = 80;
             drawStringCenter(String(currentParamAdjValue, decimalPlace), unitStr, y);
             y = 105;

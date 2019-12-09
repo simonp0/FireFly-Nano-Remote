@@ -135,7 +135,7 @@ void saveFlashSetting(uint8_t myGlobalSettingIndex, float value);// Save a setti
 
 void refreshAllSettingsFromFlashData();// SETTINGS INITIALIZATION - copy flash data into local variables & into localOptParamValueArray[] . If nothing saved in flash, GLOBALS.H hardcoded default values are used instead
 
-
+float Lpos=0;
 //void saveFSSettings();
 //void loadFSSettings();
 

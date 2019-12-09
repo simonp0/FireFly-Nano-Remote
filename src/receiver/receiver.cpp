@@ -370,6 +370,9 @@ void loop() { // CORE 1 task launcher - UART data exchange with VESC
             radioExchange();
             stateMachine();
             vTaskDelay(1);//was 1
+            #ifdef ROADLIGHT_CONNECTED
+                updateBrakeLight();
+            #endif
         }
     }
 #endif //endifdef
@@ -927,20 +930,21 @@ void setThrottle(uint16_t value){
     // UART
     #ifndef FAKE_UART
         switch(THROTTLE_MODE){
+            //0
             case VTM_NUNCHUCK_UART:
                 UART.nunchuck.valueY = value;
                 UART.nunchuck.upperButton = false;
                 UART.nunchuck.lowerButton = false;
                 UART.setNunchuckValues();
             break;
-
+            //1
             case VTM_PPM_PIN_OUT:
                 // ******** PPM THROTTLE OUTPUT ********
                 #ifdef OUTPUT_PPM_THROTTLE
                     updatePpmThrottleOutput();
                 #endif
             break;
-
+            //2
             case VTM_CURRENT_UART:
                 myCurrent = map(value, 0, 255, -10, +10);
                 if (value > (default_throttle - deadBand) && value < (default_throttle + deadBand)) myCurrent = 0;
@@ -954,19 +958,19 @@ void setThrottle(uint16_t value){
                 }
                 */
             break;
-
+            //3
             case VTM_RPM_UART:
-                myRpm = map(value, 0, 255, -1000, +1000);
+                myRpm = map(value, 0, 255, -10000, +10000);
                 if (value > (default_throttle - deadBand) && value < (default_throttle + deadBand)) myRpm = 0;
                 UART.setRPM(myRpm);
             break;
-
+            //4
             case VTM_DUTY_UART:
-                myDuty = map(value, 0, 255, 0, 1);
+                myDuty = map(value, (default_throttle + deadBand), 255, 0, 1);
                 if (value > (default_throttle - deadBand) && value < (default_throttle + deadBand)) myDuty = 0;
                 UART.setDuty(myDuty);
             break;
-
+            //5
             case VTM_REGEN_UART:
                 myCurrent = map(value, 0, 255, -10, +10);
                 if ( (mySpeed >= 0) && (value > (default_throttle + deadBand)) ) {  //going forwards
@@ -976,21 +980,27 @@ void setThrottle(uint16_t value){
                     UART.setBrakeCurrent(myCurrent);   // DOESNT WORK 
                 }                
             break;
-
+            //6
             case VTM_HANDBRAKE_UART:
                 myCurrent = map(value, 0, 255, -10, +10);
                 if ( (mySpeed >= 0) && (value > (default_throttle + deadBand)) ) {  //going forwards
                     UART.setCurrent(myCurrent);               
                 }
-                else if ( (mySpeed > 0.5) && (value < (default_throttle - deadBand)) ) {  //going forwards, braking
+                else if ( (mySpeed < 0.1) && (value < (default_throttle - deadBand)) ) {  //going forwards, braking
                     UART.setHandbrake(myHandbrakeCurrent);   // TEST
                 }                
             break;
-
+            //7
             case VTM_POS_UART:
-                float myPos = map(value, 0, 255, 0, +359);
-                if (value > (default_throttle - deadBand) && value < (default_throttle + deadBand)) myPos = 0;
-                UART.setPos(myPos); // TEST
+                float myPos = map(value, 0, 255, 1, +359);
+                //if (value > (default_throttle - deadBand) && value < (default_throttle + deadBand)) myPos = 0;
+                if ( value > (default_throttle + deadBand) ) {  //going forwards
+                    Lpos = pow( Lpos + 1 , 1.2);              
+                }
+                else if ( value < (default_throttle - deadBand) ) {  //going forwards, braking
+                    Lpos = pow(Lpos , -1.2);   // DOESNT WORK 
+                }    
+                UART.setPos(Lpos); // TEST
             break;
 
 
@@ -1001,7 +1011,7 @@ void setThrottle(uint16_t value){
     lastThrottle = throttle;
 
     #ifdef ROADLIGHT_CONNECTED
-      updateBrakeLight();
+      //updateBrakeLight();
     #endif
 
 
