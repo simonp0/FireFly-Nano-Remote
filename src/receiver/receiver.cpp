@@ -272,7 +272,7 @@ float batteryPackPercentage( float voltage ) { // Calculate the battery level of
                     display.setTextColor(WHITE);
                     display.setFont(fontDesc);  //fontDigital
                     display.setCursor(0, 20);
-                    display.println("THR: " + String(map(throttle, 0, 255, -100, 100)) + "%");
+                    display.println("THR: " + String(map(throttle, 0, 255, -100, 100)) + "%" + "   Avg:" + String(averagedThrottle) );
                     display.println("SPD: " + String(telemetry.getSpeed(),1) + " k");
                 }
             break;
@@ -303,7 +303,8 @@ float batteryPackPercentage( float voltage ) { // Calculate the battery level of
             display.print("No UART data");
             // ************ LED ROADLIGHTS *****************************
               display.print(" L:" + String(myRoadLightState) );
-              //display.print(" Lp" + String(digitalRead(PIN_BACKLIGHT)) );
+              display.setCursor(0, 40);
+              display.print(" AvgT" + String(averagedThrottle) );
             // ************ LED ROADLIGHTS *****************************
 
             // remote info
@@ -921,11 +922,11 @@ void setThrottle(uint16_t value){
     
     // update display
     throttle = value;
-    
+    averagedThrottle = smoothValueOverTime(throttle);
     int myThrottle = value;
 
     double mySpeed = telemetry.getSpeed();
-    int deadBand = 10;
+    int deadBand = 5;
     float myCurrent;
     float myRpm;
     float myDuty;
@@ -933,9 +934,8 @@ void setThrottle(uint16_t value){
     float motor_max_current = 10;    //max current
     float motor_min_current = -10;    //max negative current for active braking or cruising backwards
     float motor_max_brake_current = 10;  //max absolute current for regenerative braking
-    float regen_brake_min_speed = 2;    // switch to active braking under this speed
-    float handbrakeMaxSpeed = 0.4;
-    bool reverseLocked = 0;
+    float regen_brake_min_speed = 1;    // switch to active braking under this speed
+    float handbrakeMaxSpeed = 0.2;
 
     //TODO: test if regen braking value has to be signed and opposite to current direction - UART.setBrakeCurrent()
 
@@ -1001,19 +1001,19 @@ VTM_CURRENT_UART_STATE:
                         } 
 
                         //Start going forward from stop                        
-                        if ((mySpeed >= 0) && (myThrottle > default_throttle)) {  //moving forwards, cruising
+                        if ((mySpeed >= 0) && (myThrottle > (default_throttle + deadBand) )) {  //moving forwards, cruising
                             myCurrent = map(myThrottle, default_throttle, 255, 0, motor_max_current);
                             UART.setCurrent(myCurrent);               
                         }
 
                         //Braking while moving forwards
-                        if ((mySpeed >= regen_brake_min_speed) && (myThrottle < default_throttle)) {  //moving forwards, regen braking
+                        if ((mySpeed >= regen_brake_min_speed) && (myThrottle < (default_throttle - deadBand) )) {  //moving forwards, regen braking
                             myCurrent = map(myThrottle, 0, default_throttle, -abs(motor_max_brake_current), 0);
                             UART.setBrakeCurrent(myCurrent);   //
                             reverseLocked = 1; 
-                        } else if ((mySpeed > 0) && (mySpeed < regen_brake_min_speed) && (myThrottle < default_throttle)) {  //moving forwards, slow, active braking
+                        } else if ((mySpeed > 0) && (mySpeed < regen_brake_min_speed) && (myThrottle < (default_throttle - deadBand) )) {  //moving forwards, slow, active braking
                             myCurrent = map(myThrottle, 0, default_throttle, motor_min_current, 0);
-                            UART.setCurrent(myCurrent);   // 
+                            //UART.setCurrent(myCurrent); //+ pow(mySpeed+1,2));   // 
                         } 
                         
                         if (reverseLocked == 0){
@@ -1023,16 +1023,24 @@ VTM_CURRENT_UART_STATE:
                                 UART.setCurrent(myCurrent);
                             }
                         } else {    //Handbrake mode, we just stopped
-                            if ( (abs(mySpeed) < handbrakeMaxSpeed) && (myThrottle < (default_throttle - deadBand)) ){   //moving backwards
+                            if ( (handbrakeON == 0) && (abs(mySpeed) < handbrakeMaxSpeed) && (myThrottle < (default_throttle - deadBand)) ){ 
                                 myCurrent = myHandbrakeCurrent;
                                 UART.setHandbrake(myCurrent);
-                            }       //too steep, handbrake fails
-                            if ( (abs(mySpeed) >= handbrakeMaxSpeed) && (myThrottle < (default_throttle - deadBand)) ){   //handBrake slips -> active braking
-                                myCurrent = -(myHandbrakeCurrent/2 + pow(mySpeed+1,2)) ;
+                                handbrakeON = 1;
+                            }       
+                                    //keepalive handbrake if not moving
+                            if ( (handbrakeON == 1) && (abs(mySpeed) < handbrakeMaxSpeed) && (myThrottle < (default_throttle - deadBand)) ){
+                                myCurrent = myHandbrakeCurrent;
+                                UART.setHandbrake(myCurrent);
+                            }
+
+                                //too steep, handbrake fails
+                            if ( (handbrakeON == 1) && (abs(mySpeed) >= handbrakeMaxSpeed) && (myThrottle < (default_throttle - deadBand)) ){   //handBrake slips -> active braking
+                                myCurrent = mySpeed/abs(mySpeed) * (myHandbrakeCurrent/2 + pow(mySpeed+1,2));
                                 UART.setCurrent(myCurrent);
                             }
                             // Release handbrake when throttle goes back to neutral
-                            if (myThrottle >= default_throttle){reverseLocked = 0;}
+                            if (myThrottle >= default_throttle + deadBand){reverseLocked = 0; handbrakeON = 0;}
                         }
 
                         /*
@@ -1047,8 +1055,8 @@ VTM_CURRENT_UART_STATE:
                         */
                        
                         //deal with STOPPING state transition? timer?
-                        if (throttle == 0 && !isMoving()) { setState(STOPPED);}
-                        if (throttle == 255 && !isMoving()) { setState(STOPPED);}
+                        //if (throttle == 0 && !isMoving()) { setState(STOPPED);}
+                        //if (throttle == 255 && !isMoving()) { setState(STOPPED);}
 
                     break;
 
@@ -1618,3 +1626,30 @@ bool inRange(int val, int minimum, int maximum){ //checks if value is within MIN
         }
 #endif
 // ******** PPM THROTTLE OUTPUT ********
+
+
+
+int smoothValueOverTime(int valueToAdd){
+    int myArraySize = sizeof(arraySmoothValue)/sizeof(arraySmoothValue[0]);
+    int samples = myArraySize;
+    int total;
+    for (uint8_t i = 0; i < samples; i++) {
+
+            if (millisSince(smoothTimestamp) > 15){
+                total = 0;
+                samples = 0;
+                //totalAccumulatedSmoothValues ++;
+                for (i=0; i < (myArraySize-1); i++){
+                    arraySmoothValue[i] = arraySmoothValue[i+1]; 
+                    total = total + arraySmoothValue[i];
+                    samples ++;                               
+                }
+                arraySmoothValue[(myArraySize-1)] = valueToAdd;
+                total = total + valueToAdd;
+                samples++;
+                myAverageValue = (int)(total / samples);
+                smoothTimestamp = millis();
+            }
+    }
+    return myAverageValue;
+}

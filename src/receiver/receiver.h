@@ -136,6 +136,15 @@ void saveFlashSetting(uint8_t myGlobalSettingIndex, float value);// Save a setti
 void refreshAllSettingsFromFlashData();// SETTINGS INITIALIZATION - copy flash data into local variables & into localOptParamValueArray[] . If nothing saved in flash, GLOBALS.H hardcoded default values are used instead
 
 float Lpos=0;
+
+bool reverseLocked = 0;
+bool handbrakeON = 0;
+
+double smoothTimestamp = 0;
+int arraySmoothValue[] = { default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle };
+int averagedThrottle = default_throttle;
+int myAverageValue;
+int smoothValueOverTime(int valueToAdd);
 //void saveFSSettings();
 //void loadFSSettings();
 
