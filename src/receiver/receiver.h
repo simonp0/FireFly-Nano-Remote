@@ -139,12 +139,25 @@ float Lpos=0;
 
 bool reverseLocked = 0;
 bool handbrakeON = 0;
-
+/*
 double smoothTimestamp = 0;
 int arraySmoothValue[] = { default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle };
-int averagedThrottle = default_throttle;
+int mySmoothedThrottle = default_throttle;
 int myAverageValue;
 int smoothValueOverTime(int valueToAdd);
+*/
+
+double smoothTimestamp2 = 0;
+//float smoothArray2[10];
+int mySmoothedThrottle = (int) default_throttle;
+float mySmoothedSpeed = 0;
+
+float smoothValue2(float *smoothArray2, float valueToAdd);
+
+float throttleSmoothArray[] = { default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle };
+float speedSmoothArray[] = {0,0,0,0,0,0,0,0,0,0};
+
+
 //void saveFSSettings();
 //void loadFSSettings();
 

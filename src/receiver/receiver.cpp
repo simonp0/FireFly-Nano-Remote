@@ -272,8 +272,8 @@ float batteryPackPercentage( float voltage ) { // Calculate the battery level of
                     display.setTextColor(WHITE);
                     display.setFont(fontDesc);  //fontDigital
                     display.setCursor(0, 20);
-                    display.println("THR: " + String(map(throttle, 0, 255, -100, 100)) + "%" + "   Avg:" + String(averagedThrottle) );
-                    display.println("SPD: " + String(telemetry.getSpeed(),1) + " k");
+                    display.println("THR: " + String(map(throttle, 0, 255, -100, 100)) + "%" + "   Avg:" + String(mySmoothedThrottle) );
+                    display.println("SPD: " + String(telemetry.getSpeed(),1) + " k" + "   Avg:" + String(mySmoothedSpeed) );
                 }
             break;
         }
@@ -304,7 +304,7 @@ float batteryPackPercentage( float voltage ) { // Calculate the battery level of
             // ************ LED ROADLIGHTS *****************************
               display.print(" L:" + String(myRoadLightState) );
               display.setCursor(0, 40);
-              display.print(" AvgT" + String(averagedThrottle) );
+              display.print(" AvgT" + String(mySmoothedThrottle) );
             // ************ LED ROADLIGHTS *****************************
 
             // remote info
@@ -922,10 +922,13 @@ void setThrottle(uint16_t value){
     
     // update display
     throttle = value;
-    averagedThrottle = smoothValueOverTime(throttle);
     int myThrottle = value;
-
+   // mySmoothedThrottle = smoothValueOverTime(throttle);
     double mySpeed = telemetry.getSpeed();
+    mySmoothedThrottle = (int)smoothValue2(throttleSmoothArray, (float)throttle);
+    mySmoothedSpeed = smoothValue2(speedSmoothArray, (float)mySpeed);
+
+
     int deadBand = 5;
     float myCurrent;
     float myRpm;
@@ -1628,7 +1631,7 @@ bool inRange(int val, int minimum, int maximum){ //checks if value is within MIN
 // ******** PPM THROTTLE OUTPUT ********
 
 
-
+/*
 int smoothValueOverTime(int valueToAdd){
     int myArraySize = sizeof(arraySmoothValue)/sizeof(arraySmoothValue[0]);
     int samples = myArraySize;
@@ -1649,6 +1652,39 @@ int smoothValueOverTime(int valueToAdd){
                 samples++;
                 myAverageValue = (int)(total / samples);
                 smoothTimestamp = millis();
+            }
+    }
+    return myAverageValue;
+}
+*/
+
+float smoothValue2(float *smoothArray2, float valueToAdd){
+    int myArraySize = sizeof(smoothArray2)/sizeof(smoothArray2[0]);
+    int samples = myArraySize;
+    float total;
+    float myAverageValue;
+    for (uint8_t i = 0; i < samples; i++) {
+            if (millisSince(smoothTimestamp2) > 15){
+                total = 0;
+                samples = 0;
+                for (i=0; i < (myArraySize-1); i++){
+                    smoothArray2[i] = smoothArray2[i+1]; 
+                    total = total + smoothArray2[i];
+                    samples ++;                               
+                }
+                smoothArray2[(myArraySize-1)] = valueToAdd;
+                total = total + valueToAdd;
+                samples++;
+                myAverageValue = (float)(total / samples);
+                smoothTimestamp2 = millis();
+            }
+            else {
+                total = 0;
+                for (i=0; i < (myArraySize); i++){
+                    total = total + smoothArray2[i];                            
+                }
+                myAverageValue = (float)total/myArraySize;
+                
             }
     }
     return myAverageValue;
