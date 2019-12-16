@@ -716,63 +716,60 @@ bool receiveData() {
 
 bool receivePacket(uint8_t* buf, uint8_t len) {
 
-  uint8_t expected = len;
-  long ms = millis();
+    uint8_t expected = len;
+    long ms = millis();
 
-  // Should be a message for us now
-  if (!responseAvailable(len)) return false;
+    // Should be a message for us now
+    if (!responseAvailable(len)) return false;
 
-  #ifdef ARDUINO_SAMD_ZERO
+    #ifdef ARDUINO_SAMD_ZERO
 
-    if (!radio.recv(buf, &len)) return false;
+        if (!radio.recv(buf, &len)) return false;
 
-    // signal
-    lastRssi = radio.lastRssi();
-    signalStrength = constrain(map(lastRssi, -77, -35, 0, 100), 0, 100);
+        // signal
+        lastRssi = radio.lastRssi();
+        signalStrength = constrain(map(lastRssi, -77, -35, 0, 100), 0, 100);
 
-  #elif ESP32
-    int i = 0;
-    while (LoRa.available()) {
-      buf[i] = LoRa.read();
-      i++;
-    };
+    #elif ESP32
+        int i = 0;
+        while (LoRa.available()) {
+            buf[i] = LoRa.read();
+            i++;
+        };
 
-    len = i;
-    lastRssi = LoRa.packetRssi();
-    signalStrength = constrain(map(LoRa.packetRssi(), -100, -50, 0, 100), 0, 100);
-  #endif
+        len = i;
+        lastRssi = LoRa.packetRssi();
+        signalStrength = constrain(map(LoRa.packetRssi(), -100, -50, 0, 100), 0, 100);
+    #endif
 
-  // check length
-  if (len != expected) {
-    debug("Wrong packet length!");
-    return false;
-  }
+    // check length
+    if (len != expected) {
+        debug("Wrong packet length!");
+        return false;
+    }
 
-  // check crc
-  if (CRC8(buf, len - CRC_SIZE) != buf[len - CRC_SIZE]) {
-    debug("CRC mismatch!");
-    return false;
-  }
+    // check crc
+    if (CRC8(buf, len - CRC_SIZE) != buf[len - CRC_SIZE]) {
+        debug("CRC mismatch!");
+        return false;
+    }
 
-  return true;
+    return true;
 }
 
 
 bool responseAvailable(uint8_t len) {
 
-  #ifdef ARDUINO_SAMD_ZERO
+    #ifdef ARDUINO_SAMD_ZERO
+        return radio.waitAvailableTimeout(REMOTE_RX_TIMEOUT);
 
-    return radio.waitAvailableTimeout(REMOTE_RX_TIMEOUT);
-
-  #elif ESP32
-
-    long ms = millis();
-    while (true) {
-      if (LoRa.parsePacket(len) > 0) return true;
-      if (millis() - ms > REMOTE_RX_TIMEOUT) return false; // timeout
-    }
-
-  #endif
+    #elif ESP32
+        long ms = millis();
+        while (true) {
+            if (LoRa.parsePacket(len) > 0) return true;
+            if (millis() - ms > REMOTE_RX_TIMEOUT) return false; // timeout
+        }
+    #endif
 }
 
 void prepatePacket() {
@@ -900,130 +897,108 @@ void transmitToReceiver() {
 */
 int readThrottlePosition() {
 
-  int position = default_throttle;
+    int position = default_throttle;
+    // Hall sensor reading can be noisy, lets make an average reading.
+    uint32_t total = 0;
+    uint8_t samples = 20;
 
-  // Hall sensor reading can be noisy, lets make an average reading.
-  uint32_t total = 0;
-  uint8_t samples = 20;
+    #ifdef ESP32
+        // adc1_config_width(ADC_WIDTH_BIT_10);
+        // adc1_config_channel_atten(ADC_THROTTLE, ADC_ATTEN_DB_2_5);
 
-  #ifdef ESP32
+        // // Calculate ADC characteristics i.e. gain and offset factors
+        // esp_adc_cal_characteristics_t characteristics;
+        // esp_adc_cal_get_characteristics(V_REF, ADC_ATTEN_11db, ADC_WIDTH_12Bit, &characteristics);
+        //
+        // // Read ADC and obtain result in mV
+        // uint32_t voltage = adc1_to_voltage(ADC1_CHANNEL_6, &characteristics);
+        // printf("%d mV\n",voltage);
 
-    // adc1_config_width(ADC_WIDTH_BIT_10);
-    // adc1_config_channel_atten(ADC_THROTTLE, ADC_ATTEN_DB_2_5);
+        for ( uint8_t i = 0; i < samples; i++ ){
+            //        total += adc1_get_raw(ADC_THROTTLE);
+            total += adc1_get_voltage(ADC_THROTTLE); //seems to give better results
+        }
+    #elif ARDUINO_SAMD_ZERO
+        for ( uint8_t i = 0; i < samples; i++ ){
+            total += analogRead(PIN_THROTTLE);
+        }
+    #endif
 
-    // // Calculate ADC characteristics i.e. gain and offset factors
-    // esp_adc_cal_characteristics_t characteristics;
-    // esp_adc_cal_get_characteristics(V_REF, ADC_ATTEN_11db, ADC_WIDTH_12Bit, &characteristics);
-    //
-    // // Read ADC and obtain result in mV
-    // uint32_t voltage = adc1_to_voltage(ADC1_CHANNEL_6, &characteristics);
-    // printf("%d mV\n",voltage);
-
-    for ( uint8_t i = 0; i < samples; i++ )
-    {
-  //        total += adc1_get_raw(ADC_THROTTLE);
-        total += adc1_get_voltage(ADC_THROTTLE); //seems to give better results
-
+    hallValue = total / samples;
+    // debug(hallValue);
+    // map values 0..1023 >> 0..255
+    if (hallValue >= settings.centerHallValue + hallNoiseMargin) {    // 127 > 150
+        //      position = constrain(map(hallValue, settings.centerHallValue + hallNoiseMargin, settings.maxHallValue, 127, 255), 127, 255);
+        position = constrain(map(hallValue, settings.centerHallValue, settings.maxHallValue, 127, 255), 127, 255);
     }
-
-  #elif ARDUINO_SAMD_ZERO
-
-    for ( uint8_t i = 0; i < samples; i++ )
-    {
-      total += analogRead(PIN_THROTTLE);
+    else if (hallValue <= settings.centerHallValue - hallNoiseMargin) {
+        //      position = constrain(map(hallValue, settings.minHallValue, settings.centerHallValue - hallNoiseMargin, 0, 127), 0, 127);
+        position = constrain(map(hallValue, settings.minHallValue, settings.centerHallValue, 0, 127), 0, 127);
     }
-
-  #endif
-
-  hallValue = total / samples;
-  // debug(hallValue);
-
-  // map values 0..1023 >> 0..255
-  if (hallValue >= settings.centerHallValue + hallNoiseMargin) {    // 127 > 150
-  //      position = constrain(map(hallValue, settings.centerHallValue + hallNoiseMargin, settings.maxHallValue, 127, 255), 127, 255);
-      position = constrain(map(hallValue, settings.centerHallValue, settings.maxHallValue, 127, 255), 127, 255);
-  }
-  else if (hallValue <= settings.centerHallValue - hallNoiseMargin) {
-  //      position = constrain(map(hallValue, settings.minHallValue, settings.centerHallValue - hallNoiseMargin, 0, 127), 0, 127);
-      position = constrain(map(hallValue, settings.minHallValue, settings.centerHallValue, 0, 127), 0, 127);
-  }
-  else {
-    // Default value if stick is in deadzone
-    position = default_throttle;
-  }
-
-  // removeing center noise, todo: percent
-  //  if (abs(throttle - default_throttle) < hallCenterMargin) {
+    else {
+        // Default value if stick is in deadzone
+        position = default_throttle;
+    }
+    // removing center noise, todo: percent
+    //  if (abs(throttle - default_throttle) < hallCenterMargin) {
     if (abs(position - default_throttle) < hallCenterMargin) {
-    position = default_throttle;
-  }
+        position = default_throttle;
+    }
 
-  return position;
+    return position;
 }
 
 /*
    Calculate the remotes battery voltage
 */
 float batteryLevelVolts() {
-
-  // read battery sensor every seconds
-  if (secondsSince(lastBatterySample) > 1 || lastBatterySample == 0) {
-
-    lastBatterySample = millis();
-
-    uint16_t total = 0;
-    uint8_t samples = 10;
-
-    // read raw value
-    for (uint8_t i = 0; i < samples; i++) {
-        total += analogRead(PIN_BATTERY);
-        //total += analogRead(BATTERY_PROBE);
+    // read battery sensor every seconds
+    if (secondsSince(lastBatterySample) > 1 || lastBatterySample == 0) {
+        lastBatterySample = millis();
+        uint16_t total = 0;
+        uint8_t samples = 10;
+        // read raw value
+        for (uint8_t i = 0; i < samples; i++) {
+            total += analogRead(PIN_BATTERY);
+            //total += analogRead(BATTERY_PROBE);
+        }
+        // calculate voltage
+        float voltage;
+        #ifdef ARDUINO_SAMD_ZERO
+            voltage = ( (float)total / (float)samples ) * 2 * refVoltage / 1024.0;
+        #elif ESP32
+            //double reading = (double)total / (double)samples;
+            //voltage = -0.000000000000016 * pow(reading,4) + 0.000000000118171 * pow(reading,3)- 0.000000301211691 * pow(reading,2)+ 0.001109019271794 * reading + 0.034143524634089;
+            //voltage = voltage * 2.64;
+        // -------------------- battery voltage bugfix -----------------------------------------
+            //voltage = reading;
+            //voltage = reading / 512; 
+            voltage = ( (float)total / (float)samples ) * 2 * adjVoltage / 1024.0;
+        // -------------------- battery voltage bugfix -----------------------------------------
+        #endif
+        // don't smooth at startup
+        if (secondsSince(startupTime) < 3) {
+            batterySensor.clear();
+        }
+        // add to array
+        batterySensor.add(voltage);
+        lastBatterySample = millis();
     }
-
-    // calculate voltage
-    float voltage;
-    #ifdef ARDUINO_SAMD_ZERO
-      voltage = ( (float)total / (float)samples ) * 2 * refVoltage / 1024.0;
-    #elif ESP32
-      //double reading = (double)total / (double)samples;
-      //voltage = -0.000000000000016 * pow(reading,4) + 0.000000000118171 * pow(reading,3)- 0.000000301211691 * pow(reading,2)+ 0.001109019271794 * reading + 0.034143524634089;
-      //voltage = voltage * 2.64;
-  // -------------------- battery voltage bugfix -----------------------------------------
-      //voltage = reading;
-      //voltage = reading / 512; 
-      voltage = ( (float)total / (float)samples ) * 2 * adjVoltage / 1024.0;
-  // -------------------- battery voltage bugfix -----------------------------------------
-    #endif
-
-    // don't smooth at startup
-    if (secondsSince(startupTime) < 3) {
-      batterySensor.clear();
-    }
-
-    // add to array
-    batterySensor.add(voltage);
-
-    lastBatterySample = millis();
-  }
-
-  // smoothed value
-  return batterySensor.get();
+    // smoothed value
+    return batterySensor.get();
 }
 
 /*
    Calculate the remotes battery level
 */
 float getBatteryLevel() {
-
-  float voltage = batteryLevelVolts();
-
-  if (voltage <= minVoltage) {
-    return 0;
-  } else if (voltage >= maxVoltage) {
-    return 100;
-  }
-
-  return (voltage - minVoltage) * 100 / (maxVoltage - minVoltage);
+    float voltage = batteryLevelVolts();
+    if (voltage <= minVoltage) {
+        return 0;
+    } else if (voltage >= maxVoltage) {
+        return 100;
+    }
+    return (voltage - minVoltage) * 100 / (maxVoltage - minVoltage);
 }
 
 
@@ -1069,7 +1044,7 @@ void updateMainDisplay(){   //LOOP() task on core 1 runs thins function continuo
 
     if (isShuttingDown()){
          drawShutdownScreen();
-     }
+    }
     else {
         switch (state) {
 
@@ -1112,8 +1087,8 @@ void updateMainDisplay(){   //LOOP() task on core 1 runs thins function continuo
                     //*********** ROADLIGHTS SETTINGS ImPLEMENTATION *****************
 
                   }
-          }
         }
+    }
 
     display.display();
 }// end updateMainDisplay()
@@ -1129,177 +1104,157 @@ void drawShutdownScreen(){
 }
 
 void drawPairingScreen() {
+    display.setRotation(DISPLAY_ROTATION);
+    // blinking icon
+    if (millisSince(lastSignalBlink) > 500) {
+        signalBlink = !signalBlink;
+        lastSignalBlink = millis();
+    }
+    int y = 17; int x = (display.width()-12)/2;
 
-  display.setRotation(DISPLAY_ROTATION);
+    if (signalBlink) {
+        display.drawXBitmap(x, y, connectedIcon, 12, 12, WHITE);
+    } else {
+        display.drawXBitmap(x, y, noconnectionIcon, 12, 12, WHITE);
+    }
 
-  // blinking icon
-  if (millisSince(lastSignalBlink) > 500) {
-    signalBlink = !signalBlink;
-    lastSignalBlink = millis();
-  }
+    y += 38;
+    drawString("FF_Remote", -1, y, fontMicro);
+    drawString(String(RF_FREQ, 0) + " Mhz", -1, y + 12, fontMicro);
 
-  int y = 17; int x = (display.width()-12)/2;
+    y += 12 + 12*2;
+    drawString("Pairing...", -1, y, fontMicro);
 
-  if (signalBlink) {
-    display.drawXBitmap(x, y, connectedIcon, 12, 12, WHITE);
-  } else {
-    display.drawXBitmap(x, y, noconnectionIcon, 12, 12, WHITE);
-  }
-
-  y += 38;
-  drawString("FF_Remote", -1, y, fontMicro);
-  drawString(String(RF_FREQ, 0) + " Mhz", -1, y + 12, fontMicro);
-
-  y += 12 + 12*2;
-  drawString("Pairing...", -1, y, fontMicro);
-
-  // hall + throttle
-  y += 14;
-  drawString((triggerActive() ? "T " : "0 ") + String(hallValue) + " " + String(throttle, 0), -1, y, fontMicro);
+    // hall + throttle
+    y += 14;
+    drawString((triggerActive() ? "T " : "0 ") + String(hallValue) + " " + String(throttle, 0), -1, y, fontMicro);
 
 }
 
 void drawConnectingScreen() {
-
-  display.setRotation(DISPLAY_ROTATION);
-
-  int y = 8;
-
-  display.drawXBitmap((64-24)/2, y, logo, 24, 24, WHITE);
-
-  y += 38;
-  drawString("FF_Remote", -1, y, fontMicro);
-  drawString(String(RF_FREQ, 0) + " Mhz", -1, y + 12, fontMicro);
-
-  // blinking icon
-  if (millisSince(lastSignalBlink) > 500) {
-    signalBlink = !signalBlink;
-    lastSignalBlink = millis();
-  }
-
-  y = 68;
-  if (signalBlink == true) {
-    display.drawXBitmap((64-12)/2, y, connectedIcon, 12, 12, WHITE);
-  } else {
-    display.drawXBitmap((64-12)/2, y, noconnectionIcon, 12, 12, WHITE);
-  }
-
-  y += 12 + 12;
-  drawString("Connecting...", -1, y, fontMicro);
-
-  // hall + throttle
-  y += 14;
-  drawString((triggerActive() ? "T " : "0 ") + String(hallValue) + " " + String(throttle, 0), -1, y, fontMicro);
-
-  // remote battery
-  int level = batteryLevel;
-
-  if (level > 20 || signalBlink) { // blink
-    y += 12;
-    drawString(String(level) + "% " + String(batteryLevelVolts(), 2) + "v", -1, y, fontMicro);
-  }
-
+    display.setRotation(DISPLAY_ROTATION);
+    int y = 8;
+    display.drawXBitmap((64-24)/2, y, logo, 24, 24, WHITE);
+    y += 38;
+    drawString("FF_Remote", -1, y, fontMicro);
+    drawString(String(RF_FREQ, 0) + " Mhz", -1, y + 12, fontMicro);
+    // blinking icon
+    if (millisSince(lastSignalBlink) > 500) {
+        signalBlink = !signalBlink;
+        lastSignalBlink = millis();
+    }
+    y = 68;
+    if (signalBlink == true) {
+        display.drawXBitmap((64-12)/2, y, connectedIcon, 12, 12, WHITE);
+    } else {
+        display.drawXBitmap((64-12)/2, y, noconnectionIcon, 12, 12, WHITE);
+    }
+    y += 12 + 12;
+    drawString("Connecting...", -1, y, fontMicro);
+    // hall + throttle
+    y += 14;
+    drawString((triggerActive() ? "T " : "0 ") + String(hallValue) + " " + String(throttle, 0), -1, y, fontMicro);
+    // remote battery
+    int level = batteryLevel;
+    if (level > 20 || signalBlink) { // blink
+        y += 12;
+        drawString(String(level) + "% " + String(batteryLevelVolts(), 2) + "v", -1, y, fontMicro);
+    }
 }
 
 void drawThrottle() {
-
-  if (throttle > 127) {
-    // right side - throttle
-    int h = map(throttle - 127, 0, 127, 0, 128);
-    drawVLine(63, 128 - h, h); // nose
-  }
-
-  if (throttle < 127) {
-    // left side - brake
-    int h = map(throttle, 0, 127, 128, 0);
-    drawVLine(0, 0, h); // nose
-  }
+    if (throttle > 127) {
+        // right side - throttle
+        int h = map(throttle - 127, 0, 127, 0, 128);
+        drawVLine(63, 128 - h, h); // nose
+    }
+    if (throttle < 127) {
+        // left side - brake
+        int h = map(throttle, 0, 127, 128, 0);
+        drawVLine(0, 0, h); // nose
+    }
 }
 
 void calibrateScreen() {
+    int padding = 10;
+    int tick = 5;
+    int w = display.width() - padding*2;
+    int position = readThrottlePosition();
 
-  int padding = 10;
-  int tick = 5;
-  int w = display.width() - padding*2;
+    switch (calibrationStage) {
+        case CALIBRATE_CENTER:
+            tempSettings.centerHallValue = hallValue;
+            tempSettings.minHallValue = hallValue - 100;
+            tempSettings.maxHallValue = hallValue + 100;
+            calibrationStage = CALIBRATE_MAX;
+        break;
 
-  int position = readThrottlePosition();
+        case CALIBRATE_MAX:
+            if (hallValue > tempSettings.maxHallValue) {
+                tempSettings.maxHallValue = hallValue;
+            } else if (hallValue < tempSettings.minHallValue) {
+                calibrationStage = CALIBRATE_MIN;
+            }
+        break;
 
-  switch (calibrationStage) {
-  case CALIBRATE_CENTER:
+        case CALIBRATE_MIN:
+            if (hallValue < tempSettings.minHallValue) {
+                tempSettings.minHallValue = hallValue;
+            } else if (hallValue == tempSettings.centerHallValue) {
+                calibrationStage = CALIBRATE_STOP;
+            }
+        break;
 
-    tempSettings.centerHallValue = hallValue;
-    tempSettings.minHallValue = hallValue - 100;
-    tempSettings.maxHallValue = hallValue + 100;
-    calibrationStage = CALIBRATE_MAX;
-    break;
+        case CALIBRATE_STOP:
+        if (pressed(PIN_TRIGGER)) {
+            // apply calibration values
+            settings.centerHallValue = tempSettings.centerHallValue;
+            settings.minHallValue = tempSettings.minHallValue;
+            settings.maxHallValue = tempSettings.maxHallValue;
 
-  case CALIBRATE_MAX:
-    if (hallValue > tempSettings.maxHallValue) {
-      tempSettings.maxHallValue = hallValue;
-    } else if (hallValue < tempSettings.minHallValue) {
-      calibrationStage = CALIBRATE_MIN;
+            backToMainMenu();
+            display.setRotation(DISPLAY_ROTATION);
+            saveSettings();
+
+            return;
+        }
     }
-    break;
 
-  case CALIBRATE_MIN:
-    if (hallValue < tempSettings.minHallValue) {
-      tempSettings.minHallValue = hallValue;
-    } else if (hallValue == tempSettings.centerHallValue) {
-      calibrationStage = CALIBRATE_STOP;
+    display.setRotation(DISPLAY_ROTATION_90);
+
+    int center = map(tempSettings.centerHallValue, tempSettings.minHallValue, tempSettings.maxHallValue, display.width() - padding, padding);
+
+    int y = 8;
+    drawString(String(tempSettings.maxHallValue), 0, y, fontDesc);
+    drawString(String(tempSettings.centerHallValue), center-10, y, fontDesc);
+    drawString(String(tempSettings.minHallValue), 128-20, y, fontDesc);
+
+    // line
+    y = 16;
+    drawHLine(padding, y, w);
+    // ticks
+    drawVLine(padding, y-tick, tick);
+    drawVLine(center, y-tick, tick);
+    drawVLine(w + padding, y-tick, tick);
+
+    // current throttle position
+    int th = map(hallValue, tempSettings.minHallValue, tempSettings.maxHallValue, display.width() - padding, padding);
+    drawVLine(constrain(th, 0, display.width()-1), y, tick);
+
+    y = 32;
+    drawString(String(hallValue), constrain(th-10, 0, w), y, fontDesc); // min
+
+    y = 48;
+    switch (calibrationStage) {
+        case CALIBRATE_MAX:
+        case CALIBRATE_MIN:
+            drawString("Press throttle fully", -1, y, fontDesc);
+            drawString("forward and backward", -1, y+14, fontDesc);
+        break;
+        case CALIBRATE_STOP:
+            drawString("Calibration completed", -1, y, fontDesc);
+            drawString("Trigger: Save", -1, y+14, fontDesc);
     }
-    break;
-
-  case CALIBRATE_STOP:
-
-    if (pressed(PIN_TRIGGER)) {
-      // apply calibration values
-      settings.centerHallValue = tempSettings.centerHallValue;
-      settings.minHallValue = tempSettings.minHallValue;
-      settings.maxHallValue = tempSettings.maxHallValue;
-
-      backToMainMenu();
-      display.setRotation(DISPLAY_ROTATION);
-      saveSettings();
-
-      return;
-    }
-  }
-
-  display.setRotation(DISPLAY_ROTATION_90);
-
-  int center = map(tempSettings.centerHallValue, tempSettings.minHallValue, tempSettings.maxHallValue, display.width() - padding, padding);
-
-  int y = 8;
-  drawString(String(tempSettings.maxHallValue), 0, y, fontDesc);
-  drawString(String(tempSettings.centerHallValue), center-10, y, fontDesc);
-  drawString(String(tempSettings.minHallValue), 128-20, y, fontDesc);
-
-  // line
-  y = 16;
-  drawHLine(padding, y, w);
-  // ticks
-  drawVLine(padding, y-tick, tick);
-  drawVLine(center, y-tick, tick);
-  drawVLine(w + padding, y-tick, tick);
-
-  // current throttle position
-  int th = map(hallValue, tempSettings.minHallValue, tempSettings.maxHallValue, display.width() - padding, padding);
-  drawVLine(constrain(th, 0, display.width()-1), y, tick);
-
-  y = 32;
-  drawString(String(hallValue), constrain(th-10, 0, w), y, fontDesc); // min
-
-  y = 48;
-  switch (calibrationStage) {
-  case CALIBRATE_MAX:
-  case CALIBRATE_MIN:
-    drawString("Press throttle fully", -1, y, fontDesc);
-    drawString("forward and backward", -1, y+14, fontDesc);
-    break;
-  case CALIBRATE_STOP:
-    drawString("Calibration completed", -1, y, fontDesc);
-    drawString("Trigger: Save", -1, y+14, fontDesc);
-  }
 
 }
 
@@ -1573,41 +1528,30 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
 }//END drawSettingsMenu()
 
 void drawDebugPage() {
-
-  //  display.drawFrame(0,0,64,128);
-
-  int y = 10;
-  drawString(String(settings.boardID, HEX), -1, y, fontDesc);
-
-  y = 35;
-  drawStringCenter(String(lastDelay), " ms", y);
-
-  y += 25;
-  drawStringCenter(String(lastRssi, 0), " db", y);
-
-  y += 25;
-  drawStringCenter(String(readThrottlePosition()), String(hallValue), y);
-
+    //  display.drawFrame(0,0,64,128);
+    int y = 10;
+    drawString(String(settings.boardID, HEX), -1, y, fontDesc);
+    y = 35;
+    drawStringCenter(String(lastDelay), " ms", y);
+    y += 25;
+    drawStringCenter(String(lastRssi, 0), " db", y);
+    y += 25;
+    drawStringCenter(String(readThrottlePosition()), String(hallValue), y);
 }
 
 
 int getStringWidth(String s) {
-
     int16_t x1, y1;
     uint16_t w1, h1;
-
     display.getTextBounds(s, 0, 0, &x1, &y1, &w1, &h1);
     return w1;
 }
 
 void drawString(String string, int x, int y, const GFXfont *font) {
-
     display.setFont(font);
-
     if (x == -1) {
         x = (display.width() - getStringWidth(string)) / 2;
     }
-
     display.setCursor(x, y);
     display.print(string);
 }
