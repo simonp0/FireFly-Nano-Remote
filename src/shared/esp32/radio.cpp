@@ -18,12 +18,13 @@ void initRadio(){
     SPI.begin(SCK, MISO, MOSI, SS);
     LoRa.setPins(SS, RST_LoRa, DIO0);
     //LoRa.setSPI(spiInterface);
-    // LoRa.setSPIFrequency(10E6);  //Default = 10E6 
+    //LoRa.setSPIFrequency(1E6);  //Default = 10E6 
     
+    //LoRa.setTxPower(TXPOWER);
     LoRa.setTxPower(TXPOWER, PA_OUTPUT_PA_BOOST_PIN);
-    //    LoRa.setSpreadingFactor(SPREADING_FACTOR);
+    LoRa.setSpreadingFactor(SPREADING_FACTOR);
 
-    //    LoRa.setCodingRate4(CODING_RATE);
+    LoRa.setCodingRate4(CODING_RATE);
     //    LoRa.setPreambleLength(PREAMBLE_LENGTH);
     //    LoRa.setSyncWord(SYNC_WORD);
     LoRa.enableCrc();

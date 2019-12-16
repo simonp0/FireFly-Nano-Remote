@@ -139,6 +139,16 @@ float Lpos=0;
 
 bool reverseLocked = 0;
 bool handbrakeON = 0;
+
+enum VTM_STATE {
+    VTM_STATE_STOPPED,
+    VTM_STATE_DRIVING,
+    VTM_STATE_HANDBRAKE,
+    VTM_STATE_REVERSE
+};
+VTM_STATE vtmState = VTM_STATE_STOPPED;
+String str_vtm_state;
+
 /*
 double smoothTimestamp = 0;
 int arraySmoothValue[] = { default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle };
