@@ -1376,6 +1376,20 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                                 requestUpdate = true;
                                 backToMainMenu();
                             break;
+
+                            case BOARD_MENU_MOTOR_MIN:
+                                loadOptParamFromReceiver(IDX_MOTOR_MIN);
+                            break;
+                            case BOARD_MENU_MOTOR_MAX:
+                                loadOptParamFromReceiver(IDX_MOTOR_MAX);
+                            break; 
+                            case BOARD_MENU_BATTERY_MIN:
+                                loadOptParamFromReceiver(IDX_BATTERY_MIN);
+                            break; 
+                            case BOARD_MENU_BATTERY_MAX:
+                                loadOptParamFromReceiver(IDX_BATTERY_MAX);
+                            break;                                                                                                                 
+                            
                         }
                     break;
 
@@ -1466,6 +1480,20 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                     switch (subMenuItem) {
                         case BOARD_UPDATE:
                         break;
+
+                        case BOARD_MENU_MOTOR_MIN:
+                            paramValueSelector(IDX_MOTOR_MIN, "Motor Min\ncurrent", -100,-1,0.5,1,"A");
+                        break;
+                        case BOARD_MENU_MOTOR_MAX:
+                            paramValueSelector(IDX_MOTOR_MAX, "Motor Max\ncurrent", 1,100,0.5,1,"A");
+                        break;
+                        case BOARD_MENU_BATTERY_MIN:
+                            paramValueSelector(IDX_BATTERY_MIN, "Battery\nMin current", -100,-1,0.5,1,"A");
+                        break;
+                        case BOARD_MENU_BATTERY_MAX:
+                            paramValueSelector(IDX_BATTERY_MAX, "Battery\nMax current", 1,100,0.5,1,"A");
+                        break;                                                
+                                                
                     }
                 break;
 

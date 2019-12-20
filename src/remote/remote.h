@@ -185,7 +185,7 @@ const byte mainMenus = 6;
 String MENUS[mainMenus][subMenus] = {
     { "Info", "Debug", "TestDebug", "Specs"},
     { "Remote", "Calibrate", "Pair", "Auto off", "", ""},
-    { "Board", "WIFIupdate",  "Max Speed", "Range", "Cells", "Battery"},
+    { "Board", "WIFIupdate",  "Motor Min", "Motor Max", "BatteryMin", "BatteryMax"},
     { "Lights", "Switch ON", "Switch OFF", "Brake Only", "Settings"},
     { "Receiver", "App Mode", "", "", "", "", ""},
     { "A-Cruise", "ON/OFF", "PushSpeed", "PushTime", "Curr.Spike", "CruiseTime", "CurrentLow" }
@@ -195,7 +195,7 @@ String MENUS[mainMenus][subMenus] = {
 enum menu_main { MENU_INFO, MENU_REMOTE, MENU_BOARD, MENU_LIGHT, MENU_RECEIVER, MENU_AUTO_CRUISE };
 enum menu_info { INFO_DEBUG };
 enum menu_remote { REMOTE_CALIBRATE, REMOTE_PAIR, REMOTE_SLEEP_TIMER };
-enum menu_board { BOARD_UPDATE };
+enum menu_board { BOARD_UPDATE, BOARD_MENU_MOTOR_MIN, BOARD_MENU_MOTOR_MAX, BOARD_MENU_BATTERY_MIN, BOARD_MENU_BATTERY_MAX };
 enum menu_light { SWITCH_LIGHT_ON, SWITCH_LIGHT_OFF, SWITCH_LIGHT_BRAKES_ONLY, ROADLIGHT_SETTINGS }; // *** LED ROADLIGHTS ***
 enum menu_receiver { SUBM_THROTTLE_MODE };
 enum menu_auto_cruise { CRUISE_MENU_AUTO_CRUISE, CRUISE_MENU_PUSHING_SPEED , CRUISE_MENU_PUSHING_TIME, CRUISE_MENU_CRUISE_CURRENT_SPIKE, CRUISE_MENU_AUTO_CRUISE_TIME, CRUISE_MENU_CRUISE_CURRENT_LOW };
