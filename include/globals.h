@@ -203,9 +203,53 @@ enum GlobalSettingsIndex {
     IDX_LED_BRIGHTNESS_BRAKE,
     IDX_LED_BRIGHTNESS_OFF,
     IDX_LED_ROADLIGHT_MODE,
-    IDX_THROTTLE_MODE
+    IDX_THROTTLE_MODE,
+    
+    IDX_ENDOFARRAY
 };
 
+static String GlobalSettingsStringName[] = {
+    "MIN_HALL",//remote-CONFIGpacket
+    "CENTER_HALL",//remote-CONFIGpacket
+    "MAX_HALL",//remote-CONFIGpacket
+    "BOARD_ID",//remote-CONFIGpacket
+    "AUTO_CRUISE_ON",
+    "PUSHSPEED",
+    "PUSHING_TIME",
+    "CRUISE_CURRENT_SPIKE",
+    "AUTO_CRUISE_TIME",
+    "CRUISE_CURRENT_LOW",
+    "MAX_PUSHING_SPEED",
+    "AUTO_BRAKE_TIME",
+    "AUTO_BRAKE_RELEASE",
+    "AUTO_BRAKE_ABORT_MAXSPEED",
+    "UART_SPEED",
+    "uartPullInterval",
+    "UART_TIMEOUT",
+    "REMOTE_RX_TIMEOUT", //remote
+    "REMOTE_RADIOLOOP_DELAY",//remote
+    "REMOTE_LOCK_TIMEOUT",//remote
+    "REMOTE_SLEEP_TIMEOUT",//remote
+    "DISPLAY_BATTERY_MIN",//remote
+    "MOTOR_MIN",//remote
+    "MOTOR_MAX",//remote
+    "BATTERY_MIN",//remote
+    "BATTERY_MAX",//remote
+    "MAX_SPEED",
+    "MAX_RANGE",
+    "BATTERY_CELLS",
+    "BATTERY_TYPE",
+    "MOTOR_POLES",
+    "WHEEL_DIAMETER",
+    "WHEEL_PULLEY",
+    "MOTOR_PULLEY",
+    "LED_BRIGHTNESS_FRONT",
+    "LED_BRIGHTNESS_BACK",
+    "LED_BRIGHTNESS_BRAKE",
+    "LED_BRIGHTNESS_OFF",
+    "LED_ROADLIGHT_MODE",
+    "THROTTLE_MODE"
+};
 
 
 // state machine

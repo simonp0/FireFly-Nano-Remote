@@ -1359,6 +1359,13 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                 // handle commands
                 switch (subMenu) {
                     case MENU_INFO:
+                        switch (subMenuItem) {
+                            case INFO_DEBUG:
+                            break;
+                            case INFO_SETTINGS:
+                                initFlag_PSL=1;
+                            break;
+                        }                    
                     break;
 
                     case MENU_REMOTE:
@@ -1388,8 +1395,9 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                             break; 
                             case BOARD_MENU_BATTERY_MAX:
                                 loadOptParamFromReceiver(IDX_BATTERY_MAX);
-                            break;                                                                                                                 
-                            
+                            break;
+                            case BOARD_MENU_TEST:
+                            break;                                 
                         }
                     break;
 
@@ -1465,6 +1473,9 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                         case INFO_DEBUG:
                             drawDebugPage();
                         break;
+                        case INFO_SETTINGS:
+                            paramSelectorList(myParamSelectorIndexArray1);
+                        break;                        
                     }
                 break;
 
@@ -1493,7 +1504,8 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                         case BOARD_MENU_BATTERY_MAX:
                             paramValueSelector(IDX_BATTERY_MAX, "Battery\nMax current", 1,100,0.5,1,"A");
                         break;                                                
-                                                
+                        case BOARD_MENU_TEST:
+                        break;                                                   
                     }
                 break;
 
@@ -2189,15 +2201,15 @@ void drawLightSettingsPage(){
 // e.g. paramValueSelector(IDX_AUTO_BRAKE_RELEASE, "Auto brake delay", -1000,+1000,0.1,1,"s");
 void paramValueSelector(uint8_t myGlobalSettingIndex, String paramName, double minAdjValue, double maxAdjValue, double adjIncrement, int decimalPlace, String unitStr, String label ){
 
-    if (initFlag == 1){
-        currentParamAdjValue = -99875.98354; //random value -> wait for change
+    if (initFlag_PVS == 1){
+        //currentParamAdjValue = -99875.98354; //random value -> wait for change
         currentParamAdjValue = (double) (getOptParamValue(myGlobalSettingIndex));
         /*while(currentParamAdjValue == -99875.98354){
             vTaskDelay(2);
             //delay(5);
         }*/
         saveParamAdjValue = currentParamAdjValue;
-        initFlag = 0;
+        initFlag_PVS = 0;
         waitTimeMs = 0;
     }
 
@@ -2210,7 +2222,7 @@ void paramValueSelector(uint8_t myGlobalSettingIndex, String paramName, double m
                 break;
             }
             if (pressed(PIN_PWRBUTTON)) {
-                initFlag = 1;
+                initFlag_PVS = 1;
                 waitTimeMs = 0;
                 break;
             }
@@ -2290,12 +2302,12 @@ void paramValueSelector(uint8_t myGlobalSettingIndex, String paramName, double m
                 setOptParamValue(myGlobalSettingIndex, (float)saveParamAdjValue);  //store the value locally
                 sendOptParamToReceiver(myGlobalSettingIndex);
                 myPVSpage = ADJUST_PVS_VALUE;
-                initFlag = 1;
+                initFlag_PVS = 1;
                 backToMainMenu();
             break;
             case CANCEL_PVS_VALUE:
                 myPVSpage = ADJUST_PVS_VALUE;
-                initFlag = 1;
+                initFlag_PVS = 1;
                 backToMainMenu();
             break;
         }
@@ -2303,7 +2315,150 @@ void paramValueSelector(uint8_t myGlobalSettingIndex, String paramName, double m
     if (pressed(PIN_PWRBUTTON)) {
         waitTimeMs = 0;
         myPVSpage = ADJUST_PVS_VALUE;
-        initFlag = 1;
+        initFlag_PVS = 1;
+        backToMainMenu();
+        //currentMenu = 0;
+    }   
+
+}
+
+
+// *********************************************************************************************************************************************************************
+// *********************************************************************************************************************************************************************
+// displays a list of parameters and scrolls with throttle input. Trigger click launch paramValueSelector to adjust currently selected parameter
+
+void paramSelectorList(int *paramSelectorIndexArray){
+    //(uint8_t myGlobalSettingIndex, String paramName, double minAdjValue, double maxAdjValue, double adjIncrement, int decimalPlace, String unitStr, String label ){
+    int myArraySize = sizeof(paramSelectorIndexArray)/sizeof(paramSelectorIndexArray[0]);
+    myArraySize = IDX_ENDOFARRAY;
+
+
+    if (initFlag_PSL == 1){
+        myPSLpage = ADJUST_PSL_VALUE;
+        currentParamSelectorValue = 0;
+        paramSelector_selected = 0;
+        initFlag_PSL = 0;
+        waitTimeMs_PSL = 0;
+    }
+
+    int adjIncrement = 1;
+    int minAdjValue = 0;
+    int maxAdjValue = myArraySize - 1;
+
+    int deadBand = 5;
+    long timestamp = millis();
+    while (millisSince(timestamp) < waitTimeMs_PSL){
+            if (pressed(PIN_TRIGGER)) {
+                waitRelease(PIN_TRIGGER);
+                waitTimeMs_PSL = 0;
+                break;
+            }
+            if (pressed(PIN_PWRBUTTON)) {
+                initFlag_PSL = 1;
+                waitTimeMs_PSL = 0;
+                break;
+            }
+    }
+
+    int position = readThrottlePosition();
+    double lastPositionValue = currentParamSelectorValue;
+    double nextPositionValue = lastPositionValue;
+
+    int x = 0;
+    int y = 12;
+    drawHLine(2, y, 64-2);
+    drawString("Adj. setting", 0, y-2, fontMicro);
+
+    switch (myPSLpage){
+        case ADJUST_PSL_VALUE:
+            waitTimeMs_PSL = constrain( ( 3000 / pow( (double)(abs(position - default_throttle)/5), 1.8) - deadBand ), 0, 500);
+            // --------- wheel control ---------------------
+            if (position < default_throttle - deadBand) {
+                if (currentParamSelectorValue < maxAdjValue){ currentParamSelectorValue = constrain((currentParamSelectorValue + adjIncrement), minAdjValue, maxAdjValue);}
+            }
+            if (position > default_throttle + deadBand) {
+                if (currentParamSelectorValue > minAdjValue){ currentParamSelectorValue = constrain((currentParamSelectorValue - adjIncrement), minAdjValue, maxAdjValue);}
+            }
+            paramSelector_selected = currentParamSelectorValue;
+            x = 0; 
+            y = 20;
+            //if (paramSelector_selected > 1){drawString(String(paramSelectorNameArrray[paramSelector_selected - 2]), x, y, fontDesc); }
+            if (paramSelector_selected > 1){drawString(String(GlobalSettingsStringName[paramSelectorIndexArray[paramSelector_selected - 2]]), x, y, fontMicro); }    
+            y = 35;
+            if (paramSelector_selected > 0){drawString(String(GlobalSettingsStringName[paramSelectorIndexArray[paramSelector_selected - 1]]), x, y, fontMicro); }
+            y = 55;
+            drawString("> "+String(GlobalSettingsStringName[paramSelectorIndexArray[paramSelector_selected]]), x, y, fontMicro);
+            y = 75;
+            if (paramSelector_selected < (myArraySize - 1) ){drawString(String(GlobalSettingsStringName[paramSelectorIndexArray[paramSelector_selected + 1]]), x, y, fontMicro); }
+            y = 90;
+            if (paramSelector_selected < (myArraySize - 2) ){drawString(String(GlobalSettingsStringName[paramSelectorIndexArray[paramSelector_selected + 2]]), x, y, fontMicro); }
+
+            //x = 56; y = 115;
+            //drawString(String(myArraySize), x, y, fontPico);   //DEBUG
+
+            x = 2; y = 126;
+            drawString("EDIT", x, y, fontPico);
+            x = 28; y = 126;
+            drawString("CANCEL", x, y, fontPico);
+        break;
+        case SAVE_PSL_VALUE:
+            // --------- wheel control ---------------------
+            if (position < default_throttle - deadBand) {
+                myPSLpage = CANCEL_PSL_VALUE;
+            }
+            y = 60;
+            drawString(String(GlobalSettingsStringName[paramSelectorIndexArray[paramSelector_selected]]), 2, y, fontDesc);
+            x = 0; y = 126;
+            drawString("> EDIT", x, y, fontPico);
+            x = 28; y = 126;
+            drawString("CANCEL", x, y, fontPico);            
+        break;
+        case CANCEL_PSL_VALUE:
+            if (position > default_throttle + deadBand) {
+                myPSLpage = SAVE_PSL_VALUE;
+            }
+            y = 60;
+            drawString(String(GlobalSettingsStringName[paramSelectorIndexArray[paramSelector_selected]]), 2, y, fontDesc);
+            x = 2; y = 126;
+            drawString("EDIT", x, y, fontPico);
+            x = 26; y = 126;
+            drawString("> CANCEL", x, y, fontPico);            
+        break;
+        case DISPLAY_PVS_PAGE:
+            waitTimeMs_PSL = 0;
+            paramValueSelector(paramSelectorIndexArray[paramSelector_selected], String(GlobalSettingsStringName[paramSelectorIndexArray[paramSelector_selected]]), -255,255,0.5,1,"");           
+        break;
+    }
+
+    nextPositionValue = currentParamSelectorValue;
+    if (lastPositionValue != nextPositionValue){
+      vibe(0); //short vibration each time we change the selected menu item
+      }  
+
+    if (pressed(PIN_TRIGGER)) {
+        // apply calibration values
+        waitRelease(PIN_TRIGGER);
+        waitTimeMs_PSL = 0;
+        switch (myPSLpage){
+            case ADJUST_PSL_VALUE:
+                myPSLpage = SAVE_PSL_VALUE;
+            break;
+            case SAVE_PSL_VALUE:
+                loadOptParamFromReceiver(paramSelectorIndexArray[paramSelector_selected]);
+                vibe(0);
+                myPSLpage = DISPLAY_PVS_PAGE;
+            break;
+            case CANCEL_PSL_VALUE:
+                myPSLpage = ADJUST_PSL_VALUE;
+            break;
+            case DISPLAY_PVS_PAGE:
+            break;
+        }
+    }
+    if (pressed(PIN_PWRBUTTON)) {
+        waitTimeMs_PSL = 0;
+        myPSLpage = ADJUST_PSL_VALUE;
+        initFlag_PSL = 1;
         backToMainMenu();
         //currentMenu = 0;
     }   

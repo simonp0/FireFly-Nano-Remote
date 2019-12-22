@@ -183,9 +183,9 @@ const byte subMenus = 7;
 const byte mainMenus = 6;
 
 String MENUS[mainMenus][subMenus] = {
-    { "Info", "Debug", "TestDebug", "Specs"},
+    { "Info", "Debug", "TestDebug", "Specs", "", "", "Settings"},
     { "Remote", "Calibrate", "Pair", "Auto off", "", ""},
-    { "Board", "WIFIupdate",  "Motor Min", "Motor Max", "BatteryMin", "BatteryMax"},
+    { "Board", "WIFIupdate",  "Motor Min", "Motor Max", "BatteryMin", "BatteryMax", "TODO.test"},
     { "Lights", "Switch ON", "Switch OFF", "Brake Only", "Settings"},
     { "Receiver", "App Mode", "", "", "", "", ""},
     { "A-Cruise", "ON/OFF", "PushSpeed", "PushTime", "Curr.Spike", "CruiseTime", "CurrentLow" }
@@ -193,9 +193,9 @@ String MENUS[mainMenus][subMenus] = {
   };
 
 enum menu_main { MENU_INFO, MENU_REMOTE, MENU_BOARD, MENU_LIGHT, MENU_RECEIVER, MENU_AUTO_CRUISE };
-enum menu_info { INFO_DEBUG };
+enum menu_info { INFO_DEBUG, INFO_2, INFO_3, INFO_4, INFO_5, INFO_SETTINGS };
 enum menu_remote { REMOTE_CALIBRATE, REMOTE_PAIR, REMOTE_SLEEP_TIMER };
-enum menu_board { BOARD_UPDATE, BOARD_MENU_MOTOR_MIN, BOARD_MENU_MOTOR_MAX, BOARD_MENU_BATTERY_MIN, BOARD_MENU_BATTERY_MAX };
+enum menu_board { BOARD_UPDATE, BOARD_MENU_MOTOR_MIN, BOARD_MENU_MOTOR_MAX, BOARD_MENU_BATTERY_MIN, BOARD_MENU_BATTERY_MAX, BOARD_MENU_TEST };
 enum menu_light { SWITCH_LIGHT_ON, SWITCH_LIGHT_OFF, SWITCH_LIGHT_BRAKES_ONLY, ROADLIGHT_SETTINGS }; // *** LED ROADLIGHTS ***
 enum menu_receiver { SUBM_THROTTLE_MODE };
 enum menu_auto_cruise { CRUISE_MENU_AUTO_CRUISE, CRUISE_MENU_PUSHING_SPEED , CRUISE_MENU_PUSHING_TIME, CRUISE_MENU_CRUISE_CURRENT_SPIKE, CRUISE_MENU_AUTO_CRUISE_TIME, CRUISE_MENU_CRUISE_CURRENT_LOW };
@@ -357,6 +357,14 @@ enum paramValueSelector_page_stage{
   CANCEL_PVS_VALUE
 } myPVSpage = ADJUST_PVS_VALUE;
 
+enum paramSelectorList_page_stage{
+  ADJUST_PSL_VALUE,
+  SAVE_PSL_VALUE,
+  CANCEL_PSL_VALUE,
+  DISPLAY_PVS_PAGE  
+} myPSLpage = ADJUST_PSL_VALUE;
+
+
 /*
 // #void paramValueSelector(uint8_t myGlobalSettingIndex, String paramName, double minValue, double maxValue, double increment, int decimalPlace, String unitStr);
 */
@@ -365,16 +373,73 @@ void paramValueSelector(uint8_t myGlobalSettingIndex, String paramName, double m
 
 double currentParamAdjValue;
 double saveParamAdjValue;
-bool initFlag = 1;
+bool initFlag_PVS = 1;
 int waitTimeMs = 0;
 
 String VescThrottleMode_label[] = {
     "VESC Remote\n(Nunchuk)",
     "PPM",
-    "Current",
+    "Current+Rev",
     "RPM",
     "Duty",
     "Regen",
     "Handbrake",
     "POS"
+};
+
+
+// *********************************************************************************************************************************************************************
+// *********************************************************************************************************************************************************************
+// displays a list of parameters and scrolls with throttle input. Trigger click launch paramValueSelector to adjust currently selected parameter
+//int paramSelectorIndexArray1[] = { IDX_BATTERY_MIN, IDX_BATTERY_MAX, IDX_LED_BRIGHTNESS_BRAKE, IDX_LED_BRIGHTNESS_OFF, IDX_MOTOR_POLES, IDX_MOTOR_MAX, IDX_MOTOR_MIN };
+//String paramSelectorNameArrray[] = { "Batt.Min", "Batt.Max", "LED.Brake", "LED.Off", "Mot.Poles", "Mot.Max", "Mot.Min"};
+void paramSelectorList(int *paramSelectorIndexArray);
+int paramSelector_selected = 0;
+double currentParamSelectorValue;
+bool initFlag_PSL = 0;
+int waitTimeMs_PSL = 0;
+//GlobalSettingsIndex myGlobalSettingIndex;
+int myParamSelectorIndexArray1[] ={
+    IDX_MIN_HALL,//remote-CONFIGpacket
+    IDX_CENTER_HALL,//remote-CONFIGpacket
+    IDX_MAX_HALL,//remote-CONFIGpacket
+    IDX_BOARD_ID,//remote-CONFIGpacket
+    IDX_AUTO_CRUISE_ON,
+    IDX_PUSHING_SPEED,
+    IDX_PUSHING_TIME,
+    IDX_CRUISE_CURRENT_SPIKE,
+    IDX_AUTO_CRUISE_TIME,
+    IDX_CRUISE_CURRENT_LOW,
+    IDX_MAX_PUSHING_SPEED,
+    IDX_AUTO_BRAKE_TIME,
+    IDX_AUTO_BRAKE_RELEASE,
+    IDX_AUTO_BRAKE_ABORT_MAXSPEED,
+    IDX_UART_SPEED,
+    IDX_uartPullInterval,
+    IDX_UART_TIMEOUT,
+    IDX_REMOTE_RX_TIMEOUT, //remote
+    IDX_REMOTE_RADIOLOOP_DELAY,//remote
+    IDX_REMOTE_LOCK_TIMEOUT,//remote
+    IDX_REMOTE_SLEEP_TIMEOUT,//remote
+    IDX_DISPLAY_BATTERY_MIN,//remote
+    IDX_MOTOR_MIN,//remote
+    IDX_MOTOR_MAX,//remote
+    IDX_BATTERY_MIN,//remote
+    IDX_BATTERY_MAX,//remote
+    IDX_MAX_SPEED,
+    IDX_MAX_RANGE,
+    IDX_BATTERY_CELLS,
+    IDX_BATTERY_TYPE,
+    IDX_MOTOR_POLES,
+    IDX_WHEEL_DIAMETER,
+    IDX_WHEEL_PULLEY,
+    IDX_MOTOR_PULLEY,
+    IDX_LED_BRIGHTNESS_FRONT,
+    IDX_LED_BRIGHTNESS_BACK,
+    IDX_LED_BRIGHTNESS_BRAKE,
+    IDX_LED_BRIGHTNESS_OFF,
+    IDX_LED_ROADLIGHT_MODE,
+    IDX_THROTTLE_MODE,
+    
+    IDX_ENDOFARRAY
 };
