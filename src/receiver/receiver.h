@@ -220,6 +220,6 @@ float speedSmoothArray[] = {0,0,0,0,0,0,0,0,0,0};
     
     // MAP throttleValue(0 to 255) -> 3276 to 6552
     uint_fast32_t pwm_throttle_dutyCycle_value;
-    void updatePpmThrottleOutput();
+    void updatePpmThrottleOutput(int8_t myThrottle, bool signalOutput = true);
 #endif
 // ******** PPM THROTTLE OUTPUT ********
