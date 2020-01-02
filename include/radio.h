@@ -5,6 +5,8 @@
 
 // Change to allowed frequency
 #define RF_FREQ 868.1
+//434.1
+//868.1
 
 //#define BAND    868100000   //Hz - you can set band here directly,e.g. 868E6,915E6
 //#define PABOOST true

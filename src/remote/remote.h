@@ -164,7 +164,7 @@ float cruiseSpeed = 0;
 int cruiseStartThrottle;
 int cruiseThrottle;
 
-bool requestUpdate = false; //when drawSettingsMenu() sets flag requestUpdate=TRUE : Next run of prepatePacket() function catches requestUpdate=TRUE flag -> next packet sent to receiver is a SET_STATE = UPDATE request. Possible only under AppState=MENU
+bool requestUpdate = false; //when drawSettingsMenu() sets flag requestUpdate=TRUE : Next run of preparePacket() function catches requestUpdate=TRUE flag -> next packet sent to receiver is a SET_STATE = UPDATE request. Possible only under AppState=MENU
 
 
 // menu
@@ -202,7 +202,7 @@ enum menu_auto_cruise { CRUISE_MENU_AUTO_CRUISE, CRUISE_MENU_PUSHING_SPEED , CRU
 
 float currentMenu = 0;
 int subMenu = 0;
-int subMenuItem = 0;
+int subMenuItem = 0;//= 99;
 
 // set idle mode after using menu
 bool menuWasUsed = false;
@@ -215,13 +215,22 @@ bool menuWasUsed = false;
 // const int MOTOR_PULLEY = 1;
 
 // Button constants
+const int RELEASED  = 0;
 const int CLICK     = 1;
 const int DBL_CLICK = 2;
 const int HOLD      = 3;
 const int LONG_HOLD = 4;
 
+enum class ButtonState {
+    RELEASED,
+    CLICK,
+    DBL_CLICK,
+    HOLD,
+    LONG_HOLD
+} PwrButtonState = ButtonState::RELEASED;
+
 // Button timing variables
-int debounce = 30;          // ms debounce period to prevent flickering when pressing or releasing the button (20ms)
+int debounce = 50;          // ms debounce period to prevent flickering when pressing or releasing the button (20ms)
 int DCgap = 250;            // max ms between clicks for a double click event
 int holdTime = 300;        // ms hold period: how long to wait for press+hold event
 int longHoldTime = 1000;    // ms long hold period: how long to wait for press+hold event

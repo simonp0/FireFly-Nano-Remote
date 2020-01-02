@@ -281,11 +281,21 @@ void calculateThrottle() {
 
 void isr() { } // Interrupt Service Routine
 
+double handleButtonTimestamp = 0;
 void handleButtons() { //executes action depending on PWR_BUTTON state ( CLICK - DBL_CLICK - HOLD - LONG_HOLD )
 
     switch (checkButton()) { //checks what PWR_BUTTON is doing and return it's state ( CLICK - DBL_CLICK - HOLD - LONG_HOLD )
 
+        case RELEASED:
+if (millisSince(handleButtonTimestamp) > 100) {
+    PwrButtonState = ButtonState::RELEASED;
+    handleButtonTimestamp = millis();
+}
+        break;
+
         case CLICK:
+            PwrButtonState = ButtonState::CLICK;
+            handleButtonTimestamp = millis();
             keepAlive();
             switch (state) { //state is an AppState() type - (Remote control state)
                 case CONNECTING:
@@ -298,7 +308,6 @@ void handleButtons() { //executes action depending on PWR_BUTTON state ( CLICK -
 
                 default:
                     if (page == PAGE_MENU) { // in menu
-
                         if (menuPage != MENU_MAIN) {
                             display.setRotation(DISPLAY_ROTATION); // back to vertical
                             calibrationStage = CALIBRATE_CENTER;
@@ -313,10 +322,19 @@ void handleButtons() { //executes action depending on PWR_BUTTON state ( CLICK -
             }
         break;
 
+        case DBL_CLICK:
+            PwrButtonState = ButtonState::DBL_CLICK;
+            handleButtonTimestamp = millis();
+        break;
+
         case HOLD: // start shutdown
+            PwrButtonState = ButtonState::HOLD;
+            handleButtonTimestamp = millis();
         break;
 
         case LONG_HOLD: // shutdown confirmed
+            PwrButtonState = ButtonState::LONG_HOLD;
+            handleButtonTimestamp = millis();
             sleep();
         return;
     }
@@ -461,8 +479,8 @@ void sleep2()
 }
 */
 
-bool pressed(int button) {
-  return digitalRead(button) == LOW;
+bool pressed(int button) { 
+  return (digitalRead(button) == LOW);
 }
 
 void waitRelease(int button) {
@@ -772,7 +790,7 @@ bool responseAvailable(uint8_t len) {
     #endif
 }
 
-void prepatePacket() {
+void preparePacket() {
 
     // speed control
     switch (state) {//state is an AppState() type - (Remote control state)
@@ -850,7 +868,7 @@ void transmitToReceiver() {
 
   // send packet
   digitalWrite(PIN_LED, HIGH);
-  prepatePacket();
+  preparePacket();
 
   if (sendData()) {
     // Listen for an acknowledgement reponse and return of uart data
@@ -1261,6 +1279,7 @@ void calibrateScreen() {
 void backToMainMenu() {
     menuPage = MENU_MAIN;
     currentMenu = 0;
+    //subMenuItem = 99;
 }
 
 void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuously via updateMainDisplay() when PAGE state == PAGE_MENU
@@ -1279,22 +1298,20 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
         }
     }
 
-
     // wheel = up/down
     int position = readThrottlePosition();
-
+    int deadBand = 15;
     int lastMenuIndex = round(currentMenu);
     int nextMenuIndex = lastMenuIndex;
-
 
     switch (menuPage) {
 
         case MENU_MAIN:
             // --------- mainMenu wheel control navigation---------------------
-            if (position < default_throttle - 15) {
+            if (position < default_throttle - deadBand) {
                 if (currentMenu < ARRAYLEN(MENUS)-1){currentMenu += 0.25;}
             }
-            if (position > default_throttle + 15) {
+            if (position > default_throttle + deadBand) {
                 if (currentMenu > 0){currentMenu -= 0.25;}
             }
             nextMenuIndex = round(currentMenu);
@@ -1326,11 +1343,11 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
 
         case MENU_SUB:
             // --------- subMenus wheel control navigation---------------------
-            if (position < default_throttle - 15) {
-    //                if (currentMenu < ARRAYLEN(MENUS[subMenu])-2){currentMenu += 0.25;}
+            if (position < default_throttle - deadBand) {
+            //if (currentMenu < ARRAYLEN(MENUS[subMenu])-2){currentMenu += 0.25;}
                 if (currentMenu < ARRAYLEN(MENUS[subMenu])-2){currentMenu += 0.25;}
             }
-            if (position > default_throttle + 15) {
+            if (position > default_throttle + deadBand) {
                 if (currentMenu > 0) currentMenu -= 0.25;
             }
             nextMenuIndex = round(currentMenu);
@@ -1350,7 +1367,7 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
             }
             drawString("- - - -", -1, y, fontDesc);
 
-            if (pressed(PIN_TRIGGER)) {
+            if (pressed(PIN_TRIGGER)) { //what to do when TRIGGER is clicked
                 menuPage = MENU_ITEM;
                 subMenuItem = round(currentMenu);
                 waitRelease(PIN_TRIGGER);
@@ -1462,8 +1479,97 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                     break;
 
                 }
-            }
+            } // END if (pressed(PIN_TRIGGER))
+/*
+    //  PWR_BUTTON action specific for each subMenu 
+            if (PwrButtonState == ButtonState::CLICK) { //what to do when PWRBUTTON is clicked
+                //menuPage = MENU_ITEM;
+                //subMenuItem = round(currentMenu);
+                //waitRelease(PIN_TRIGGER);
+                vibe(3);    //short vibrations when pressing the trigger
 
+                // handle commands
+                switch (subMenu) {
+                    case MENU_INFO:
+                        switch (subMenuItem) {
+                            case INFO_DEBUG:
+                            //subMenuItem=99;
+                            backToMainMenu();
+                            break;
+                            case INFO_SETTINGS:
+                            break;
+                           // case 99:
+                           // backToMainMenu();
+                           // break;
+                        }                    
+                    break;
+
+                    case MENU_REMOTE:
+                        //backToMainMenu();
+                        switch (subMenuItem) {
+                            case REMOTE_PAIR:
+                            break;
+                        }
+                    break;
+
+                    case MENU_BOARD:
+                        //backToMainMenu();
+                        switch (subMenuItem) {
+                            case BOARD_UPDATE:
+                            break;
+
+                            case BOARD_MENU_MOTOR_MIN:
+                            break;
+                            case BOARD_MENU_MOTOR_MAX:
+                            break; 
+                            case BOARD_MENU_BATTERY_MIN:
+                            break; 
+                            case BOARD_MENU_BATTERY_MAX:
+                            break;
+                            case BOARD_MENU_TEST:
+                            break;                                 
+                        }
+                    break;
+
+                    case MENU_LIGHT:
+                    backToMainMenu();
+                        switch (subMenuItem){
+                            case SWITCH_LIGHT_ON:
+                            break;
+                            case SWITCH_LIGHT_OFF:
+                            break;
+                            case SWITCH_LIGHT_BRAKES_ONLY:
+                            case ROADLIGHT_SETTINGS:
+                            break;
+                        }
+                    break;
+
+                    case MENU_RECEIVER:
+                        switch (subMenuItem){
+                            case SUBM_THROTTLE_MODE:
+                            break;
+                        }
+                    break;
+
+                    case MENU_AUTO_CRUISE:
+                        switch (subMenuItem){
+                            case CRUISE_MENU_AUTO_CRUISE:
+                            break;
+                            case CRUISE_MENU_PUSHING_SPEED:
+                            break;
+                            case CRUISE_MENU_PUSHING_TIME:
+                            break;
+                            case CRUISE_MENU_CRUISE_CURRENT_SPIKE:
+                            break;
+                            case CRUISE_MENU_AUTO_CRUISE_TIME:
+                            break;
+                            case CRUISE_MENU_CRUISE_CURRENT_LOW:
+                            break;
+                        }
+                    break;
+                }
+            } // END if (checkButton()==CLICK) ---- PWRBUTTON CLICK -------      
+            */
         break; //MENU_SUB
 
         case MENU_ITEM: //Here we can display a specific page after handling commands, and stay on it (similar to debugPage)
@@ -1577,6 +1683,36 @@ void drawDebugPage() {
     drawStringCenter(String(lastRssi, 0), " db", y);
     y += 25;
     drawStringCenter(String(readThrottlePosition()), String(hallValue), y);
+    y += 15;
+    if (pressed(PIN_PWRBUTTON)) {
+        drawString("PWRBUTT", 0, y, fontDesc);
+    }
+    if (checkButton() == CLICK) {
+        drawString("PW_CLICK", 0, y, fontDesc);
+    }
+    y += 10;
+    switch(PwrButtonState){
+        case ButtonState::RELEASED:
+            drawString("RELEASED", 0, y, fontDesc);
+        break;
+        case ButtonState::CLICK:
+            drawString("CLICK", 0, y, fontDesc);
+        break;
+        case ButtonState::DBL_CLICK:
+            drawString("DBL_CLICK", 0, y, fontDesc);
+        break;
+        case ButtonState::HOLD:
+            drawString("HOLD", 0, y, fontDesc);
+        break;
+        case ButtonState::LONG_HOLD:
+            drawString("LONG_HOLD", 0, y, fontDesc);
+        break;
+    }
+    y += 10;
+    if (pressed(PIN_TRIGGER)) {
+        drawString("TRIGGER", 0, y, fontDesc);
+    }
+
 }
 
 
@@ -1976,6 +2112,72 @@ int checkButton() { //reads value of PWR_BUTTON and return event 0 - CLICK - DBL
     return event;
 }
 
+/*int checkButton() { //reads value of PWR_BUTTON and return event 0 - CLICK - DBL_CLICK - HOLD - LONG_HOLD
+
+    int event = 0;
+    buttonVal = digitalRead(PIN_PWRBUTTON);
+
+    // Button pressed down
+    if (buttonVal == LOW && buttonLast == HIGH && (millis() - upTime) > debounce) {
+        downTime = millis();
+        ignoreUp = false;
+        waitForUp = false;
+        singleOK = true;
+        holdEventPast = false;
+        longHoldEventPast = false;
+        if ((millis() - upTime) < DCgap && DConUp == false && DCwaiting == true){
+            DConUp = true;
+        }
+        else {  DConUp = false; }
+        DCwaiting = false;
+    }
+    // Button released
+    else {
+        if (buttonVal == HIGH && buttonLast == LOW && (millis() - downTime) > debounce){
+            if (not ignoreUp){
+                upTime = millis();
+                if (DConUp == false){
+                    DCwaiting = true;
+                }
+                else{
+                    event = DBL_CLICK;
+                    DConUp = false;
+                    DCwaiting = false;
+                    singleOK = false;
+                }
+            }
+        }
+    }
+
+    // Test for normal click event: DCgap expired
+    if ( buttonVal == HIGH && (millis() - upTime) >= DCgap && DCwaiting == true && DConUp == false && singleOK == true && event != 2){
+        event = CLICK;
+        DCwaiting = false;
+    }
+    // Test for hold
+    if (buttonVal == LOW && (millis() - downTime) >= holdTime) {
+        // Trigger "normal" hold
+        if (not holdEventPast){
+            event = HOLD;
+            waitForUp = true;
+            ignoreUp = true;
+            DConUp = false;
+            DCwaiting = false;
+            holdEventPast = true;
+        }
+        // Trigger "long" hold
+        if ((millis() - downTime) >= longHoldTime){
+            if (not longHoldEventPast){
+                event = LONG_HOLD;
+                longHoldEventPast = true;
+            }
+        }
+    }
+
+    buttonLast = buttonVal;
+    return event;
+}*/
+
 bool isShuttingDown() {
   // button held for more than holdTime
   return (buttonVal == LOW) && holdEventPast;
@@ -2213,7 +2415,7 @@ void paramValueSelector(uint8_t myGlobalSettingIndex, String paramName, double m
         waitTimeMs = 0;
     }
 
-    int deadBand = 5;
+    int deadBand = 25;
     long timestamp = millis();
     while (millisSince(timestamp) < waitTimeMs){
             if (pressed(PIN_TRIGGER)) {
@@ -2221,9 +2423,11 @@ void paramValueSelector(uint8_t myGlobalSettingIndex, String paramName, double m
                 waitTimeMs = 0;
                 break;
             }
-            if (pressed(PIN_PWRBUTTON)) {
+//            if (pressed(PIN_PWRBUTTON)) {
+    if (PwrButtonState == ButtonState::CLICK) {
                 initFlag_PVS = 1;
                 waitTimeMs = 0;
+//backToMainMenu();                
                 break;
             }
     }
@@ -2312,7 +2516,8 @@ void paramValueSelector(uint8_t myGlobalSettingIndex, String paramName, double m
             break;
         }
     }
-    if (pressed(PIN_PWRBUTTON)) {
+//    if (pressed(PIN_PWRBUTTON)) {
+    if (PwrButtonState == ButtonState::CLICK) {
         waitTimeMs = 0;
         myPVSpage = ADJUST_PVS_VALUE;
         initFlag_PVS = 1;
@@ -2345,7 +2550,7 @@ void paramSelectorList(int *paramSelectorIndexArray){
     int minAdjValue = 0;
     int maxAdjValue = myArraySize - 1;
 
-    int deadBand = 5;
+    int deadBand = 25;
     long timestamp = millis();
     while (millisSince(timestamp) < waitTimeMs_PSL){
             if (pressed(PIN_TRIGGER)) {

@@ -222,4 +222,5 @@ float speedSmoothArray[] = {0,0,0,0,0,0,0,0,0,0};
     uint_fast32_t pwm_throttle_dutyCycle_value;
     void updatePpmThrottleOutput();
 #endif
+void disablePpmThrottleOutput();
 // ******** PPM THROTTLE OUTPUT ********

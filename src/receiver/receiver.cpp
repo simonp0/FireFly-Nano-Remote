@@ -63,6 +63,10 @@ void setup(){ //runs once after powerOn
         ledcSetup(pwm_throttle_channel, pwm_throttle_frequency, pwm_throttle_resolution); //configure THROTTLE PWM functionalitites
         ledcAttachPin(PIN_PPM_THROTTLE, pwm_throttle_channel); // attach the channel to the GPIO to be controlled
     #endif
+    #ifndef OUTPUT_PPM_THROTTLE
+        pinMode(PIN_PPM_THROTTLE, OUTPUT);
+        digitalWrite(PIN_PPM_THROTTLE, LOW);
+    #endif
 
     batterySensor.begin(SMOOTHED_EXPONENTIAL, 10);     // 10 seconds average
     motorCurrent.begin(SMOOTHED_AVERAGE, 2);    // 1 sec average
@@ -887,39 +891,6 @@ void updateSetting( uint8_t setting, uint64_t value){  // Update a single settin
     }
 }
 
-/*TODO setCruise
-void setCruise ( bool cruise, uint16_t setPoint ){
-  if( rxSettings.controlMode == 0 ){
-
-    setThrottle( setPoint );
-
-  }
-  else if( rxSettings.controlMode == 1 ){
-
-    setThrottle( setPoint );
-
-  }
-  else if( rxSettings.controlMode == 2 ){
-
-    // Setpoint not used (PID by VESC)
-    UART.nunchuck.lowerButton = cruise;
-
-    // Make sure the motor doesn't begin to spin wrong way under high load (and don't allow cruise backwards)
-    // if( returnData.rpm < 0 ){
-    //
-    //   UART.nunchuck.lowerButton = false;
-    //   UART.nunchuck.valueY = 127;
-    //   UART.setNunchuckValues();
-    //   UART.setCurrent(0.0);
-    //
-    // } else{
-    //
-    //   UART.nunchuck.valueY = 127;
-    //   UART.setNunchuckValues();
-    //
-    // }
-  }
-} */
 
 void setThrottle(uint16_t value){
     
@@ -927,8 +898,8 @@ void setThrottle(uint16_t value){
     throttle = value;
    // mySmoothedThrottle = smoothValueOverTime(throttle);
     double mySpeed = telemetry.getSpeed();
-    mySmoothedThrottle = (int)smoothValue2(throttleSmoothArray, (float)throttle);
-    mySmoothedSpeed = smoothValue2(speedSmoothArray, (float)mySpeed);
+mySmoothedThrottle = (int)smoothValue2(throttleSmoothArray, (float)throttle);
+mySmoothedSpeed = smoothValue2(speedSmoothArray, (float)mySpeed);
 
 
     int deadBand = 5;
@@ -950,6 +921,7 @@ void setThrottle(uint16_t value){
         switch(THROTTLE_MODE){
             //0
             case VTM_NUNCHUCK_UART:
+                disablePpmThrottleOutput();
                 UART.nunchuck.valueY = value;
                 UART.nunchuck.upperButton = false;
                 UART.nunchuck.lowerButton = false;
@@ -998,6 +970,7 @@ VTM_CURRENT_UART_STATE:
             //2
             case VTM_CURRENT_UART:  //current with regen brake & handbrake when stopped
                 //myCurrent = map(throttle, 0, 255, -abs(motor_max_brake_current), motor_max_current);
+                disablePpmThrottleOutput();
                 switch (state){
                     case CONNECTED:
                         switch (vtmState){
@@ -1116,18 +1089,21 @@ VTM_CURRENT_UART_STATE:
             break;
             //3
             case VTM_RPM_UART:
+                disablePpmThrottleOutput();
                 myRpm = map(value, 0, 255, -10000, +10000);
                 if (value > (default_throttle - deadBand) && value < (default_throttle + deadBand)) myRpm = 0;
                 UART.setRPM(myRpm);
             break;
             //4
             case VTM_DUTY_UART:
+                disablePpmThrottleOutput();
                 myDuty = map(value, (default_throttle + deadBand), 255, 0, 1);
                 if (value > (default_throttle - deadBand) && value < (default_throttle + deadBand)) myDuty = 0;
                 UART.setDuty(myDuty);
             break;
             //5
             case VTM_REGEN_UART:
+                disablePpmThrottleOutput();
                 myCurrent = map(value, 0, 255, -10, +10);
                 if ( (mySpeed >= 0) && (value > (default_throttle + deadBand)) ) {  //going forwards
                     UART.setCurrent(myCurrent);               
@@ -1138,6 +1114,7 @@ VTM_CURRENT_UART_STATE:
             break;
             //6
             case VTM_HANDBRAKE_UART:
+                disablePpmThrottleOutput();
                 myCurrent = map(value, 0, 255, -10, +10);
                 if ( (mySpeed >= 0) && (value > (default_throttle + deadBand)) ) {  //going forwards
                     UART.setCurrent(myCurrent);               
@@ -1148,6 +1125,7 @@ VTM_CURRENT_UART_STATE:
             break;
             //7
             case VTM_POS_UART:
+                disablePpmThrottleOutput();
                 float myPos = map(value, 0, 255, 1, +359);
                 //if (value > (default_throttle - deadBand) && value < (default_throttle + deadBand)) myPos = 0;
                 if ( value > (default_throttle + deadBand) ) {  //going forwards
@@ -1185,7 +1163,6 @@ void setCruise(uint8_t speed) {
             break;
 
             case VTM_PPM_PIN_OUT:
-                updatePpmThrottleOutput();      // NOT TESTED !
             break;
 
             case VTM_CURRENT_UART:
@@ -1209,6 +1186,40 @@ void setCruise(uint8_t speed) {
         }
     #endif
 }
+
+/*TODO setCruise
+void setCruise ( bool cruise, uint16_t setPoint ){
+  if( rxSettings.controlMode == 0 ){
+
+    setThrottle( setPoint );
+
+  }
+  else if( rxSettings.controlMode == 1 ){
+
+    setThrottle( setPoint );
+
+  }
+  else if( rxSettings.controlMode == 2 ){
+
+    // Setpoint not used (PID by VESC)
+    UART.nunchuck.lowerButton = cruise;
+
+    // Make sure the motor doesn't begin to spin wrong way under high load (and don't allow cruise backwards)
+    // if( returnData.rpm < 0 ){
+    //
+    //   UART.nunchuck.lowerButton = false;
+    //   UART.nunchuck.valueY = 127;
+    //   UART.setNunchuckValues();
+    //   UART.setCurrent(0.0);
+    //
+    // } else{
+    //
+    //   UART.nunchuck.valueY = 127;
+    //   UART.setNunchuckValues();
+    //
+    // }
+  }
+} */
 
 /* void speedControl( uint16_t throttle , bool trigger ){ TODO
    // Kill switch
@@ -1672,6 +1683,12 @@ bool inRange(int val, int minimum, int maximum){ //checks if value is within MIN
             ledcWrite(pwm_throttle_channel, pwm_throttle_dutyCycle_value);
         }
 #endif
+
+void disablePpmThrottleOutput(){
+    #ifdef OUTPUT_PPM_THROTTLE
+        ledcWrite(pwm_throttle_channel, 0);
+    #endif
+}
 // ******** PPM THROTTLE OUTPUT ********
 
 
