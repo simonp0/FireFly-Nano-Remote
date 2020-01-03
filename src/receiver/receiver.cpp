@@ -818,7 +818,8 @@ void stateMachine() { // handle auto-stop, endless mode, etc...
                     setThrottle(throttle);
                 }
                 if (currentSpeedValue < 0) {  //going backwards
-                    if (throttle > brakeForce) throttle += brakeForce; else throttle = 10;
+//                    if (throttle > brakeForce) throttle += brakeForce; else throttle = 10;
+                    if (throttle < (255-brakeForce)) throttle += brakeForce; else throttle = 255;
                     setThrottle(throttle);
                 }
                 lastBrakeTime = millis();
@@ -892,11 +893,11 @@ void updateSetting( uint8_t setting, uint64_t value){  // Update a single settin
 }
 
 
-void setThrottle(uint16_t value){
+void setThrottle(uint16_t throttleValue){
     
     // update display
-    throttle = value;
-   // mySmoothedThrottle = smoothValueOverTime(throttle);
+    throttle = throttleValue;
+   // mySmoothedThrottle = smoothValueOverTime(throttleValue);
     double mySpeed = telemetry.getSpeed();
 mySmoothedThrottle = (int)smoothValue2(throttleSmoothArray, (float)throttle);
 mySmoothedSpeed = smoothValue2(speedSmoothArray, (float)mySpeed);
@@ -922,7 +923,7 @@ mySmoothedSpeed = smoothValue2(speedSmoothArray, (float)mySpeed);
             //0
             case VTM_NUNCHUCK_UART:
                 disablePpmThrottleOutput();
-                UART.nunchuck.valueY = value;
+                UART.nunchuck.valueY = throttleValue;
                 UART.nunchuck.upperButton = false;
                 UART.nunchuck.lowerButton = false;
                 UART.setNunchuckValues();
@@ -931,23 +932,23 @@ mySmoothedSpeed = smoothValue2(speedSmoothArray, (float)mySpeed);
             case VTM_PPM_PIN_OUT:
                 // ******** PPM THROTTLE OUTPUT ********
                 #ifdef OUTPUT_PPM_THROTTLE
-                    updatePpmThrottleOutput();
+                    updatePpmThrottleOutput(throttleValue);
                 #endif
             break;
 
 /*
 VTM_CURRENT_UART_STATE:
     VTM_IDLE:
-        if ((mySpeed > -5) && (throttle > default_throttle)) {  //start going forwards
-            myCurrent = map(throttle, default_throttle, 255, 0, motor_max_current);
+        if ((mySpeed > -5) && (throttleValue > default_throttle)) {  //start going forwards
+            myCurrent = map(throttleValue, default_throttle, 255, 0, motor_max_current);
             UART.setCurrent(myCurrent);
             VTM_CURRENT_UART_STATE = VTM_DRIVING;               
         }
         
     VTM_STOPPED:
                         //Start going forwards from stop                        
-                        if ((mySpeed >= 0) && (throttle > default_throttle)) {  //going forwards, cruising
-                            myCurrent = map(throttle, default_throttle, 255, 0, motor_max_current);
+                        if ((mySpeed >= 0) && (throttleValue > default_throttle)) {  //going forwards, cruising
+                            myCurrent = map(throttleValue, default_throttle, 255, 0, motor_max_current);
                             UART.setCurrent(myCurrent);               
                         }
                         if (mySpeed>2) VTM_CURRENT_UART_STATE = VTM_DRIVING;
@@ -978,14 +979,14 @@ VTM_CURRENT_UART_STATE:
                             case VTM_STATE_STOPPED:
                                 str_vtm_state = "Stopped";
                                 //Idle
-                                if (throttle > (default_throttle - deadBand) && throttle < (default_throttle + deadBand)){ //IDLE - remote centered
+                                if (throttleValue > (default_throttle - deadBand) && throttleValue < (default_throttle + deadBand)){ //IDLE - remote centered
                                     myCurrent = 0;
                                     UART.setCurrent(myCurrent);
                                 } 
 
                                 //Start going forward from stop                        
-                                if ((mySpeed >= (-stoppedStateMaxSpeed)) && (throttle > (default_throttle + deadBand) )) {  //moving forwards, cruising
-                                    myCurrent = map(throttle, default_throttle, 255, 0, motor_max_current);
+                                if ((mySpeed >= (-stoppedStateMaxSpeed)) && (throttleValue > (default_throttle + deadBand) )) {  //moving forwards, cruising
+                                    myCurrent = map(throttleValue, default_throttle, 255, 0, motor_max_current);
                                     UART.setCurrent(myCurrent);
                                     vtmState = VTM_STATE_DRIVING;               
                                 }
@@ -993,8 +994,8 @@ VTM_CURRENT_UART_STATE:
                                 if (mySpeed > stoppedStateMaxSpeed ){ vtmState = VTM_STATE_DRIVING;}
 
                                 //Start going backwards from stop
-                                if ( (mySpeed <= stoppedStateMaxSpeed) && (throttle < (default_throttle - deadBand)) ){   //moving backwards
-                                    myCurrent = map (throttle, 0, default_throttle, motor_min_current, 0);
+                                if ( (mySpeed <= stoppedStateMaxSpeed) && (throttleValue < (default_throttle - deadBand)) ){   //moving backwards
+                                    myCurrent = map (throttleValue, 0, default_throttle, motor_min_current, 0);
                                     UART.setCurrent(myCurrent);
                                     vtmState = VTM_STATE_REVERSE;  
                                 }
@@ -1006,23 +1007,23 @@ VTM_CURRENT_UART_STATE:
                             case VTM_STATE_DRIVING:
                                 
                                 //Keep driving, update motor throttle.
-                                if ( (mySpeed >= (-handbrakeMaxSpeed)) && (throttle > default_throttle) ) {  //moving forwards, cruising
-                                    myCurrent = map(throttle, default_throttle, 255, 0, motor_max_current);
+                                if ( (mySpeed >= (-handbrakeMaxSpeed)) && (throttleValue > default_throttle) ) {  //moving forwards, cruising
+                                    myCurrent = map(throttleValue, default_throttle, 255, 0, motor_max_current);
                                     UART.setCurrent(myCurrent);
                                     str_vtm_state = "Driving";
                                 }                                
                                 //Braking while moving forwards
-                                if ((mySpeed >= regen_brake_min_speed) && (throttle < default_throttle)) {  //moving forwards, regen braking
-                                    myCurrent = map(throttle, 0, default_throttle, -abs(motor_max_brake_current), 0);
+                                if ((mySpeed >= regen_brake_min_speed) && (throttleValue < default_throttle)) {  //moving forwards, regen braking
+                                    myCurrent = map(throttleValue, 0, default_throttle, -abs(motor_max_brake_current), 0);
                                     UART.setBrakeCurrent(myCurrent);
                                     str_vtm_state = "Drv: regen. braking";
-                                } else if ((mySpeed > 0) && (mySpeed < regen_brake_min_speed) && (throttle < default_throttle)) {  //moving forwards, slow, active braking
-                                    myCurrent = map(throttle, 0, default_throttle, motor_min_current, 0); 
+                                } else if ((mySpeed > 0) && (mySpeed < regen_brake_min_speed) && (throttleValue < default_throttle)) {  //moving forwards, slow, active braking
+                                    myCurrent = map(throttleValue, 0, default_throttle, motor_min_current, 0); 
                                     str_vtm_state = "Drv: active braking";                                 
                                     //UART.setCurrent(myCurrent); //+ pow(mySpeed+1,2));   // 
                                 } 
                                 //We just stopped -> activate Handbrake
-                                if ( (abs(mySpeed) < handbrakeMaxSpeed) && (throttle < default_throttle) ){ 
+                                if ( (abs(mySpeed) < handbrakeMaxSpeed) && (throttleValue < default_throttle) ){ 
                                     myCurrent = myHandbrakeCurrent;
                                     UART.setHandbrake(myCurrent);
                                     vtmState = VTM_STATE_HANDBRAKE;
@@ -1036,52 +1037,52 @@ VTM_CURRENT_UART_STATE:
                             case VTM_STATE_HANDBRAKE:
                                 str_vtm_state = "Handbrake";
                                 //keepalive handbrake if not moving
-                                if ( (abs(mySpeed) < handbrakeMaxSpeed) && (throttle < default_throttle) ){
+                                if ( (abs(mySpeed) < handbrakeMaxSpeed) && (throttleValue < default_throttle) ){
                                     myCurrent = myHandbrakeCurrent;
                                     UART.setHandbrake(myCurrent);
                                 }
                                 //too steep, handbrake slips -> active braking
-                                if ( (abs(mySpeed) >= handbrakeMaxSpeed) && (throttle < default_throttle) ){
+                                if ( (abs(mySpeed) >= handbrakeMaxSpeed) && (throttleValue < default_throttle) ){
                                     myCurrent = mySpeed/abs(mySpeed) * (myHandbrakeCurrent/2 + pow(mySpeed+1,2));
                                     UART.setCurrent(myCurrent);
                                 }
                                 // Release handbrake when throttle goes back to neutral
-                                if (throttle >= default_throttle){
+                                if (throttleValue >= default_throttle){
                                     vtmState = VTM_STATE_STOPPED;
                                 }
                             break;
 
                             case VTM_STATE_REVERSE:
                                 //str_vtm_state = "Reverse";
-                                if ( (mySpeed <= 0) ){   //moving backwards //&& (throttle < (default_throttle - deadBand))
-                                    myCurrent = map (throttle, 0, default_throttle, motor_min_current, 0);
+                                if ( (mySpeed <= 0) ){   //moving backwards //&& (throttleValue < (default_throttle - deadBand))
+                                    myCurrent = map (throttleValue, 0, default_throttle, motor_min_current, 0);
                                     UART.setCurrent(myCurrent);
                                 }
                                 //Stopping
-                                if ((mySpeed >= 0) && (throttle > default_throttle)){ vtmState = VTM_STATE_STOPPED; }
+                                if ((mySpeed >= 0) && (throttleValue > default_throttle)){ vtmState = VTM_STATE_STOPPED; }
                             break;
 
                                 /*
                                 //Braking while moving backwards
-                                if ( (mySpeed < -regen_brake_min_speed) && (throttle > default_throttle) ) {    //moving backwards, regen braking
-                                    myCurrent = map (throttle, default_throttle, 255, 0, abs(motor_max_brake_current));
+                                if ( (mySpeed < -regen_brake_min_speed) && (throttleValue > default_throttle) ) {    //moving backwards, regen braking
+                                    myCurrent = map (throttleValue, default_throttle, 255, 0, abs(motor_max_brake_current));
                                     UART.setBrakeCurrent(myCurrent);
-                                } else if ((mySpeed < 0) && (mySpeed > -regen_brake_min_speed) && (throttle > default_throttle)) {  //moving backwards, slow, active braking
-                                    myCurrent = map(throttle, default_throttle, 255, 0, motor_max_current);
+                                } else if ((mySpeed < 0) && (mySpeed > -regen_brake_min_speed) && (throttleValue > default_throttle)) {  //moving backwards, slow, active braking
+                                    myCurrent = map(throttleValue, default_throttle, 255, 0, motor_max_current);
                                     UART.setCurrent(myCurrent);   // 
                                 }
                                 */
                             
                                 //deal with STOPPING state transition? timer?
-                                //if (throttle == 0 && !isMoving()) { setState(STOPPED);}
-                                //if (throttle == 255 && !isMoving()) { setState(STOPPED);}
+                                //if (throttleValue == 0 && !isMoving()) { setState(STOPPED);}
+                                //if (throttleValue == 255 && !isMoving()) { setState(STOPPED);}
 
                         }
                     break;
 
                     case STOPPING: // emergency brake when remote has disconnected  -> don't use regen, only active braking.
                         str_vtm_state = "Emergency brake";
-                        myCurrent = map(throttle, 0, 255, motor_min_current, motor_max_current);
+                        myCurrent = map(throttleValue, 0, 255, motor_min_current, motor_max_current);
                         UART.setCurrent(myCurrent);   
                     break;
 
@@ -1090,48 +1091,48 @@ VTM_CURRENT_UART_STATE:
             //3
             case VTM_RPM_UART:
                 disablePpmThrottleOutput();
-                myRpm = map(value, 0, 255, -10000, +10000);
-                if (value > (default_throttle - deadBand) && value < (default_throttle + deadBand)) myRpm = 0;
+                myRpm = map(throttleValue, 0, 255, -10000, +10000);
+                if (throttleValue > (default_throttle - deadBand) && throttleValue < (default_throttle + deadBand)) myRpm = 0;
                 UART.setRPM(myRpm);
             break;
             //4
             case VTM_DUTY_UART:
                 disablePpmThrottleOutput();
-                myDuty = map(value, (default_throttle + deadBand), 255, 0, 1);
-                if (value > (default_throttle - deadBand) && value < (default_throttle + deadBand)) myDuty = 0;
+                myDuty = map(throttleValue, (default_throttle + deadBand), 255, 0, 1);
+                if (throttleValue > (default_throttle - deadBand) && throttleValue < (default_throttle + deadBand)) myDuty = 0;
                 UART.setDuty(myDuty);
             break;
             //5
             case VTM_REGEN_UART:
                 disablePpmThrottleOutput();
-                myCurrent = map(value, 0, 255, -10, +10);
-                if ( (mySpeed >= 0) && (value > (default_throttle + deadBand)) ) {  //going forwards
+                myCurrent = map(throttleValue, 0, 255, -10, +10);
+                if ( (mySpeed >= 0) && (throttleValue > (default_throttle + deadBand)) ) {  //going forwards
                     UART.setCurrent(myCurrent);               
                 }
-                else if ( (mySpeed > 0.5) && (value < (default_throttle - deadBand)) ) {  //going forwards, braking
+                else if ( (mySpeed > 0.5) && (throttleValue < (default_throttle - deadBand)) ) {  //going forwards, braking
                     UART.setBrakeCurrent(myCurrent);
                 }                
             break;
             //6
             case VTM_HANDBRAKE_UART:
                 disablePpmThrottleOutput();
-                myCurrent = map(value, 0, 255, -10, +10);
-                if ( (mySpeed >= 0) && (value > (default_throttle + deadBand)) ) {  //going forwards
+                myCurrent = map(throttleValue, 0, 255, -10, +10);
+                if ( (mySpeed >= 0) && (throttleValue > (default_throttle + deadBand)) ) {  //going forwards
                     UART.setCurrent(myCurrent);               
                 }
-                else if ( (mySpeed < 0.1) && (value < (default_throttle - deadBand)) ) {  //going forwards, braking
+                else if ( (mySpeed < 0.1) && (throttleValue < (default_throttle - deadBand)) ) {  //going forwards, braking
                     UART.setHandbrake(myHandbrakeCurrent);   // TEST
                 }                
             break;
             //7
             case VTM_POS_UART:
                 disablePpmThrottleOutput();
-                float myPos = map(value, 0, 255, 1, +359);
-                //if (value > (default_throttle - deadBand) && value < (default_throttle + deadBand)) myPos = 0;
-                if ( value > (default_throttle + deadBand) ) {  //going forwards
+                float myPos = map(throttleValue, 0, 255, 1, +359);
+                //if (throttleValue > (default_throttle - deadBand) && throttleValue < (default_throttle + deadBand)) myPos = 0;
+                if ( throttleValue > (default_throttle + deadBand) ) {  //going forwards
                     Lpos = pow( Lpos + 1 , 1.2);              
                 }
-                else if ( value < (default_throttle - deadBand) ) {  //going forwards, braking
+                else if ( throttleValue < (default_throttle - deadBand) ) {  //going forwards, braking
                     Lpos = pow(Lpos , -1.2);   // DOESNT WORK 
                 }    
                 UART.setPos(Lpos); // TEST
@@ -1142,7 +1143,7 @@ VTM_CURRENT_UART_STATE:
     #endif
 
     // remember throttle for smooth auto stop
-    lastThrottle = throttle;
+    lastThrottle = throttleValue;
 
     #ifdef ROADLIGHT_CONNECTED
       //updateBrakeLight();
@@ -1678,10 +1679,16 @@ bool inRange(int val, int minimum, int maximum){ //checks if value is within MIN
 
 // ******** PPM THROTTLE OUTPUT ********
 #ifdef OUTPUT_PPM_THROTTLE
-        void updatePpmThrottleOutput(){
-            uint_fast32_t pwm_throttle_dutyCycle_value = map(throttle, 0, 255, 3276, 6552); //throttle; //map(throttle, 0, 255, 1ms, 2ms);
+    void updatePpmThrottleOutput(int8_t myThrottle, bool signalOutput){
+        if (signalOutput == true){  //default case if signalOutput is omitted
+            uint_fast32_t pwm_throttle_dutyCycle_value = map(myThrottle, 0, 255, 3276, 6552); //throttle; //map(throttle, 0, 255, 1ms, 2ms);
             ledcWrite(pwm_throttle_channel, pwm_throttle_dutyCycle_value);
         }
+        else if (signalOutput == false){    //temporally output a flat signal instead of a neutral 1ms Pulse Width
+            uint_fast32_t pwm_throttle_dutyCycle_value = 0;     //no PPM_remote input -> we can temporally use UART commands without signal conflict.
+            ledcWrite(pwm_throttle_channel, pwm_throttle_dutyCycle_value);
+        }
+    }
 #endif
 
 void disablePpmThrottleOutput(){
