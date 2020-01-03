@@ -214,6 +214,15 @@ bool menuWasUsed = false;
 // const int WHEEL_PULLEY = 1;
 // const int MOTOR_PULLEY = 1;
 
+//BUTTONS 
+#include "button.cpp"
+//RemoteButton(int inputPin, int debounce, int DCgap, int holdTime, int longHoldTime, int memoryDelay)
+//RemoteButton* triggerButton = new RemoteButton(PIN_TRIGGER, 50, 250, 300, 1000, 200);
+//RemoteButton* powerButton = new RemoteButton(PIN_PWRBUTTON, 50, 250, 300, 1000, 200);
+RemoteButton triggerButton(PIN_TRIGGER, 40, 150, 300, 1000, 0);
+RemoteButton powerButton(PIN_PWRBUTTON, 50, 250, 300, 1000, 50);
+
+
 // Button constants
 const int RELEASED  = 0;
 const int CLICK     = 1;

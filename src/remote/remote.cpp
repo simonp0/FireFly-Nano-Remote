@@ -1,4 +1,6 @@
 #include "remote.h"
+//#include "button.cpp"
+//#include"try.cpp"
 Adafruit_SSD1306 display(DISPLAY_RST);
 Smoothed <double> batterySensor;
 
@@ -149,6 +151,10 @@ void loop() { // core 1
 
   checkBatteryLevel();
   handleButtons();
+  //powerButton->update();
+  //triggerButton->update();
+  powerButton.update();
+  triggerButton.update();
 
   // Call function to update display
   if (displayOn) updateMainDisplay();
@@ -287,15 +293,15 @@ void handleButtons() { //executes action depending on PWR_BUTTON state ( CLICK -
     switch (checkButton()) { //checks what PWR_BUTTON is doing and return it's state ( CLICK - DBL_CLICK - HOLD - LONG_HOLD )
 
         case RELEASED:
-if (millisSince(handleButtonTimestamp) > 100) {
-    PwrButtonState = ButtonState::RELEASED;
-    handleButtonTimestamp = millis();
-}
+//if (millisSince(handleButtonTimestamp) > 100) {
+//    PwrButtonState = ButtonState::RELEASED;
+//    handleButtonTimestamp = millis();
+//}
         break;
 
         case CLICK:
-            PwrButtonState = ButtonState::CLICK;
-            handleButtonTimestamp = millis();
+//            PwrButtonState = ButtonState::CLICK;
+//            handleButtonTimestamp = millis();
             keepAlive();
             switch (state) { //state is an AppState() type - (Remote control state)
                 case CONNECTING:
@@ -323,18 +329,18 @@ if (millisSince(handleButtonTimestamp) > 100) {
         break;
 
         case DBL_CLICK:
-            PwrButtonState = ButtonState::DBL_CLICK;
-            handleButtonTimestamp = millis();
+//            PwrButtonState = ButtonState::DBL_CLICK;
+//            handleButtonTimestamp = millis();
         break;
 
         case HOLD: // start shutdown
-            PwrButtonState = ButtonState::HOLD;
-            handleButtonTimestamp = millis();
+//            PwrButtonState = ButtonState::HOLD;
+//            handleButtonTimestamp = millis();
         break;
 
         case LONG_HOLD: // shutdown confirmed
-            PwrButtonState = ButtonState::LONG_HOLD;
-            handleButtonTimestamp = millis();
+//            PwrButtonState = ButtonState::LONG_HOLD;
+//            handleButtonTimestamp = millis();
             sleep();
         return;
     }
@@ -1332,11 +1338,12 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
             }
             //drawString(".", -1, y, fontDesc);
 
-            if (pressed(PIN_TRIGGER)) {
+            if (triggerButton.getState() == CLICK) {
+//            if (pressed(PIN_TRIGGER)) {
                 menuPage = MENU_SUB;
                 subMenu = round(currentMenu);
                 currentMenu = 0;
-                waitRelease(PIN_TRIGGER);
+                //waitRelease(PIN_TRIGGER);
                 vibe(3);   //short vibrations when pressing the trigger
             }
         break;
@@ -1367,10 +1374,11 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
             }
             drawString("- - - -", -1, y, fontDesc);
 
-            if (pressed(PIN_TRIGGER)) { //what to do when TRIGGER is clicked
+            if (triggerButton.getState() == CLICK) {
+//            if (pressed(PIN_TRIGGER)) { //what to do when TRIGGER is clicked
                 menuPage = MENU_ITEM;
                 subMenuItem = round(currentMenu);
-                waitRelease(PIN_TRIGGER);
+                //waitRelease(PIN_TRIGGER);
                 vibe(3);    //short vibrations when pressing the trigger
 
                 // handle commands
@@ -1691,28 +1699,44 @@ void drawDebugPage() {
         drawString("PW_CLICK", 0, y, fontDesc);
     }
     y += 10;
-    switch(PwrButtonState){
-        case ButtonState::RELEASED:
+    switch(powerButton.getState()){
+        case RELEASED:
             drawString("RELEASED", 0, y, fontDesc);
         break;
-        case ButtonState::CLICK:
+        case CLICK:
             drawString("CLICK", 0, y, fontDesc);
         break;
-        case ButtonState::DBL_CLICK:
+        case DBL_CLICK:
             drawString("DBL_CLICK", 0, y, fontDesc);
         break;
-        case ButtonState::HOLD:
+        case HOLD:
             drawString("HOLD", 0, y, fontDesc);
         break;
-        case ButtonState::LONG_HOLD:
+        case LONG_HOLD:
             drawString("LONG_HOLD", 0, y, fontDesc);
         break;
     }
-    y += 10;
+    y += 14;
     if (pressed(PIN_TRIGGER)) {
-        drawString("TRIGGER", 0, y, fontDesc);
+        drawString("T", 0, y, fontDesc);
     }
-
+    switch (triggerButton.getState()) {
+        case RELEASED:
+            drawString(" ", 0, y, fontDesc);
+        break;
+        case CLICK:
+            drawString("Click", 0, y, fontDesc);
+        break;
+        case DBL_CLICK:
+            drawString("Dbl_Click", 0, y, fontDesc);
+        break;
+        case HOLD:
+            drawString("Hold", 0, y, fontDesc);
+        break;
+        case LONG_HOLD:
+            drawString("Long_Hold", 0, y, fontDesc);
+        break;
+    }
 }
 
 
