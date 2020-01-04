@@ -150,12 +150,8 @@ void loop() { // core 1
   #endif
 
   checkBatteryLevel();
-  handleButtons();
-  //powerButton->update();
-  //triggerButton->update();
-  powerButton.update();
-  triggerButton.update();
 
+  handleButtons();
   // Call function to update display
   if (displayOn) updateMainDisplay();
 }
@@ -287,21 +283,21 @@ void calculateThrottle() {
 
 void isr() { } // Interrupt Service Routine
 
-double handleButtonTimestamp = 0;
+//double handleButtonTimestamp = 0;
 void handleButtons() { //executes action depending on PWR_BUTTON state ( CLICK - DBL_CLICK - HOLD - LONG_HOLD )
 
-    switch (checkButton()) { //checks what PWR_BUTTON is doing and return it's state ( CLICK - DBL_CLICK - HOLD - LONG_HOLD )
+    //powerButton->update();
+    //triggerButton->update();
+
+    powerButton.update();
+    triggerButton.update();
+
+    switch (powerButton.getState()) { //checks what PWR_BUTTON is doing and return it's state ( CLICK - DBL_CLICK - HOLD - LONG_HOLD )
 
         case RELEASED:
-//if (millisSince(handleButtonTimestamp) > 100) {
-//    PwrButtonState = ButtonState::RELEASED;
-//    handleButtonTimestamp = millis();
-//}
         break;
 
         case CLICK:
-//            PwrButtonState = ButtonState::CLICK;
-//            handleButtonTimestamp = millis();
             keepAlive();
             switch (state) { //state is an AppState() type - (Remote control state)
                 case CONNECTING:
@@ -314,12 +310,16 @@ void handleButtons() { //executes action depending on PWR_BUTTON state ( CLICK -
 
                 default:
                     if (page == PAGE_MENU) { // in menu
-                        if (menuPage != MENU_MAIN) {
-                            display.setRotation(DISPLAY_ROTATION); // back to vertical
-                            calibrationStage = CALIBRATE_CENTER;
-                            return backToMainMenu();
+                        if (quitMainMenu == true){
+                        quitMainMenu = false;
+                            if (menuPage != MENU_MAIN) {
+                                display.setRotation(DISPLAY_ROTATION); // back to vertical
+                                calibrationStage = CALIBRATE_CENTER;
+                                return backToMainMenu();
+                            }
+                            // exit menu
                         }
-                        // exit menu
+                        else{quitMainMenu = true;}
                         state = menuWasUsed ? IDLE : NORMAL;
                     }
 
@@ -329,18 +329,12 @@ void handleButtons() { //executes action depending on PWR_BUTTON state ( CLICK -
         break;
 
         case DBL_CLICK:
-//            PwrButtonState = ButtonState::DBL_CLICK;
-//            handleButtonTimestamp = millis();
         break;
 
         case HOLD: // start shutdown
-//            PwrButtonState = ButtonState::HOLD;
-//            handleButtonTimestamp = millis();
         break;
 
         case LONG_HOLD: // shutdown confirmed
-//            PwrButtonState = ButtonState::LONG_HOLD;
-//            handleButtonTimestamp = millis();
             sleep();
         return;
     }
@@ -348,112 +342,112 @@ void handleButtons() { //executes action depending on PWR_BUTTON state ( CLICK -
 }
 
 void sleep() {  // manages the remote POWER ON / POWER OFF via PWR_BUTTON
-  if (power == false) { return; }
+    if (power == false) { return; }
 
-  // turn off screen
-  display.powerOff();
-  digitalWrite(PIN_LED, LOW); //write on PIN_LED PIN
+    // turn off screen
+    display.powerOff();
+    digitalWrite(PIN_LED, LOW); //write on PIN_LED PIN
 
-  power = false;
+    power = false;
 
-  #ifdef ARDUINO_SAMD_ZERO
+    #ifdef ARDUINO_SAMD_ZERO
 
-    // interrupt
-    attachInterrupt (digitalPinToInterrupt(PIN_PWRBUTTON), isr, LOW);  // attach interrupt handler
+        // interrupt
+        attachInterrupt (digitalPinToInterrupt(PIN_PWRBUTTON), isr, LOW);  // attach interrupt handler
 
-    radio.sleep();
+        radio.sleep();
 
 
-    USBDevice.standby();
+        USBDevice.standby();
 
-    delay(200);
+        delay(200);
 
-    // Set sleep mode to deep sleep
-    SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
+        // Set sleep mode to deep sleep
+        SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
 
-    //Enter sleep mode and wait for interrupt (WFI)
-    __DSB();
-    __WFI();
+        //Enter sleep mode and wait for interrupt (WFI)
+        __DSB();
+        __WFI();
 
-  #elif ESP32
+    #elif ESP32
 
-    // wait for button release ( vTaskDelay (ms) from ESP32 )
-    while (pressed(PIN_PWRBUTTON)) vTaskDelay(10);
+        // wait for button release ( vTaskDelay (ms) from ESP32 )
+        while (pressed(PIN_PWRBUTTON)) vTaskDelay(10);
 
-    // keep RTC on
-    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
-    gpio_pullup_en((gpio_num_t)PIN_PWRBUTTON);
-    gpio_pulldown_dis((gpio_num_t)PIN_PWRBUTTON);
+        // keep RTC on
+        esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
+        gpio_pullup_en((gpio_num_t)PIN_PWRBUTTON);
+        gpio_pulldown_dis((gpio_num_t)PIN_PWRBUTTON);
 
-    // wake up when the top button is pressed
-    const uint64_t ext_wakeup_pin_1_mask = 1ULL << PIN_PWRBUTTON;
-    esp_sleep_enable_ext1_wakeup(ext_wakeup_pin_1_mask, ESP_EXT1_WAKEUP_ALL_LOW);
+        // wake up when the top button is pressed
+        const uint64_t ext_wakeup_pin_1_mask = 1ULL << PIN_PWRBUTTON;
+        esp_sleep_enable_ext1_wakeup(ext_wakeup_pin_1_mask, ESP_EXT1_WAKEUP_ALL_LOW);
 
-    // turn off radio
-    LoRa.end();
-    LoRa.sleep();
-    delay(100);
+        // turn off radio
+        LoRa.end();
+        LoRa.sleep();
+        delay(100);
 
-    // setup the peripherals state in deep sleep
-    pinMode(DISPLAY_SCL, INPUT);
-    pinMode(DISPLAY_RST,INPUT);
+        // setup the peripherals state in deep sleep
+        pinMode(DISPLAY_SCL, INPUT);
+        pinMode(DISPLAY_RST,INPUT);
 
-    // rtc_gpio_hold_en((gpio_num_t)RF_MOSI);
-    // rtc_gpio_hold_en((gpio_num_t)RF_RST);
-    // 20k pull-up resistors on Mosi, Miso, SS and CLK
+        // rtc_gpio_hold_en((gpio_num_t)RF_MOSI);
+        // rtc_gpio_hold_en((gpio_num_t)RF_RST);
+        // 20k pull-up resistors on Mosi, Miso, SS and CLK
 
-    gpio_num_t gpio_num = (gpio_num_t)RF_RST;
-    rtc_gpio_set_direction(gpio_num, RTC_GPIO_MODE_INPUT_ONLY);
-    rtc_gpio_pulldown_en(gpio_num);
-    rtc_gpio_pullup_dis(gpio_num);
-    rtc_gpio_hold_en(gpio_num);
-    //
-    // gpio_num = (gpio_num_t)RF_MOSI;
-    // rtc_gpio_set_direction(gpio_num, RTC_GPIO_MODE_INPUT_ONLY);
-    // rtc_gpio_pulldown_en(gpio_num);
-    // rtc_gpio_pullup_dis(gpio_num);
-    // rtc_gpio_hold_en(gpio_num);
+        gpio_num_t gpio_num = (gpio_num_t)RF_RST;
+        rtc_gpio_set_direction(gpio_num, RTC_GPIO_MODE_INPUT_ONLY);
+        rtc_gpio_pulldown_en(gpio_num);
+        rtc_gpio_pullup_dis(gpio_num);
+        rtc_gpio_hold_en(gpio_num);
+        //
+        // gpio_num = (gpio_num_t)RF_MOSI;
+        // rtc_gpio_set_direction(gpio_num, RTC_GPIO_MODE_INPUT_ONLY);
+        // rtc_gpio_pulldown_en(gpio_num);
+        // rtc_gpio_pullup_dis(gpio_num);
+        // rtc_gpio_hold_en(gpio_num);
 
-    pinMode(PIN_VIBRO, INPUT);
+        pinMode(PIN_VIBRO, INPUT);
 
-    pinMode(RF_MISO, INPUT);
-    pinMode(RF_DI0, INPUT);
-    pinMode(RF_MOSI, INPUT);
+        pinMode(RF_MISO, INPUT);
+        pinMode(RF_DI0, INPUT);
+        pinMode(RF_MOSI, INPUT);
 
-    pinMode(RF_SCK, INPUT);
-    pinMode(14,INPUT);
-    pinMode(RF_CS, INPUT);
+        pinMode(RF_SCK, INPUT);
+        pinMode(14,INPUT);
+        pinMode(RF_CS, INPUT);
 
-    // disable battery probe
-  	pinMode(VEXT, OUTPUT);
-  	digitalWrite(VEXT, HIGH);
+        // disable battery probe
+        pinMode(VEXT, OUTPUT);
+        digitalWrite(VEXT, HIGH);
 
-    // Enter sleep mode and wait for interrupt
-    esp_deep_sleep_start();
+        // Enter sleep mode and wait for interrupt
+        esp_deep_sleep_start();
 
-    // CPU will be reset here
-  #endif
+        // CPU will be reset here
+    #endif
 
-  // After waking the code continues
-  // to execute from this point.
-  detachInterrupt(digitalPinToInterrupt(PIN_PWRBUTTON));
+    // After waking the code continues
+    // to execute from this point.
+    detachInterrupt(digitalPinToInterrupt(PIN_PWRBUTTON));
 
-  #ifdef ARDUINO_SAMD_ZERO
-    SCB->SCR &= ~SCB_SCR_SLEEPDEEP_Msk;
-    USBDevice.attach();
-  #endif
+    #ifdef ARDUINO_SAMD_ZERO
+        SCB->SCR &= ~SCB_SCR_SLEEPDEEP_Msk;
+        USBDevice.attach();
+    #endif
 
-  digitalWrite(PIN_LED, HIGH);
+    digitalWrite(PIN_LED, HIGH);
 
-  display.powerOn();
-  power = true;
+    display.powerOn();
+    power = true;
 
-  // in case of board change
-  needConfig = true;
+    // in case of board change
+    needConfig = true;
 
-  keepAlive();
+    keepAlive();
 
-//end of sleep() function
+    //end of sleep() function
 }
 
 
@@ -1121,8 +1115,8 @@ void drawShutdownScreen(){
 
     drawString("Turning off...", -1, 60, fontMicro);
     // shrinking line
-    long ms_left = longHoldTime - (millisSince(downTime));
-    int w = map(ms_left, 0, longHoldTime - holdTime, 0, 32);
+    long ms_left = powerButton.longHoldTime - (millisSince(powerButton.downTime));
+    int w = map(ms_left, 0, powerButton.longHoldTime - powerButton.holdTime, 0, 32);
     drawHLine(32 - w, 70, w * 2); // top line
 
 }
@@ -1230,7 +1224,7 @@ void calibrateScreen() {
         break;
 
         case CALIBRATE_STOP:
-        if (pressed(PIN_TRIGGER)) {
+        if (triggerButton.getState() == CLICK) {
             // apply calibration values
             settings.centerHallValue = tempSettings.centerHallValue;
             settings.minHallValue = tempSettings.minHallValue;
@@ -1285,7 +1279,9 @@ void calibrateScreen() {
 void backToMainMenu() {
     menuPage = MENU_MAIN;
     currentMenu = 0;
-    //subMenuItem = 99;
+    //subMenuItem = 0;
+    initFlag_PSL = 1;
+    initFlag_PVS = 1;
 }
 
 void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuously via updateMainDisplay() when PAGE state == PAGE_MENU
@@ -1339,7 +1335,6 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
             //drawString(".", -1, y, fontDesc);
 
             if (triggerButton.getState() == CLICK) {
-//            if (pressed(PIN_TRIGGER)) {
                 menuPage = MENU_SUB;
                 subMenu = round(currentMenu);
                 currentMenu = 0;
@@ -1375,7 +1370,6 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
             drawString("- - - -", -1, y, fontDesc);
 
             if (triggerButton.getState() == CLICK) {
-//            if (pressed(PIN_TRIGGER)) { //what to do when TRIGGER is clicked
                 menuPage = MENU_ITEM;
                 subMenuItem = round(currentMenu);
                 //waitRelease(PIN_TRIGGER);
@@ -1695,13 +1689,13 @@ void drawDebugPage() {
     if (pressed(PIN_PWRBUTTON)) {
         drawString("PWRBUTT", 0, y, fontDesc);
     }
-    if (checkButton() == CLICK) {
+    if (powerButton.getState() == CLICK) {
         drawString("PW_CLICK", 0, y, fontDesc);
     }
     y += 10;
     switch(powerButton.getState()){
         case RELEASED:
-            drawString("RELEASED", 0, y, fontDesc);
+            drawString("-", 0, y, fontDesc);
         break;
         case CLICK:
             drawString("CLICK", 0, y, fontDesc);
@@ -1739,6 +1733,51 @@ void drawDebugPage() {
     }
 }
 
+void debugButtons() {   //displays button state on lower right screen corner
+    int y = 100;
+    int x = 55;
+    if (pressed(PIN_PWRBUTTON)) {
+        drawString("P", x, y, fontDesc);
+    }
+    switch(powerButton.getState()){
+        case RELEASED:
+            drawString("-", x, y, fontDesc);
+        break;
+        case CLICK:
+            drawString("C", x, y, fontDesc);
+        break;
+        case DBL_CLICK:
+            drawString("D", x, y, fontDesc);
+        break;
+        case HOLD:
+            drawString("H", x, y, fontDesc);
+        break;
+        case LONG_HOLD:
+            drawString("L", x, y, fontDesc);
+        break;
+    }
+    y += 14;
+    if (pressed(PIN_TRIGGER)) {
+        drawString("T", x, y, fontDesc);
+    }
+    switch (triggerButton.getState()) {
+        case RELEASED:
+            drawString("-", x, y, fontDesc);
+        break;
+        case CLICK:
+            drawString("C", x, y, fontDesc);
+        break;
+        case DBL_CLICK:
+            drawString("D", x, y, fontDesc);
+        break;
+        case HOLD:
+            drawString("H", x, y, fontDesc);
+        break;
+        case LONG_HOLD:
+            drawString("L", x, y, fontDesc);
+        break;
+    }
+}
 
 int getStringWidth(String s) {
     int16_t x1, y1;
@@ -2070,141 +2109,9 @@ void drawBatteryLevel() { // Print the remotes battery level as a battery on the
 
 }
 
-int checkButton() { //reads value of PWR_BUTTON and return event 0 - CLICK - DBL_CLICK - HOLD - LONG_HOLD
-
-    int event = 0;
-    buttonVal = digitalRead(PIN_PWRBUTTON);
-
-    // Button pressed down
-    if (buttonVal == LOW && buttonLast == HIGH && (millis() - upTime) > debounce) {
-        downTime = millis();
-        ignoreUp = false;
-        waitForUp = false;
-        singleOK = true;
-        holdEventPast = false;
-        longHoldEventPast = false;
-        if ((millis() - upTime) < DCgap && DConUp == false && DCwaiting == true){
-            DConUp = true;
-        }
-        else {  DConUp = false; }
-        DCwaiting = false;
-    }
-    // Button released
-    else {
-        if (buttonVal == HIGH && buttonLast == LOW && (millis() - downTime) > debounce){
-            if (not ignoreUp){
-                upTime = millis();
-                if (DConUp == false){
-                    DCwaiting = true;
-                }
-                else{
-                    event = DBL_CLICK;
-                    DConUp = false;
-                    DCwaiting = false;
-                    singleOK = false;
-                }
-            }
-        }
-    }
-
-    // Test for normal click event: DCgap expired
-    if ( buttonVal == HIGH && (millis() - upTime) >= DCgap && DCwaiting == true && DConUp == false && singleOK == true && event != 2){
-        event = CLICK;
-        DCwaiting = false;
-    }
-    // Test for hold
-    if (buttonVal == LOW && (millis() - downTime) >= holdTime) {
-        // Trigger "normal" hold
-        if (not holdEventPast){
-            event = HOLD;
-            waitForUp = true;
-            ignoreUp = true;
-            DConUp = false;
-            DCwaiting = false;
-            holdEventPast = true;
-        }
-        // Trigger "long" hold
-        if ((millis() - downTime) >= longHoldTime){
-            if (not longHoldEventPast){
-                event = LONG_HOLD;
-                longHoldEventPast = true;
-            }
-        }
-    }
-
-    buttonLast = buttonVal;
-    return event;
-}
-
-/*int checkButton() { //reads value of PWR_BUTTON and return event 0 - CLICK - DBL_CLICK - HOLD - LONG_HOLD
-
-    int event = 0;
-    buttonVal = digitalRead(PIN_PWRBUTTON);
-
-    // Button pressed down
-    if (buttonVal == LOW && buttonLast == HIGH && (millis() - upTime) > debounce) {
-        downTime = millis();
-        ignoreUp = false;
-        waitForUp = false;
-        singleOK = true;
-        holdEventPast = false;
-        longHoldEventPast = false;
-        if ((millis() - upTime) < DCgap && DConUp == false && DCwaiting == true){
-            DConUp = true;
-        }
-        else {  DConUp = false; }
-        DCwaiting = false;
-    }
-    // Button released
-    else {
-        if (buttonVal == HIGH && buttonLast == LOW && (millis() - downTime) > debounce){
-            if (not ignoreUp){
-                upTime = millis();
-                if (DConUp == false){
-                    DCwaiting = true;
-                }
-                else{
-                    event = DBL_CLICK;
-                    DConUp = false;
-                    DCwaiting = false;
-                    singleOK = false;
-                }
-            }
-        }
-    }
-
-    // Test for normal click event: DCgap expired
-    if ( buttonVal == HIGH && (millis() - upTime) >= DCgap && DCwaiting == true && DConUp == false && singleOK == true && event != 2){
-        event = CLICK;
-        DCwaiting = false;
-    }
-    // Test for hold
-    if (buttonVal == LOW && (millis() - downTime) >= holdTime) {
-        // Trigger "normal" hold
-        if (not holdEventPast){
-            event = HOLD;
-            waitForUp = true;
-            ignoreUp = true;
-            DConUp = false;
-            DCwaiting = false;
-            holdEventPast = true;
-        }
-        // Trigger "long" hold
-        if ((millis() - downTime) >= longHoldTime){
-            if (not longHoldEventPast){
-                event = LONG_HOLD;
-                longHoldEventPast = true;
-            }
-        }
-    }
-
-    buttonLast = buttonVal;
-    return event;
-}*/
-
 bool isShuttingDown() {
   // button held for more than holdTime
-  return (buttonVal == LOW) && holdEventPast;
+  return (powerButton.buttonValue == LOW) && powerButton.holdEventPast;
 }
 
 void vibrate(int ms) {
@@ -2391,9 +2298,9 @@ void drawLightSettingsPage(){
         drawBars_2(x, y, bars, String(bars), "Brakes", (myRoadlightSetting_page_stage==ADJUSTING_BRAKELIGHT_BRIGHTNESS));
 
 
-    if (pressed(PIN_TRIGGER)) {
+    if (triggerButton.getState() == CLICK) {
         // apply calibration values
-        waitRelease(PIN_TRIGGER);
+        //waitRelease(PIN_TRIGGER);
         switch (myRoadlightSetting_page_stage) {
             case ADJUSTING_FRONTLIGHT_BRIGHTNESS:
                 FRONTLIGHT_BRIGHTNESS = myFrontLightBrightness;
@@ -2426,34 +2333,34 @@ void drawLightSettingsPage(){
 
 // e.g. paramValueSelector(IDX_AUTO_BRAKE_RELEASE, "Auto brake delay", -1000,+1000,0.1,1,"s");
 void paramValueSelector(uint8_t myGlobalSettingIndex, String paramName, double minAdjValue, double maxAdjValue, double adjIncrement, int decimalPlace, String unitStr, String label ){
-
+    //debugButtons();
     if (initFlag_PVS == 1){
         //currentParamAdjValue = -99875.98354; //random value -> wait for change
         currentParamAdjValue = (double) (getOptParamValue(myGlobalSettingIndex));
         /*while(currentParamAdjValue == -99875.98354){
-            vTaskDelay(2);
-            //delay(5);
+            vTaskDelay(10);
         }*/
         saveParamAdjValue = currentParamAdjValue;
-        initFlag_PVS = 0;
+        myPVSpage = ADJUST_PVS_VALUE;
         waitTimeMs = 0;
+        initFlag_PVS = 0;
     }
 
     int deadBand = 25;
     long timestamp = millis();
     while (millisSince(timestamp) < waitTimeMs){
-            if (pressed(PIN_TRIGGER)) {
-                waitRelease(PIN_TRIGGER);
+            /*if (triggerButton.getState() == CLICK) {
+                //waitRelease(PIN_TRIGGER);
                 waitTimeMs = 0;
                 break;
             }
-//            if (pressed(PIN_PWRBUTTON)) {
-    if (PwrButtonState == ButtonState::CLICK) {
+            if (powerButton.getState() == CLICK) {
                 initFlag_PVS = 1;
                 waitTimeMs = 0;
-//backToMainMenu();                
+            backToMainMenu();                
                 break;
-            }
+            }*/
+            vTaskDelay(5);
     }
 
     int position = readThrottlePosition();
@@ -2468,13 +2375,15 @@ void paramValueSelector(uint8_t myGlobalSettingIndex, String paramName, double m
     
     switch (myPVSpage){
         case ADJUST_PVS_VALUE:
-            waitTimeMs = constrain( ( 3000 / pow( (double)(abs(position - default_throttle)/5), 1.8) - deadBand ), 0, 500);
+            waitTimeMs = 0;
             // --------- wheel control ---------------------
             if (position > default_throttle + deadBand) {
                 if (currentParamAdjValue < maxAdjValue){ currentParamAdjValue = constrain((currentParamAdjValue + adjIncrement), minAdjValue, maxAdjValue);}
+                waitTimeMs = constrain( ( 3000 / pow( (double)(abs(position - default_throttle)/5), 1.8) - deadBand ), 0, 500);
             }
             if (position < default_throttle - deadBand) {
                 if (currentParamAdjValue > minAdjValue){ currentParamAdjValue = constrain((currentParamAdjValue - adjIncrement), minAdjValue, maxAdjValue);}
+                waitTimeMs = constrain( ( 3000 / pow( (double)(abs(position - default_throttle)/5), 1.8) - deadBand ), 0, 500);
             }
             saveParamAdjValue = currentParamAdjValue;
             drawString(label, 0, 44, fontMicro);
@@ -2517,13 +2426,12 @@ void paramValueSelector(uint8_t myGlobalSettingIndex, String paramName, double m
       vibe(0); //short vibration each time we change the selected menu item
       }  
 
-    if (pressed(PIN_TRIGGER)) {
-        // apply calibration values
-        waitRelease(PIN_TRIGGER);
+    if (triggerButton.getState() == CLICK) {
         waitTimeMs = 0;
         switch (myPVSpage){
             case ADJUST_PVS_VALUE:
                 myPVSpage = SAVE_PVS_VALUE;
+                keepAlive();
             break;
             case SAVE_PVS_VALUE:
                 vibe(0);
@@ -2540,8 +2448,7 @@ void paramValueSelector(uint8_t myGlobalSettingIndex, String paramName, double m
             break;
         }
     }
-//    if (pressed(PIN_PWRBUTTON)) {
-    if (PwrButtonState == ButtonState::CLICK) {
+    if (powerButton.getState() == CLICK) {
         waitTimeMs = 0;
         myPVSpage = ADJUST_PVS_VALUE;
         initFlag_PVS = 1;
@@ -2577,16 +2484,17 @@ void paramSelectorList(int *paramSelectorIndexArray){
     int deadBand = 25;
     long timestamp = millis();
     while (millisSince(timestamp) < waitTimeMs_PSL){
-            if (pressed(PIN_TRIGGER)) {
-                waitRelease(PIN_TRIGGER);
+            /*if (triggerButton.getState() == CLICK) {
+                //waitRelease(PIN_TRIGGER);
                 waitTimeMs_PSL = 0;
                 break;
             }
-            if (pressed(PIN_PWRBUTTON)) {
+            if (powerButton.getState() == CLICK) {
                 initFlag_PSL = 1;
                 waitTimeMs_PSL = 0;
                 break;
-            }
+            }*/
+        vTaskDelay(2);
     }
 
     int position = readThrottlePosition();
@@ -2600,13 +2508,15 @@ void paramSelectorList(int *paramSelectorIndexArray){
 
     switch (myPSLpage){
         case ADJUST_PSL_VALUE:
-            waitTimeMs_PSL = constrain( ( 3000 / pow( (double)(abs(position - default_throttle)/5), 1.8) - deadBand ), 0, 500);
+            waitTimeMs_PSL = 0;
             // --------- wheel control ---------------------
             if (position < default_throttle - deadBand) {
                 if (currentParamSelectorValue < maxAdjValue){ currentParamSelectorValue = constrain((currentParamSelectorValue + adjIncrement), minAdjValue, maxAdjValue);}
+                waitTimeMs_PSL = constrain( ( 3000 / pow( (double)(abs(position - default_throttle)/5), 1.8) - deadBand ), 0, 500);
             }
             if (position > default_throttle + deadBand) {
                 if (currentParamSelectorValue > minAdjValue){ currentParamSelectorValue = constrain((currentParamSelectorValue - adjIncrement), minAdjValue, maxAdjValue);}
+                waitTimeMs_PSL = constrain( ( 3000 / pow( (double)(abs(position - default_throttle)/5), 1.8) - deadBand ), 0, 500);
             }
             paramSelector_selected = currentParamSelectorValue;
             x = 0; 
@@ -2664,9 +2574,9 @@ void paramSelectorList(int *paramSelectorIndexArray){
       vibe(0); //short vibration each time we change the selected menu item
       }  
 
-    if (pressed(PIN_TRIGGER)) {
+    if (triggerButton.getState() == CLICK) {
         // apply calibration values
-        waitRelease(PIN_TRIGGER);
+        //waitRelease(PIN_TRIGGER);
         waitTimeMs_PSL = 0;
         switch (myPSLpage){
             case ADJUST_PSL_VALUE:
@@ -2684,7 +2594,7 @@ void paramSelectorList(int *paramSelectorIndexArray){
             break;
         }
     }
-    if (pressed(PIN_PWRBUTTON)) {
+    if (powerButton.getState() == CLICK) {
         waitTimeMs_PSL = 0;
         myPSLpage = ADJUST_PSL_VALUE;
         initFlag_PSL = 1;

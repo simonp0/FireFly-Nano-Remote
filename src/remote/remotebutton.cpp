@@ -16,6 +16,9 @@ class RemoteButton{
 
     //by default : private
     private:
+
+
+    public:
         int inputPin;
         int privateNumber;  
         int debounce;
@@ -25,7 +28,7 @@ class RemoteButton{
         int memoryDelay;
 
         // Button variables
-        boolean buttonVal = HIGH;   // value read from button
+        boolean buttonValue = HIGH;   // value read from button
         boolean buttonLast = HIGH;  // buffered value of the button's previous state
         boolean DCwaiting = false;  // whether we're waiting for a double click (down)
         boolean DConUp = false;     // whether to register a double click on next release, or whether to wait and click
@@ -34,16 +37,11 @@ class RemoteButton{
         long upTime = -1;           // time the button was released
         boolean ignoreUp = false;   // whether to ignore the button release because the click+hold was triggered
         boolean waitForUp = false;        // when held, whether to wait for the up event
-        boolean holdEventPast = false;    // whether or not the hold event happened already
         boolean longHoldEventPast = false;// whether or not the long hold event happened already
+        boolean holdEventPast = false;    // whether or not the hold event happened already
 
         long lastStateTimestamp = 0; 
-
-        int currentButtonState = 0;
-
-    public:
-        
-        int number;
+        int currentButtonState = 0;        
 
         //CONSTRUCTOR
         //RemoteButton(){}
@@ -75,10 +73,10 @@ class RemoteButton{
         void readButtonState(){
             //big functions -> define outside class to avoid being an inline function
             int event = 0;
-            buttonVal = digitalRead(inputPin);
+            buttonValue = digitalRead(inputPin);
 
             // Button pressed down
-            if (buttonVal == LOW && buttonLast == HIGH && (millis() - upTime) > debounce) {
+            if (buttonValue == LOW && buttonLast == HIGH && (millis() - upTime) > debounce) {
                 downTime = millis();
                 ignoreUp = false;
                 waitForUp = false;
@@ -93,7 +91,7 @@ class RemoteButton{
             }
             // Button released
             else {
-                if (buttonVal == HIGH && buttonLast == LOW && (millis() - downTime) > debounce){
+                if (buttonValue == HIGH && buttonLast == LOW && (millis() - downTime) > debounce){
                     if (not ignoreUp){
                         upTime = millis();
                         if (DConUp == false){
@@ -110,12 +108,12 @@ class RemoteButton{
             }
 
             // Test for normal click event: DCgap expired
-            if ( buttonVal == HIGH && (millis() - upTime) >= DCgap && DCwaiting == true && DConUp == false && singleOK == true && event != 2){
+            if ( buttonValue == HIGH && (millis() - upTime) >= DCgap && DCwaiting == true && DConUp == false && singleOK == true && event != 2){
                 event = CLICK;
                 DCwaiting = false;
             }
             // Test for hold
-            if (buttonVal == LOW && (millis() - downTime) >= holdTime) {
+            if (buttonValue == LOW && (millis() - downTime) >= holdTime) {
                 // Trigger "normal" hold
                 if (not holdEventPast){
                     event = HOLD;
@@ -134,7 +132,7 @@ class RemoteButton{
                 }
             }
 
-            buttonLast = buttonVal;
+            buttonLast = buttonValue;
             //return event;
             currentButtonState = event;
         }
@@ -174,10 +172,10 @@ class RemoteButton{
 void RemoteButton::checkButtonState(){
    //big functions -> define outside class to avoid being an inline function
     int event = 0;
-    buttonVal = digitalRead(PIN_PWRBUTTON);
+    buttonValue = digitalRead(PIN_PWRBUTTON);
 
     // Button pressed down
-    if (buttonVal == LOW && buttonLast == HIGH && (millis() - upTime) > debounce) {
+    if (buttonValue == LOW && buttonLast == HIGH && (millis() - upTime) > debounce) {
         downTime = millis();
         ignoreUp = false;
         waitForUp = false;
@@ -192,7 +190,7 @@ void RemoteButton::checkButtonState(){
     }
     // Button released
     else {
-        if (buttonVal == HIGH && buttonLast == LOW && (millis() - downTime) > debounce){
+        if (buttonValue == HIGH && buttonLast == LOW && (millis() - downTime) > debounce){
             if (not ignoreUp){
                 upTime = millis();
                 if (DConUp == false){
@@ -209,12 +207,12 @@ void RemoteButton::checkButtonState(){
     }
 
     // Test for normal click event: DCgap expired
-    if ( buttonVal == HIGH && (millis() - upTime) >= DCgap && DCwaiting == true && DConUp == false && singleOK == true && event != 2){
+    if ( buttonValue == HIGH && (millis() - upTime) >= DCgap && DCwaiting == true && DConUp == false && singleOK == true && event != 2){
         event = CLICK;
         DCwaiting = false;
     }
     // Test for hold
-    if (buttonVal == LOW && (millis() - downTime) >= holdTime) {
+    if (buttonValue == LOW && (millis() - downTime) >= holdTime) {
         // Trigger "normal" hold
         if (not holdEventPast){
             event = HOLD;
@@ -233,7 +231,7 @@ void RemoteButton::checkButtonState(){
         }
     }
 
-    buttonLast = buttonVal;
+    buttonLast = buttonValue;
     //return event;
     currentButtonState = event;
 }

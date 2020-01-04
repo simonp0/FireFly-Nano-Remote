@@ -119,7 +119,7 @@ enum ui_page {
 const float minVoltage = 3.3; // min voltage with vibro motor
 const float maxVoltage = 4.1; //Heltec_Lora32_v2 stops charging around here..
 const float refVoltage = 3.3; // Feather double-100K resistor divider
-const float adjVoltage = 4.1/2.9; // Adjustment factor - Heltec : when battery is full, adjVoltage = 4.1 / displayed value
+const float adjVoltage = 4.1/4.3; // Adjustment factor - Heltec : when battery is full, adjVoltage = 4.1 / displayed value
 
 unsigned long lastBatterySample = 0; // smooth remote voltage
 
@@ -183,7 +183,7 @@ const byte subMenus = 7;
 const byte mainMenus = 6;
 
 String MENUS[mainMenus][subMenus] = {
-    { "Info", "Debug", "TestDebug", "Specs", "", "", "Settings"},
+    { "Info", "Debug", "TestDebug", "Specs", " ", " ", "Settings"},
     { "Remote", "Calibrate", "Pair", "Auto off", "", ""},
     { "Board", "WIFIupdate",  "Motor Min", "Motor Max", "BatteryMin", "BatteryMax", "TODO.test"},
     { "Lights", "Switch ON", "Switch OFF", "Brake Only", "Settings"},
@@ -206,7 +206,7 @@ int subMenuItem = 0;//= 99;
 
 // set idle mode after using menu
 bool menuWasUsed = false;
-
+bool quitMainMenu = false;
 // const int BATTERY_CELLS = 10;
 // const int BATTERY_TYPE = 0;     // 0: LI-ION | 1: LIPO
 // const int MOTOR_POLES = 22;
@@ -215,13 +215,12 @@ bool menuWasUsed = false;
 // const int MOTOR_PULLEY = 1;
 
 //BUTTONS 
-#include "button.cpp"
+#include "remotebutton.cpp"
 //RemoteButton(int inputPin, int debounce, int DCgap, int holdTime, int longHoldTime, int memoryDelay)
 //RemoteButton* triggerButton = new RemoteButton(PIN_TRIGGER, 50, 250, 300, 1000, 200);
 //RemoteButton* powerButton = new RemoteButton(PIN_PWRBUTTON, 50, 250, 300, 1000, 200);
-RemoteButton triggerButton(PIN_TRIGGER, 40, 150, 300, 1000, 0);
-RemoteButton powerButton(PIN_PWRBUTTON, 50, 250, 300, 1000, 50);
-
+RemoteButton triggerButton(PIN_TRIGGER, 40, 250, 300, 1000, 50);
+RemoteButton powerButton(PIN_PWRBUTTON, 80, 250, 300, 1000, 50);
 
 // Button constants
 const int RELEASED  = 0;
@@ -229,33 +228,6 @@ const int CLICK     = 1;
 const int DBL_CLICK = 2;
 const int HOLD      = 3;
 const int LONG_HOLD = 4;
-
-enum class ButtonState {
-    RELEASED,
-    CLICK,
-    DBL_CLICK,
-    HOLD,
-    LONG_HOLD
-} PwrButtonState = ButtonState::RELEASED;
-
-// Button timing variables
-int debounce = 50;          // ms debounce period to prevent flickering when pressing or releasing the button (20ms)
-int DCgap = 250;            // max ms between clicks for a double click event
-int holdTime = 300;        // ms hold period: how long to wait for press+hold event
-int longHoldTime = 1000;    // ms long hold period: how long to wait for press+hold event
-
-// Button variables
-boolean buttonVal = HIGH;   // value read from button
-boolean buttonLast = HIGH;  // buffered value of the button's previous state
-boolean DCwaiting = false;  // whether we're waiting for a double click (down)
-boolean DConUp = false;     // whether to register a double click on next release, or whether to wait and click
-boolean singleOK = true;    // whether it's OK to do a single click
-long downTime = -1;         // time the button was pressed down
-long upTime = -1;           // time the button was released
-boolean ignoreUp = false;   // whether to ignore the button release because the click+hold was triggered
-boolean waitForUp = false;        // when held, whether to wait for the up event
-boolean holdEventPast = false;    // whether or not the hold event happened already
-boolean longHoldEventPast = false;// whether or not the long hold event happened already
 
 // icons
 const unsigned char logo[] PROGMEM = {
@@ -302,10 +274,10 @@ float getBatteryLevel();
 float batteryLevelVolts();
 float batteryPackPercentage(float voltage );
 void calculateThrottle();
-int checkButton();
 void checkBatteryLevel();
 void coreTask(void * pvParameters );
 int cruiseControl();
+void debugButtons();
 void drawBatteryLevel();
 void drawConnectingScreen();
 void drawMode();
@@ -346,7 +318,6 @@ bool triggerActive();
 bool triggerActiveSafe();
 void updateMainDisplay();
 void vibrate(int ms);
-
 void vibe(int vibeMode); //vibrations combos
 
 //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
