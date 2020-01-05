@@ -387,6 +387,9 @@ void loop() { // CORE 1 task launcher - UART data exchange with VESC
 
 void pairingRequest() { // TODO
     // safety checks
+    if (millis() < startupPairingWindowMs){
+        setstate(PAIRING);return;
+    }
     #ifdef FAKE_UART
         setState(PAIRING);
         return;

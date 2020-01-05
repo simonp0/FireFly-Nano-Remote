@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <Smoothed.h>
 #include "CPU.h"
-#include <globals.h>
+#include "globals.h"
 #include "radio.h"
 #include "utils.h"
 #include "VescUart.h"
@@ -20,6 +20,9 @@
   #include <Fonts/FreeSans9pt7b.h>
   #include <Fonts/FreeSans12pt7b.h>
 #endif
+
+//pairing at atartup:
+int startupPairingWindowMs = 2000;
 
 VescUart UART;
 
