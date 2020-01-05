@@ -1679,15 +1679,9 @@ bool inRange(int val, int minimum, int maximum){ //checks if value is within MIN
 
 // ******** PPM THROTTLE OUTPUT ********
 #ifdef OUTPUT_PPM_THROTTLE
-    void updatePpmThrottleOutput(int8_t myThrottle, bool signalOutput){
-        if (signalOutput == true){  //default case if signalOutput is omitted
-            uint_fast32_t pwm_throttle_dutyCycle_value = map(myThrottle, 0, 255, 3276, 6552); //throttle; //map(throttle, 0, 255, 1ms, 2ms);
-            ledcWrite(pwm_throttle_channel, pwm_throttle_dutyCycle_value);
-        }
-        else if (signalOutput == false){    //temporally output a flat signal instead of a neutral 1ms Pulse Width
-            uint_fast32_t pwm_throttle_dutyCycle_value = 0;     //no PPM_remote input -> we can temporally use UART commands without signal conflict.
-            ledcWrite(pwm_throttle_channel, pwm_throttle_dutyCycle_value);
-        }
+    void updatePpmThrottleOutput(int8_t myThrottle){
+        uint_fast32_t pwm_throttle_dutyCycle_value = map(myThrottle, 0, 255, 3276, 6552); //throttle; //map(throttle, 0, 255, 1ms, 2ms);
+        ledcWrite(pwm_throttle_channel, pwm_throttle_dutyCycle_value);
     }
 #endif
 

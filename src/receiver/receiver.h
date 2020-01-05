@@ -215,12 +215,10 @@ float speedSmoothArray[] = {0,0,0,0,0,0,0,0,0,0};
     const uint8_t pwm_throttle_channel = 2; //GPIO channel to use
     const uint8_t pwm_throttle_resolution = 16;//16bits -> 0 to 65535
     // 20ms (50Hz) = 65535 ---> 1ms = 3276 & 2ms = 6552
-    
     //double ppm_throttle_1ms_position = map(1, 0, (1000/pwm_throttle_frequency), 0, 65535);  
-    
     // MAP throttleValue(0 to 255) -> 3276 to 6552
     uint_fast32_t pwm_throttle_dutyCycle_value;
-    void updatePpmThrottleOutput(int8_t myThrottle, bool signalOutput = true);
+    void updatePpmThrottleOutput(int8_t myThrottle);
 #endif
 void disablePpmThrottleOutput();
 // ******** PPM THROTTLE OUTPUT ********
