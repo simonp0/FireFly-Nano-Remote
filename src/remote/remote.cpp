@@ -346,8 +346,9 @@ void handleButtons() { //executes action depending on PWR_BUTTON state ( CLICK -
         case CLICK:
         break;
         case DBL_CLICK:
-        //keepAlive();
-            speedLimiter(!speedLimiterState);
+            //keepAlive();
+            speedLimiter(!speedLimiterState);//switches the speed limiter on or off
+            
             switch (state) { //state is an AppState() type - (Remote control state)
             //IDLE,       // remote is not connected
             //NORMAL,

@@ -66,6 +66,7 @@ bool cruising;
 unsigned long lastCruiseControl; //
 unsigned long cruiseControlStart;
 
+//Speed limiter
 bool speedLimiterState = true;
 
 // Endless ride
@@ -140,8 +141,10 @@ void saveFlashSetting(uint8_t myGlobalSettingIndex, float value);// Save a setti
 
 void refreshAllSettingsFromFlashData();// SETTINGS INITIALIZATION - copy flash data into local variables & into localOptParamValueArray[] . If nothing saved in flash, GLOBALS.H hardcoded default values are used instead
 
-float Lpos=0;
+// motor drive mode tests
+float Lpos=0;//position 
 
+//smart reverse & handbrake
 bool reverseLocked = 0;
 bool handbrakeON = 0;
 
@@ -153,6 +156,7 @@ enum VTM_STATE {
 };
 VTM_STATE vtmState = VTM_STATE_STOPPED;
 String str_vtm_state;
+
 
 /*
 double smoothTimestamp = 0;

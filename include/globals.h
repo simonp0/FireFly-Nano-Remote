@@ -107,7 +107,7 @@ static int LED_BRIGHTNESS_OFF = 0;
 static int LED_ROADLIGHT_MODE = 0;
 
 static int THROTTLE_MODE = VTM_NUNCHUCK_UART;   //Default = UART.Nunchuck / 1=PPM 
-static double LIMITED_SPEED_MAX = 20;
+static double LIMITED_SPEED_MAX = 20.0;   //kmh
 
 #ifdef ROADLIGHT_CONNECTED  // ********** LED ROADLIGHTS ***********************************************
     enum RoadLightState{

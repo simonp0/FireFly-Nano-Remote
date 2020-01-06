@@ -75,8 +75,8 @@ void setup(){ //runs once after powerOn
     motorCurrent.begin(SMOOTHED_AVERAGE, 2);    // 1 sec average
     motorCurrent.add(0);
 
-mySmoothedSpeed.begin(SMOOTHED_AVERAGE, 3);
-mySmoothedThrottle.begin(SMOOTHED_AVERAGE, 3);
+    mySmoothedSpeed.begin(SMOOTHED_AVERAGE, 10);
+    mySmoothedThrottle.begin(SMOOTHED_AVERAGE, 10);
 
     UART.setTimeout(UART_TIMEOUT);
 
@@ -853,11 +853,13 @@ void stateMachine() { // handle auto-stop, endless mode, etc...
             }
 
             // check speed
-            if (throttle == 0 && !isMoving()) {
-                setState(STOPPED);
+            //if (throttle == 0 && !isMoving()) {setState(STOPPED);}
+            //if (throttle == 255 && !isMoving()) {setState(STOPPED);}
+            if (throttle == 0 && (abs(currentSpeedValue) < AUTO_BRAKE_ABORT_MAXSPEED)) {
+                setState(IDLE);
             }
-            if (throttle == 255 && !isMoving()) {
-                setState(STOPPED);
+            if (throttle == 255 && (abs(currentSpeedValue) < AUTO_BRAKE_ABORT_MAXSPEED)) {
+                setState(IDLE);
             }
 
             //avoids going backwards after stopping if auto-reverse is enabled within VESC app 
@@ -923,11 +925,11 @@ void updateSetting( uint8_t setting, uint64_t value){  // Update a single settin
 
 void setThrottle(uint16_t throttleValue){
     // update display
-    throttle = throttleValue;
+    throttle = throttleValue;   //update global variable
     // mySmoothedThrottle = smoothValueOverTime(throttleValue);
     double mySpeed = telemetry.getSpeed();
 
-    mySmoothedThrottle.add(throttle);
+    //mySmoothedThrottle.add(throttleValue);
     mySmoothedSpeed.add(mySpeed);
 
     int deadBand = 5;
@@ -949,6 +951,7 @@ void setThrottle(uint16_t throttleValue){
         switch(THROTTLE_MODE){
             //0
             case VTM_NUNCHUCK_UART:
+                mySmoothedThrottle.add(throttleValue);
                 disablePpmThrottleOutput();
                 if (speedLimiterState == false){
                     UART.nunchuck.valueY = throttleValue;
@@ -971,45 +974,27 @@ void setThrottle(uint16_t throttleValue){
             case VTM_PPM_PIN_OUT:
                 // ******** PPM THROTTLE OUTPUT ********
                 #ifdef OUTPUT_PPM_THROTTLE
-                    updatePpmThrottleOutput(throttleValue);
+                    if (speedLimiterState == false){
+                        mySmoothedThrottle.add(throttleValue);
+                        updatePpmThrottleOutput(throttleValue);
+                    }else if (speedLimiterState == true){
+                        if(abs(telemetry.getSpeed()) <= LIMITED_SPEED_MAX || throttleValue <= 160 ){
+                            mySmoothedThrottle.add(throttleValue);
+                            updatePpmThrottleOutput(mySmoothedThrottle.get());
+                        }else if (telemetry.getSpeed() > LIMITED_SPEED_MAX && throttleValue > 160){
+                            mySmoothedThrottle.add(default_throttle + (mySmoothedThrottle.get()-default_throttle) / (2*(mySmoothedSpeed.get()-LIMITED_SPEED_MAX)) );
+                            updatePpmThrottleOutput(mySmoothedThrottle.get());                            
+                        }
+                    }
+
                 #endif
             break;
 
-/*
-VTM_CURRENT_UART_STATE:
-    VTM_IDLE:
-        if ((mySpeed > -5) && (throttleValue > default_throttle)) {  //start going forwards
-            myCurrent = map(throttleValue, default_throttle, 255, 0, motor_max_current);
-            UART.setCurrent(myCurrent);
-            VTM_CURRENT_UART_STATE = VTM_DRIVING;               
-        }
-        
-    VTM_STOPPED:
-                        //Start going forwards from stop                        
-                        if ((mySpeed >= 0) && (throttleValue > default_throttle)) {  //going forwards, cruising
-                            myCurrent = map(throttleValue, default_throttle, 255, 0, motor_max_current);
-                            UART.setCurrent(myCurrent);               
-                        }
-                        if (mySpeed>2) VTM_CURRENT_UART_STATE = VTM_DRIVING;
-
-    VTM_DRIVING:
-    bool has_reached_driving_speed = 1; //flag for statechange
-
-
-    VTM_REGEN_BRAKING:
-
-
-    VTM_ACTIVE_BRAKING:
-
-
-    VTM_HANDBRAKE:
-
-
-    VTM_BACKWARDS_DRIVING:
-*/
+    //BELOW MODES ARE FOR TEST PURPOSE            
             //2
             case VTM_CURRENT_UART:  //current with regen brake & handbrake when stopped
                 //myCurrent = map(throttle, 0, 255, -abs(motor_max_brake_current), motor_max_current);
+                mySmoothedThrottle.add(throttleValue);
                 disablePpmThrottleOutput();
                 switch (state){
                     case CONNECTED:
@@ -1129,6 +1114,7 @@ VTM_CURRENT_UART_STATE:
             break;
             //3
             case VTM_RPM_UART:
+                mySmoothedThrottle.add(throttleValue);
                 disablePpmThrottleOutput();
                 myRpm = map(throttleValue, 0, 255, -10000, +10000);
                 if (throttleValue > (default_throttle - deadBand) && throttleValue < (default_throttle + deadBand)) myRpm = 0;
@@ -1136,6 +1122,7 @@ VTM_CURRENT_UART_STATE:
             break;
             //4
             case VTM_DUTY_UART:
+                mySmoothedThrottle.add(throttleValue);
                 disablePpmThrottleOutput();
                 myDuty = map(throttleValue, (default_throttle + deadBand), 255, 0, 1);
                 if (throttleValue > (default_throttle - deadBand) && throttleValue < (default_throttle + deadBand)) myDuty = 0;
@@ -1143,6 +1130,7 @@ VTM_CURRENT_UART_STATE:
             break;
             //5
             case VTM_REGEN_UART:
+                mySmoothedThrottle.add(throttleValue);
                 disablePpmThrottleOutput();
                 myCurrent = map(throttleValue, 0, 255, -10, +10);
                 if ( (mySpeed >= 0) && (throttleValue > (default_throttle + deadBand)) ) {  //going forwards
@@ -1154,6 +1142,7 @@ VTM_CURRENT_UART_STATE:
             break;
             //6
             case VTM_HANDBRAKE_UART:
+                mySmoothedThrottle.add(throttleValue);
                 disablePpmThrottleOutput();
                 myCurrent = map(throttleValue, 0, 255, -10, +10);
                 if ( (mySpeed >= 0) && (throttleValue > (default_throttle + deadBand)) ) {  //going forwards
@@ -1165,6 +1154,7 @@ VTM_CURRENT_UART_STATE:
             break;
             //7
             case VTM_POS_UART:
+                mySmoothedThrottle.add(throttleValue);
                 disablePpmThrottleOutput();
                 float myPos = map(throttleValue, 0, 255, 1, +359);
                 //if (throttleValue > (default_throttle - deadBand) && throttleValue < (default_throttle + deadBand)) myPos = 0;

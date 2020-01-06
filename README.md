@@ -16,3 +16,5 @@ This fork of the FireFly Nano remote implements the following changes :
 - Auto-stop mode is now compatible when "reverse mode" is enabled - the board simply stops without going backwards after a disconnection.
 
 - Some settings (from globals.h) can be accessed and changed via the remote's menu. Everything is then saved in the receiver's flash memory.
+
+- A Speed Limiter can be activated or deactivated with a double click on the remote's trigger button. The max speed can be set via LIMITED_SPEED_MAX value in globals.h
