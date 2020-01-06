@@ -75,8 +75,8 @@ void setup(){ //runs once after powerOn
     motorCurrent.begin(SMOOTHED_AVERAGE, 2);    // 1 sec average
     motorCurrent.add(0);
 
-    mySmoothedSpeed.begin(SMOOTHED_AVERAGE, 10);
-    mySmoothedThrottle.begin(SMOOTHED_AVERAGE, 10);
+    mySmoothedSpeed.begin(SMOOTHED_AVERAGE, 5);
+    mySmoothedThrottle.begin(SMOOTHED_AVERAGE, 6);
 
     UART.setTimeout(UART_TIMEOUT);
 
@@ -960,12 +960,12 @@ void setThrottle(uint16_t throttleValue){
                     UART.setNunchuckValues();
                 }
                 else if (speedLimiterState == true){
-                    if(abs(telemetry.getSpeed()) <= LIMITED_SPEED_MAX || throttleValue <= 160 ){
+                    if(abs(telemetry.getSpeed()) <= LIMITED_SPEED_MAX || throttleValue <= 150 ){
                         UART.nunchuck.valueY = throttleValue;
                         UART.nunchuck.upperButton = false;
                         UART.nunchuck.lowerButton = false;
                         UART.setNunchuckValues();
-                    }else if (telemetry.getSpeed() > LIMITED_SPEED_MAX && throttleValue > 160){
+                    }else if (telemetry.getSpeed() > LIMITED_SPEED_MAX && throttleValue > 150){
                         setCruise(LIMITED_SPEED_MAX);
                     }
                 }
@@ -978,10 +978,10 @@ void setThrottle(uint16_t throttleValue){
                         mySmoothedThrottle.add(throttleValue);
                         updatePpmThrottleOutput(throttleValue);
                     }else if (speedLimiterState == true){
-                        if(abs(telemetry.getSpeed()) <= LIMITED_SPEED_MAX || throttleValue <= 160 ){
+                        if(abs(telemetry.getSpeed()) <= LIMITED_SPEED_MAX || throttleValue <= 150 ){
                             mySmoothedThrottle.add(throttleValue);
                             updatePpmThrottleOutput(mySmoothedThrottle.get());
-                        }else if (telemetry.getSpeed() > LIMITED_SPEED_MAX && throttleValue > 160){
+                        }else if (telemetry.getSpeed() > LIMITED_SPEED_MAX && throttleValue > 150){
                             mySmoothedThrottle.add(default_throttle + constrain( ((mySmoothedThrottle.get()-default_throttle) / (2*(mySmoothedSpeed.get()-LIMITED_SPEED_MAX))), 0, 127) );
                             mySmoothedThrottle.add(default_throttle + constrain( ((mySmoothedThrottle.get()-default_throttle) / (2*(mySmoothedSpeed.get()-LIMITED_SPEED_MAX))), 0, 127) );
                             updatePpmThrottleOutput(mySmoothedThrottle.get());                            
