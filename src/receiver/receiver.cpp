@@ -982,7 +982,8 @@ void setThrottle(uint16_t throttleValue){
                             mySmoothedThrottle.add(throttleValue);
                             updatePpmThrottleOutput(mySmoothedThrottle.get());
                         }else if (telemetry.getSpeed() > LIMITED_SPEED_MAX && throttleValue > 160){
-                            mySmoothedThrottle.add(default_throttle + (mySmoothedThrottle.get()-default_throttle) / (2*(mySmoothedSpeed.get()-LIMITED_SPEED_MAX)) );
+                            mySmoothedThrottle.add(default_throttle + constrain( ((mySmoothedThrottle.get()-default_throttle) / (2*(mySmoothedSpeed.get()-LIMITED_SPEED_MAX))), 0, 127) );
+                            mySmoothedThrottle.add(default_throttle + constrain( ((mySmoothedThrottle.get()-default_throttle) / (2*(mySmoothedSpeed.get()-LIMITED_SPEED_MAX))), 0, 127) );
                             updatePpmThrottleOutput(mySmoothedThrottle.get());                            
                         }
                     }
