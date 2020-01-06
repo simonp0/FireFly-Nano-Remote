@@ -21,8 +21,8 @@
   #include <Fonts/FreeSans12pt7b.h>
 #endif
 
-//pairing at atartup:
-int startupPairingWindowMs = 2000;
+//Pairing at at sartup:
+unsigned long startupPairingWindowMs = 3000; //startup takes about 1.5sec
 
 VescUart UART;
 
@@ -160,15 +160,11 @@ int myAverageValue;
 int smoothValueOverTime(int valueToAdd);
 */
 
-double smoothTimestamp2 = 0;
-//float smoothArray2[10];
-int mySmoothedThrottle = (int) default_throttle;
-float mySmoothedSpeed = 0;
+//float mySmoothedSpeed = 0;
+//float smoothValue2(float *smoothArray2, float valueToAdd);
+//float throttleSmoothArray[] = { default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle };
+//float speedSmoothArray[] = {0,0,0,0,0,0,0,0,0,0};
 
-float smoothValue2(float *smoothArray2, float valueToAdd);
-
-float throttleSmoothArray[] = { default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle };
-float speedSmoothArray[] = {0,0,0,0,0,0,0,0,0,0};
 
 
 //void saveFSSettings();

@@ -42,5 +42,6 @@
         "typeinfo": "cpp",
         "optional": "cpp",
         "random": "cpp"
-    }
+    },
+    "C_Cpp.dimInactiveRegions": true
 }

@@ -182,9 +182,10 @@ enum menu_page {
 const byte subMenus = 7;
 const byte mainMenus = 6;
 
+//String MENUS[mainMenus][subMenus] = {
 String MENUS[mainMenus][subMenus] = {
     { "Info", "Debug", "TestDebug", "Specs", " ", " ", "Settings"},
-    { "Remote", "Calibrate", "Pair", "Auto off", "", ""},
+    { "Remote", "Calibrate", "Pair", "Auto off"},
     { "Board", "WIFIupdate",  "Motor Min", "Motor Max", "BatteryMin", "BatteryMax", "TODO.test"},
     { "Lights", "Switch ON", "Switch OFF", "Brake Only", "Settings"},
     { "Receiver", "App Mode", "", "", "", "", ""},
@@ -220,7 +221,7 @@ bool quitMainMenu = false;
 //RemoteButton* triggerButton = new RemoteButton(PIN_TRIGGER, 50, 250, 300, 1000, 200);
 //RemoteButton* powerButton = new RemoteButton(PIN_PWRBUTTON, 50, 250, 300, 1000, 200);
 RemoteButton triggerButton(PIN_TRIGGER, 40, 250, 300, 1000, 50);
-RemoteButton powerButton(PIN_PWRBUTTON, 80, 250, 300, 1000, 50);
+RemoteButton powerButton(PIN_PWRBUTTON, 80, 250, 300, 1000, 5);
 
 // Button constants
 const int RELEASED  = 0;

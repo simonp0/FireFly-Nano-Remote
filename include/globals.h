@@ -7,7 +7,7 @@
 // ********** OPTIONAL FEATURES ***********************************************
 
 //#define FAKE_UART                         // Comment out after pairing the remote and connecting VESC
-//#define DEBUG                             // Uncomment DEBUG if you need to debug the remote
+//#define DEBUG                             // Uncomment DEBUG if you need to debug the remote / receiver
 //const uint32_t boardAddress = 0xA9BF713C;
 //#include <analogWrite.h>
 #define ROADLIGHT_CONNECTED                 // FRONT LIGHT and BACKLIGHT option. Reconfigure 2 pins on the receiver side for FRONTLIGHT and BACKLIGHT PWM signal

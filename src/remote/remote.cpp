@@ -3,7 +3,7 @@
 //#include"try.cpp"
 Adafruit_SSD1306 display(DISPLAY_RST);
 Smoothed <double> batterySensor;
-
+Smoothed <float> smoothedThrottle;
 
 //TaskHandle_t TaskHandle1;
 // Adafruit_SSD1306 display(64, 128, &Wire, DISPLAY_RST, 700000, 700000);
@@ -115,8 +115,9 @@ void setup() {
         adc1_config_channel_atten(ADC_THROTTLE, ADC_ATTEN_DB_2_5);
     #endif
 
-    // 10 seconds average
+    // 10 values average
     batterySensor.begin(SMOOTHED_AVERAGE, 10);
+    smoothedThrottle.begin(SMOOTHED_AVERAGE, 3);
 
     #ifdef ESP32
         xTaskCreatePinnedToCore(
@@ -310,16 +311,16 @@ void handleButtons() { //executes action depending on PWR_BUTTON state ( CLICK -
 
                 default:
                     if (page == PAGE_MENU) { // in menu
-                        if (quitMainMenu == true){
-                        quitMainMenu = false;
+                        //if (quitMainMenu == true){
+                        //quitMainMenu = false;
                             if (menuPage != MENU_MAIN) {
                                 display.setRotation(DISPLAY_ROTATION); // back to vertical
                                 calibrationStage = CALIBRATE_CENTER;
                                 return backToMainMenu();
                             }
                             // exit menu
-                        }
-                        else{quitMainMenu = true;}
+                        //}
+                        //else{quitMainMenu = true;}
                         state = menuWasUsed ? IDLE : NORMAL;
                     }
 
@@ -963,7 +964,8 @@ int readThrottlePosition() {
         position = default_throttle;
     }
 
-    return position;
+    smoothedThrottle.add(position); //average over 3 readThrottlePosition() function calls
+    return smoothedThrottle.get();
 }
 
 /*
@@ -1346,8 +1348,11 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
         case MENU_SUB:
             // --------- subMenus wheel control navigation---------------------
             if (position < default_throttle - deadBand) {
-            //if (currentMenu < ARRAYLEN(MENUS[subMenu])-2){currentMenu += 0.25;}
-                if (currentMenu < ARRAYLEN(MENUS[subMenu])-2){currentMenu += 0.25;}
+            if (currentMenu < ARRAYLEN(MENUS[subMenu])-2){currentMenu += 0.25;}
+             //   if (currentMenu < (_countof (*MENUS)) -2){currentMenu += 0.25;}
+// if (currentMenu < (sizeof(MENUS[subMenu])/sizeof(*MENUS[subMenu][0])) -2){currentMenu += 0.25;}
+// if (currentMenu < (sizeof(MENUS[subMenu])/sizeof(*MENUS[subMenu])) -2){currentMenu += 0.25;}
+               // if (currentMenu < ARRAYLEN(MENUS[subMenu])-2){currentMenu += 0.25;}
             }
             if (position > default_throttle + deadBand) {
                 if (currentMenu > 0) currentMenu -= 0.25;

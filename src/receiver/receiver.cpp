@@ -26,6 +26,9 @@
 Smoothed <double> batterySensor;
 Smoothed <double> motorCurrent;
 
+Smoothed <double> mySmoothedSpeed;
+Smoothed <double> mySmoothedThrottle;
+
 #include "radio.h"
 
 float signalStrength;
@@ -71,6 +74,9 @@ void setup(){ //runs once after powerOn
     batterySensor.begin(SMOOTHED_EXPONENTIAL, 10);     // 10 seconds average
     motorCurrent.begin(SMOOTHED_AVERAGE, 2);    // 1 sec average
     motorCurrent.add(0);
+
+mySmoothedSpeed.begin(SMOOTHED_AVERAGE, 3);
+mySmoothedThrottle.begin(SMOOTHED_AVERAGE, 3);
 
     UART.setTimeout(UART_TIMEOUT);
 
@@ -276,8 +282,8 @@ float batteryPackPercentage( float voltage ) { // Calculate the battery level of
                     display.setTextColor(WHITE);
                     display.setFont(fontDesc);  //fontDigital
                     display.setCursor(0, 20);
-                    display.println("THR: " + String(map(throttle, 0, 255, -100, 100)) + "%" + "   Avg:" + String(mySmoothedThrottle) );
-                    display.println("SPD: " + String(telemetry.getSpeed(),1) + " k" + "   Avg:" + String(mySmoothedSpeed) );
+                    display.println("THR: " + String(map(throttle, 0, 255, -100, 100)) + "%" + "   Avg:" + String(mySmoothedThrottle.get(), 0) );
+                    display.println("SPD: " + String(telemetry.getSpeed(),1) + " k" + "   Avg:" + String(mySmoothedSpeed.get(), 1) );
                     display.setCursor(0, 45);
                     display.print(">" + String(str_vtm_state) );
                 }
@@ -323,6 +329,11 @@ float batteryPackPercentage( float voltage ) { // Calculate the battery level of
                 }
             //    display.setCursor(0, 40);
             //    display.print("Delay: " + String(lastDelay));
+            #ifdef DEBUG
+                display.setCursor(0, 45);
+                if (startupDelay == 0) {startupDelay = millis();} //(int)(millisSince(startupDelay));}
+                display.print("Sartup Time: " + String(startupDelay, 10) + "ms");
+            #endif
         return;
         }
 
@@ -384,11 +395,11 @@ void loop() { // CORE 1 task launcher - UART data exchange with VESC
     }
 #endif //endifdef
 
-
 void pairingRequest() { // TODO
     // safety checks
-    if (millis() < startupPairingWindowMs){
-        setstate(PAIRING);return;
+    if (millis() < startupPairingWindowMs){ //Opens a small window for pairing just after startup
+        setState(PAIRING);
+        return;
     }
     #ifdef FAKE_UART
         setState(PAIRING);
@@ -896,15 +907,16 @@ void updateSetting( uint8_t setting, uint64_t value){  // Update a single settin
 }
 
 
+
 void setThrottle(uint16_t throttleValue){
     
     // update display
     throttle = throttleValue;
    // mySmoothedThrottle = smoothValueOverTime(throttleValue);
     double mySpeed = telemetry.getSpeed();
-mySmoothedThrottle = (int)smoothValue2(throttleSmoothArray, (float)throttle);
-mySmoothedSpeed = smoothValue2(speedSmoothArray, (float)mySpeed);
 
+    mySmoothedThrottle.add(throttle);
+    mySmoothedSpeed.add(mySpeed);
 
     int deadBand = 5;
     float myCurrent;
@@ -1723,6 +1735,7 @@ int smoothValueOverTime(int valueToAdd){
 }
 */
 
+/*
 float smoothValue2(float *smoothArray2, float valueToAdd){
     int myArraySize = sizeof(smoothArray2)/sizeof(smoothArray2[0]);
     int samples = myArraySize;
@@ -1753,4 +1766,4 @@ float smoothValue2(float *smoothArray2, float valueToAdd){
             }
     }
     return myAverageValue;
-}
+}*/
