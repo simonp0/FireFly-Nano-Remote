@@ -2661,4 +2661,7 @@ void paramSelectorList(int *paramSelectorIndexArray){
 void speedLimiter(bool state){  //activate or deactivate the speed limiter
     speedLimiterState = state;
     requestSpeedLimiter = true;
+    if (speedLimiterState){
+        vibe(3);
+    }
 }
