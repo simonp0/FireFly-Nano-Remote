@@ -286,6 +286,8 @@ float batteryPackPercentage( float voltage ) { // Calculate the battery level of
                     display.println("SPD: " + String(telemetry.getSpeed(),1) + " k" + "   Avg:" + String(mySmoothedSpeed.get(), 1) );
                     display.setCursor(0, 45);
                     display.print(">" + String(str_vtm_state) );
+                    display.setCursor(100, 45);
+                    display.print("SL" + String(speedLimiterState, 10));
                 }
             break;
         }
@@ -703,6 +705,17 @@ void radioExchange() {   //receive packet, execute SET_ or GET_ request, send an
                 break;
                 //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
 
+                case SPEED_LIMITER:
+                    response = ACK_ONLY;
+                    switch (remPacket.data) { //remPacket.data = RoadLightState
+                        case 0: 
+                            speedLimiterState = false;
+                        break;
+                        case 1: 
+                            speedLimiterState = true;
+                        break;
+                    }
+                break;
             } // end switch
 
             // send config after power on
@@ -909,10 +922,9 @@ void updateSetting( uint8_t setting, uint64_t value){  // Update a single settin
 
 
 void setThrottle(uint16_t throttleValue){
-    
     // update display
     throttle = throttleValue;
-   // mySmoothedThrottle = smoothValueOverTime(throttleValue);
+    // mySmoothedThrottle = smoothValueOverTime(throttleValue);
     double mySpeed = telemetry.getSpeed();
 
     mySmoothedThrottle.add(throttle);
@@ -938,10 +950,22 @@ void setThrottle(uint16_t throttleValue){
             //0
             case VTM_NUNCHUCK_UART:
                 disablePpmThrottleOutput();
-                UART.nunchuck.valueY = throttleValue;
-                UART.nunchuck.upperButton = false;
-                UART.nunchuck.lowerButton = false;
-                UART.setNunchuckValues();
+                if (speedLimiterState == false){
+                    UART.nunchuck.valueY = throttleValue;
+                    UART.nunchuck.upperButton = false;
+                    UART.nunchuck.lowerButton = false;
+                    UART.setNunchuckValues();
+                }
+                else if (speedLimiterState == true){
+                    if(abs(telemetry.getSpeed()) <= LIMITED_SPEED_MAX || throttleValue <= 160 ){
+                        UART.nunchuck.valueY = throttleValue;
+                        UART.nunchuck.upperButton = false;
+                        UART.nunchuck.lowerButton = false;
+                        UART.setNunchuckValues();
+                    }else if (telemetry.getSpeed() > LIMITED_SPEED_MAX && throttleValue > 160){
+                        setCruise(LIMITED_SPEED_MAX);
+                    }
+                }
             break;
             //1
             case VTM_PPM_PIN_OUT:
@@ -1532,6 +1556,7 @@ void updateOptParamVariables(){
     LED_BRIGHTNESS_OFF = getOptParamValue(IDX_LED_BRIGHTNESS_OFF);
     LED_ROADLIGHT_MODE = getOptParamValue(IDX_LED_ROADLIGHT_MODE);
     THROTTLE_MODE = getOptParamValue(IDX_THROTTLE_MODE);
+    LIMITED_SPEED_MAX = getOptParamValue(IDX_LIMITED_SPEED_MAX);
 }
 
     //random thought : keep an array of pointers to parameters addresses ( --> iteration )
@@ -1617,6 +1642,7 @@ void refreshAllSettingsFromFlashData(){
     LED_BRIGHTNESS_OFF = loadFlashSetting(IDX_LED_BRIGHTNESS_OFF, (float) LED_BRIGHTNESS_OFF);
     LED_ROADLIGHT_MODE = loadFlashSetting(IDX_LED_ROADLIGHT_MODE, (float) LED_ROADLIGHT_MODE);
     THROTTLE_MODE = loadFlashSetting(IDX_THROTTLE_MODE, (float) THROTTLE_MODE);
+    LIMITED_SPEED_MAX = loadFlashSetting(IDX_LIMITED_SPEED_MAX, (float) LIMITED_SPEED_MAX);
 //     = loadFlashSetting(IDX_, (float) );
 }
 //  ######## Settings Flash Storage - ESP32 ########

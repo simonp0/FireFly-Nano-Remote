@@ -66,6 +66,8 @@ bool cruising;
 unsigned long lastCruiseControl; //
 unsigned long cruiseControlStart;
 
+bool speedLimiterState = true;
+
 // Endless ride
 unsigned long timeSpeedReached;
 

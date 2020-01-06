@@ -340,6 +340,42 @@ void handleButtons() { //executes action depending on PWR_BUTTON state ( CLICK -
         return;
     }
 
+    switch (triggerButton.getState()) { //checks what PWR_BUTTON is doing and return it's state ( CLICK - DBL_CLICK - HOLD - LONG_HOLD )
+        case RELEASED:
+        break;
+        case CLICK:
+        break;
+        case DBL_CLICK:
+        //keepAlive();
+            speedLimiter(!speedLimiterState);
+            switch (state) { //state is an AppState() type - (Remote control state)
+            //IDLE,       // remote is not connected
+            //NORMAL,
+            //PUSHING,
+            //CRUISE,
+            //ENDLESS,
+            //CONNECTED,  // riding with connected remote
+            //CONNECTING,
+            //MENU,
+            //STOPPING,   // emergency brake when remote has disconnected
+            //STOPPED,
+            //PAIRING,
+            //UPDATE,     // update over WiFi
+            //COASTING    // waiting for board to slowdown
+                case CONNECTING:
+                break;
+                case PAIRING:
+                break;
+                default:
+                break;
+            }
+        break;
+        case HOLD: // start shutdown
+        break;
+        case LONG_HOLD: // shutdown confirmed
+        return;
+    }
+
 }
 
 void sleep() {  // manages the remote POWER ON / POWER OFF via PWR_BUTTON
@@ -812,8 +848,17 @@ void preparePacket() {
 
         case IDLE:
         case NORMAL: // Send throttle to the receiver.
-            remPacket.command = SET_THROTTLE;
-            remPacket.data = round(throttle);
+            if (requestSpeedLimiter){   //activate speed limiter while riding
+                debug("requestSpeedLimiter");
+                remPacket.command = SPEED_LIMITER;
+                remPacket.data = speedLimiterState;
+                requestSpeedLimiter = false;
+                break;
+            }
+            else{
+                remPacket.command = SET_THROTTLE;
+                remPacket.data = round(throttle);
+            }
         break;
 
         case MENU:
@@ -845,7 +890,6 @@ void preparePacket() {
                 break;
             }
             //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
-
             else {
                 remPacket.command = SET_THROTTLE;
                 remPacket.data = default_throttle;
@@ -1728,14 +1772,19 @@ void drawDebugPage() {
         break;
         case DBL_CLICK:
             drawString("Dbl_Click", 0, y, fontDesc);
+    //        speedLimiter(!speedLimiterState);
         break;
         case HOLD:
             drawString("Hold", 0, y, fontDesc);
+            speedLimiter(!speedLimiterState);
         break;
         case LONG_HOLD:
             drawString("Long_Hold", 0, y, fontDesc);
         break;
     }
+//    if (speedLimiterState == 1) {drawString("SL", 45, y, fontDesc);}
+drawString("SL" + String(speedLimiterState, 10), 45, y, fontDesc);
+
 }
 
 void debugButtons() {   //displays button state on lower right screen corner
@@ -2607,4 +2656,9 @@ void paramSelectorList(int *paramSelectorIndexArray){
         //currentMenu = 0;
     }   
 
+}
+
+void speedLimiter(bool state){  //activate or deactivate the speed limiter
+    speedLimiterState = state;
+    requestSpeedLimiter = true;
 }

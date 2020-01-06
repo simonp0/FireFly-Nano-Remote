@@ -164,6 +164,10 @@ float cruiseSpeed = 0;
 int cruiseStartThrottle;
 int cruiseThrottle;
 
+// speed limiter activation/deactivation request
+bool requestSpeedLimiter = false;
+bool speedLimiterState = 1; //OFF - ON
+
 bool requestUpdate = false; //when drawSettingsMenu() sets flag requestUpdate=TRUE : Next run of preparePacket() function catches requestUpdate=TRUE flag -> next packet sent to receiver is a SET_STATE = UPDATE request. Possible only under AppState=MENU
 
 
@@ -313,6 +317,7 @@ bool sendData();
 void setup();
 void sleep();
 float speed();
+void speedLimiter(bool state);
 bool suddenSpeedChange();
 void transmitToReceiver();
 bool triggerActive();
@@ -430,6 +435,7 @@ int myParamSelectorIndexArray1[] ={
     IDX_LED_BRIGHTNESS_OFF,
     IDX_LED_ROADLIGHT_MODE,
     IDX_THROTTLE_MODE,
+    IDX_LIMITED_SPEED_MAX,
     
     IDX_ENDOFARRAY
 };

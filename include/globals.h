@@ -107,6 +107,7 @@ static int LED_BRIGHTNESS_OFF = 0;
 static int LED_ROADLIGHT_MODE = 0;
 
 static int THROTTLE_MODE = VTM_NUNCHUCK_UART;   //Default = UART.Nunchuck / 1=PPM 
+static double LIMITED_SPEED_MAX = 20;
 
 #ifdef ROADLIGHT_CONNECTED  // ********** LED ROADLIGHTS ***********************************************
     enum RoadLightState{
@@ -148,7 +149,8 @@ enum RemotePacketCommand {
     GET_CONFIG,
     SET_STATE,
     SET_LIGHT,
-    OPT_PARAM_MODE
+    OPT_PARAM_MODE,
+    SPEED_LIMITER
 };
 
 // RemotePacket.optParamCommand :
@@ -204,6 +206,7 @@ enum GlobalSettingsIndex {
     IDX_LED_BRIGHTNESS_OFF,
     IDX_LED_ROADLIGHT_MODE,
     IDX_THROTTLE_MODE,
+    IDX_LIMITED_SPEED_MAX,
     
     IDX_ENDOFARRAY
 };
@@ -248,7 +251,8 @@ static String GlobalSettingsStringName[] = {
     "LED_BRIGHTNESS_BRAKE",
     "LED_BRIGHTNESS_OFF",
     "LED_ROADLIGHT_MODE",
-    "THROTTLE_MODE"
+    "THROTTLE_MODE",
+    "LIMITED_SPEED_MAX"
 };
 
 
