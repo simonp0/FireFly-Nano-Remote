@@ -76,7 +76,7 @@ void setup(){ //runs once after powerOn
     motorCurrent.add(0);
 
     mySmoothedSpeed.begin(SMOOTHED_AVERAGE, 5);
-    mySmoothedThrottle.begin(SMOOTHED_AVERAGE, 6);
+    mySmoothedThrottle.begin(SMOOTHED_AVERAGE, 10);
 
     UART.setTimeout(UART_TIMEOUT);
 
@@ -286,7 +286,7 @@ float batteryPackPercentage( float voltage ) { // Calculate the battery level of
                     display.println("SPD: " + String(telemetry.getSpeed(),1) + " k" + "   Avg:" + String(mySmoothedSpeed.get(), 1) );
                     display.setCursor(0, 45);
                     display.print(">" + String(str_vtm_state) );
-                    display.setCursor(100, 45);
+                    display.setCursor(90, 45);
                     display.print("SL" + String(speedLimiterState, 10));
                 }
             break;
@@ -763,12 +763,13 @@ void stateMachine() { // handle auto-stop, endless mode, etc...
     switch (state) {
 
         case IDLE: // no remote connected
+            str_vtm_state = "Idle";
             setThrottle(default_throttle);
             if (telemetry.getSpeed() >= PUSHING_SPEED) setState(PUSHING);
         break;
 
         case PUSHING: // pushing with no remote connected
-
+            str_vtm_state = "Pushing";
             if (telemetry.getSpeed() < PUSHING_SPEED) { // pushing ended
                 if (AUTO_CRUISE_ON) {
                     if (secondsSince(timeSpeedReached) > PUSHING_TIME)
@@ -782,6 +783,7 @@ void stateMachine() { // handle auto-stop, endless mode, etc...
         break;
 
         case ENDLESS: // cruise without remote at ~12 km/h / 7 mph
+            str_vtm_state = "Endless";
             autoCruise(PUSHING_SPEED);
             // detect a foot brake /
             if (true) {
@@ -804,12 +806,14 @@ void stateMachine() { // handle auto-stop, endless mode, etc...
         break;
 
         case COASTING: // waiting for board to slowdown
+            str_vtm_state = "Coasting";
             setThrottle(default_throttle);
             // avoid ENDLESS > IDLE > PUSHING loop
             if (telemetry.getSpeed() < PUSHING_SPEED) setState(IDLE);
         break;
 
         case CONNECTED: // remote is connected
+            str_vtm_state = "Connected";
             // timeout handling
             if (millisSince(timeoutTimer) > timeoutMax) {
                 debug("receiver timeout");
@@ -929,7 +933,7 @@ void setThrottle(uint16_t throttleValue){
     // mySmoothedThrottle = smoothValueOverTime(throttleValue);
     double mySpeed = telemetry.getSpeed();
 
-    //mySmoothedThrottle.add(throttleValue);
+  //  mySmoothedThrottle.add(throttleValue);
     mySmoothedSpeed.add(mySpeed);
 
     int deadBand = 5;
@@ -951,6 +955,7 @@ void setThrottle(uint16_t throttleValue){
         switch(THROTTLE_MODE){
             //0
             case VTM_NUNCHUCK_UART:
+    //            inverse_speed_direction = false;
                 mySmoothedThrottle.add(throttleValue);
                 disablePpmThrottleOutput();
                 if (speedLimiterState == false){
@@ -960,31 +965,37 @@ void setThrottle(uint16_t throttleValue){
                     UART.setNunchuckValues();
                 }
                 else if (speedLimiterState == true){
-                    if(abs(telemetry.getSpeed()) <= LIMITED_SPEED_MAX || throttleValue <= 150 ){
+                    if(abs(mySpeed) <= LIMITED_SPEED_MAX || throttleValue <= 140 ){
                         UART.nunchuck.valueY = throttleValue;
                         UART.nunchuck.upperButton = false;
                         UART.nunchuck.lowerButton = false;
                         UART.setNunchuckValues();
-                    }else if (telemetry.getSpeed() > LIMITED_SPEED_MAX && throttleValue > 150){
+                    }else if (mySpeed > LIMITED_SPEED_MAX && throttleValue > 140){
                         setCruise(LIMITED_SPEED_MAX);
                     }
                 }
             break;
             //1
-            case VTM_PPM_PIN_OUT:
-                // ******** PPM THROTTLE OUTPUT ********
+            case VTM_PPM_PIN_OUT:  // ******** PPM THROTTLE OUTPUT ********
+ //               inverse_speed_direction = true;
+                 //updatePpmThrottleOutput(throttle);
                 #ifdef OUTPUT_PPM_THROTTLE
                     if (speedLimiterState == false){
                         mySmoothedThrottle.add(throttleValue);
                         updatePpmThrottleOutput(throttleValue);
                     }else if (speedLimiterState == true){
-                        if(abs(telemetry.getSpeed()) <= LIMITED_SPEED_MAX || throttleValue <= 150 ){
-                            mySmoothedThrottle.add(throttleValue);
-                            updatePpmThrottleOutput(mySmoothedThrottle.get());
-                        }else if (telemetry.getSpeed() > LIMITED_SPEED_MAX && throttleValue > 150){
-                            mySmoothedThrottle.add(default_throttle + constrain( ((mySmoothedThrottle.get()-default_throttle) / (2*(mySmoothedSpeed.get()-LIMITED_SPEED_MAX))), 0, 127) );
-                            mySmoothedThrottle.add(default_throttle + constrain( ((mySmoothedThrottle.get()-default_throttle) / (2*(mySmoothedSpeed.get()-LIMITED_SPEED_MAX))), 0, 127) );
-                            updatePpmThrottleOutput(mySmoothedThrottle.get());                            
+                        if(throttleValue >= default_throttle){
+                            if(abs(mySpeed) <= LIMITED_SPEED_MAX || throttleValue <= 130 ){
+                                mySmoothedThrottle.add(throttleValue);
+                                updatePpmThrottleOutput(mySmoothedThrottle.get());
+                            }else if (mySpeed > LIMITED_SPEED_MAX && throttleValue > 130){
+                            // mySmoothedThrottle.add(default_throttle + constrain( ((mySmoothedThrottle.get()-default_throttle) / (4*(mySmoothedSpeed.get()-LIMITED_SPEED_MAX))), 0, 127) );
+                                mySmoothedThrottle.add(mySmoothedThrottle.get() - constrain( pow((mySpeed-LIMITED_SPEED_MAX),3), 0, (mySmoothedThrottle.get()-default_throttle)) );
+                                //mySmoothedThrottle.add(mySmoothedThrottle.get()*0.95);
+                                updatePpmThrottleOutput(mySmoothedThrottle.get());                            
+                            }
+                        }else if (throttleValue < default_throttle){//quick reaction for breaking
+                                updatePpmThrottleOutput(throttleValue);
                         }
                     }
 
@@ -994,6 +1005,7 @@ void setThrottle(uint16_t throttleValue){
     //BELOW MODES ARE FOR TEST PURPOSE            
             //2
             case VTM_CURRENT_UART:  //current with regen brake & handbrake when stopped
+ //               inverse_speed_direction = false;
                 //myCurrent = map(throttle, 0, 255, -abs(motor_max_brake_current), motor_max_current);
                 mySmoothedThrottle.add(throttleValue);
                 disablePpmThrottleOutput();
@@ -1115,6 +1127,7 @@ void setThrottle(uint16_t throttleValue){
             break;
             //3
             case VTM_RPM_UART:
+//                inverse_speed_direction = false;
                 mySmoothedThrottle.add(throttleValue);
                 disablePpmThrottleOutput();
                 myRpm = map(throttleValue, 0, 255, -10000, +10000);
@@ -1123,6 +1136,7 @@ void setThrottle(uint16_t throttleValue){
             break;
             //4
             case VTM_DUTY_UART:
+//                inverse_speed_direction = false;
                 mySmoothedThrottle.add(throttleValue);
                 disablePpmThrottleOutput();
                 myDuty = map(throttleValue, (default_throttle + deadBand), 255, 0, 1);
@@ -1131,6 +1145,7 @@ void setThrottle(uint16_t throttleValue){
             break;
             //5
             case VTM_REGEN_UART:
+//                inverse_speed_direction = false;
                 mySmoothedThrottle.add(throttleValue);
                 disablePpmThrottleOutput();
                 myCurrent = map(throttleValue, 0, 255, -10, +10);
@@ -1143,6 +1158,7 @@ void setThrottle(uint16_t throttleValue){
             break;
             //6
             case VTM_HANDBRAKE_UART:
+//                inverse_speed_direction = false;
                 mySmoothedThrottle.add(throttleValue);
                 disablePpmThrottleOutput();
                 myCurrent = map(throttleValue, 0, 255, -10, +10);
@@ -1155,6 +1171,7 @@ void setThrottle(uint16_t throttleValue){
             break;
             //7
             case VTM_POS_UART:
+//                inverse_speed_direction = false;
                 mySmoothedThrottle.add(throttleValue);
                 disablePpmThrottleOutput();
                 float myPos = map(throttleValue, 0, 255, 1, +359);
@@ -1187,6 +1204,7 @@ void setCruise(uint8_t speed) {
     #ifndef FAKE_UART
         switch(THROTTLE_MODE){
             case VTM_NUNCHUCK_UART:
+                disablePpmThrottleOutput();
                 UART.nunchuck.valueY = 127;
                 UART.nunchuck.upperButton = false;
                 UART.nunchuck.lowerButton = true;
@@ -1711,7 +1729,8 @@ bool inRange(int val, int minimum, int maximum){ //checks if value is within MIN
 
 // ******** PPM THROTTLE OUTPUT ********
 #ifdef OUTPUT_PPM_THROTTLE
-    void updatePpmThrottleOutput(int8_t myThrottle){
+    void updatePpmThrottleOutput(int myThrottle){
+//        uint_fast32_t pwm_throttle_dutyCycle_value = map(myThrottle, 0, 255, 3276, 6552); //throttle; //map(throttle, 0, 255, 1ms, 2ms);
         uint_fast32_t pwm_throttle_dutyCycle_value = map(myThrottle, 0, 255, 3276, 6552); //throttle; //map(throttle, 0, 255, 1ms, 2ms);
         ledcWrite(pwm_throttle_channel, pwm_throttle_dutyCycle_value);
     }

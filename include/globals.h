@@ -14,6 +14,8 @@
 #define OUTPUT_PPM_THROTTLE               // include receiver functions to be able to output a THROTTLE PPM/PWM signal on PIN_PPM_THROTTLE when THROTTLE_MODE = VTM_PPM_PIN_OUT (1)
 
 // ********** * * * * * * * * * ***********************************************
+static bool inverse_speed_direction = false;   //change if speed is negative when going forwards
+
 enum VescThrottleMode{
     VTM_NUNCHUCK_UART,
     VTM_PPM_PIN_OUT,
@@ -71,25 +73,19 @@ static float AUTO_BRAKE_ABORT_MAXSPEED = 3; // speed under which it's safe to ab
 // UART
 static int UART_SPEED = 115200;
 //const int UART_SPEED = 9600;
-
-
 static uint16_t uartPullInterval = 150;
 static int UART_TIMEOUT = 25; // 10ms for 115200 bauds, 100ms for 9600 bauds
 static int REMOTE_RX_TIMEOUT = 25; // ms (was 20)
 static int REMOTE_RADIOLOOP_DELAY = 50; //ms sending THROTTLE each xx millisecond to the receiver
-
 static int REMOTE_LOCK_TIMEOUT = 10; // seconds to lock throttle when idle
 static int REMOTE_SLEEP_TIMEOUT = 180; // seconds to go to sleep mode
-
 // turn off display if battery < 15%
 static int DISPLAY_BATTERY_MIN = 15;// ######### change to 0 if remote screen doesnt turn ON ###########
-
 // VESC current, for graphs only
 static int MOTOR_MIN = -30;
 static int MOTOR_MAX = 30;
 static int BATTERY_MIN = -30;
 static int BATTERY_MAX = 30;
-
 // default board configuration
 static int MAX_SPEED = 30;       // KM/H
 static int MAX_RANGE = 30;       // KM
@@ -99,27 +95,27 @@ static int MOTOR_POLES = 28;
 static int WHEEL_DIAMETER = 105;
 static int WHEEL_PULLEY = 1;
 static int MOTOR_PULLEY = 1;
-
+//LED roadlights
 static int LED_BRIGHTNESS_FRONT = 90;
 static int LED_BRIGHTNESS_BACK = 90;
 static int LED_BRIGHTNESS_BRAKE = 255;
 static int LED_BRIGHTNESS_OFF = 0;
 static int LED_ROADLIGHT_MODE = 0;
-
+//Remote APP
 static int THROTTLE_MODE = VTM_NUNCHUCK_UART;   //Default = UART.Nunchuck / 1=PPM 
 static double LIMITED_SPEED_MAX = 20.0;   //kmh
 
-#ifdef ROADLIGHT_CONNECTED  // ********** LED ROADLIGHTS ***********************************************
+
+#ifdef ROADLIGHT_CONNECTED
     enum RoadLightState{
         OFF,
         ON,
         BRAKES_ONLY
     };
-#endif                      // ********** LED ROADLIGHTS ***********************************************
+#endif
 
 
 #define VERSION 3
-
 // Remote > receiver
 struct RemotePacket {
     uint32_t address;   //LoRa packets : max payload = 255bytes 
@@ -331,7 +327,9 @@ struct TelemetryPacket{ //extends ReceiverPacket
     float w2fi(int16_t w) { return float(w) / 100; }; // unpack float
 
     float getSpeed() { return w2fi(speed); }
+ // float getSpeed() { if(!inverse_speed_direction){return w2fi(speed);}else{return w2fi(-speed);} }
     void setSpeed(float f) { speed = f2wi(f); }
+ // void setSpeed(float f) { if(!inverse_speed_direction){speed = f2wi(f);}else{speed = f2wi(f);} }
 
     float getVoltage() { return w2f(voltage); }
     void setVoltage(float f) { voltage = f2w(f); }
