@@ -822,7 +822,7 @@ void stateMachine() { // handle auto-stop, endless mode, etc...
                 timeoutTimer = millis();
                 lastBrakeTime=millis();
                 //  Set last speed
-                lastSpeedValue = telemetry.getSpeed();
+                lowestSpeedValue = telemetry.getSpeed();
                 setState(STOPPING);
                 //  Use last throttle in case of reconnection shortly after timeout
                 throttle = lastThrottle;
@@ -867,11 +867,11 @@ void stateMachine() { // handle auto-stop, endless mode, etc...
             }
 
             //avoids going backwards after stopping if auto-reverse is enabled within VESC app 
-            if (abs(currentSpeedValue) < abs(lastSpeedValue)){
-                lastSpeedValue = currentSpeedValue;
+            if (abs(currentSpeedValue) < abs(lowestSpeedValue)){
+                lowestSpeedValue = currentSpeedValue;
             }
 
-            if(abs(currentSpeedValue) > abs(lastSpeedValue*1.5)){   //absolute speed has increased by 50% --> retry braking or abort if speed low enough
+            if(abs(currentSpeedValue) > abs(lowestSpeedValue*1.5)){   //absolute speed has increased by 50% --> retry braking or abort if speed low enough
                 setThrottle(default_throttle); //restart break procedure from zero throttle
                 if(abs(currentSpeedValue) < AUTO_BRAKE_ABORT_MAXSPEED){
                     setState(IDLE);   //If speed is low enough -> abort break procedure
@@ -929,13 +929,15 @@ void updateSetting( uint8_t setting, uint64_t value){  // Update a single settin
 
 void setThrottle(uint16_t throttleValue){
     // update display
-    throttle = throttleValue;   //update global variable
-    // mySmoothedThrottle = smoothValueOverTime(throttleValue);
+    throttle = throttleValue;   //update global variable (see setThrottle(rempacket.data) call)
+
     double mySpeed = telemetry.getSpeed();
+    int myThrottle = 0;
+    bool setCruise_enabled = false;
 
-  //  mySmoothedThrottle.add(throttleValue);
+    //mySmoothedThrottle.add(throttleValue);
     mySmoothedSpeed.add(mySpeed);
-
+    
     int deadBand = 5;
     float myCurrent;
     float myRpm;
@@ -955,7 +957,6 @@ void setThrottle(uint16_t throttleValue){
         switch(THROTTLE_MODE){
             //0
             case VTM_NUNCHUCK_UART:
-    //            inverse_speed_direction = false;
                 mySmoothedThrottle.add(throttleValue);
                 disablePpmThrottleOutput();
                 if (speedLimiterState == false){
@@ -965,48 +966,78 @@ void setThrottle(uint16_t throttleValue){
                     UART.setNunchuckValues();
                 }
                 else if (speedLimiterState == true){
-                    if(abs(mySpeed) <= LIMITED_SPEED_MAX || throttleValue <= 140 ){
-                        UART.nunchuck.valueY = throttleValue;
+                    if(throttleValue >= default_throttle){// NOT braking
+                            if(abs(mySpeed) <= LIMITED_SPEED_MAX){
+                                if (mySpeed > lastSpeedValue) { //accelerating -> reduce throttle while reaching LIMITED_SPEED_MAX
+                                    mySmoothedThrottle.add(throttleValue);
+                                    myThrottle = (mySmoothedThrottle.get() - constrain( (mySmoothedThrottle.get()-default_throttle) / (LIMITED_SPEED_MAX - mySpeed), 0, default_throttle/2 ) );
+                                }
+                                else{ //deccelerating -> full power
+                                    mySmoothedThrottle.add(throttleValue);
+                                    myThrottle = (mySmoothedThrottle.get());
+                                }
+                            }else if (mySpeed > LIMITED_SPEED_MAX){ // faster than LIMITED_SPEED_MAX
+                                if (mySpeed >= lastSpeedValue) { //accelerating -> reduce throttle by overspeed^3
+                                    mySmoothedThrottle.add(mySmoothedThrottle.get() - constrain( pow((mySpeed-LIMITED_SPEED_MAX),3), 0, (mySmoothedThrottle.get()-default_throttle)) );
+                                }else if(mySpeed < lastSpeedValue){  //deccelerating -> reduce throttle a tiny bit
+                                    mySmoothedThrottle.add(mySmoothedThrottle.get() - constrain( pow((mySpeed-LIMITED_SPEED_MAX),1), 0, (mySmoothedThrottle.get()-default_throttle)) );
+                                    setCruise_enabled = true;
+                                }
+                                myThrottle = (mySmoothedThrottle.get());                            
+                            }
+                        }else if (throttleValue < default_throttle){// BRAKING -> quick reaction
+                            mySmoothedThrottle.add(throttleValue);
+                            myThrottle = (throttleValue);
+                        }
+                    if(!setCruise_enabled){
+                        UART.nunchuck.valueY = myThrottle;
                         UART.nunchuck.upperButton = false;
                         UART.nunchuck.lowerButton = false;
                         UART.setNunchuckValues();
-                    }else if (mySpeed > LIMITED_SPEED_MAX && throttleValue > 140){
+                    }else{
+                        setCruise_enabled = false;
                         setCruise(LIMITED_SPEED_MAX);
                     }
                 }
             break;
             //1
             case VTM_PPM_PIN_OUT:  // ******** PPM THROTTLE OUTPUT ********
- //               inverse_speed_direction = true;
-                 //updatePpmThrottleOutput(throttle);
+                  //updatePpmThrottleOutput(throttle);
                 #ifdef OUTPUT_PPM_THROTTLE
                     if (speedLimiterState == false){
                         mySmoothedThrottle.add(throttleValue);
                         updatePpmThrottleOutput(throttleValue);
                     }else if (speedLimiterState == true){
-                        if(throttleValue >= default_throttle){
-                            if(abs(mySpeed) <= LIMITED_SPEED_MAX || throttleValue <= 130 ){
-                                mySmoothedThrottle.add(throttleValue);
-                                updatePpmThrottleOutput(mySmoothedThrottle.get());
-                            }else if (mySpeed > LIMITED_SPEED_MAX && throttleValue > 130){
-                            // mySmoothedThrottle.add(default_throttle + constrain( ((mySmoothedThrottle.get()-default_throttle) / (4*(mySmoothedSpeed.get()-LIMITED_SPEED_MAX))), 0, 127) );
-                                mySmoothedThrottle.add(mySmoothedThrottle.get() - constrain( pow((mySpeed-LIMITED_SPEED_MAX),3), 0, (mySmoothedThrottle.get()-default_throttle)) );
-                                //mySmoothedThrottle.add(mySmoothedThrottle.get()*0.95);
+                        if(throttleValue >= default_throttle){// NOT braking
+                            if(abs(mySpeed) <= LIMITED_SPEED_MAX){
+                                if (mySpeed > lastSpeedValue) { //accelerating -> reduce throttle while reaching LIMITED_SPEED_MAX
+                                    mySmoothedThrottle.add(throttleValue);
+                                    updatePpmThrottleOutput(mySmoothedThrottle.get() - constrain( (mySmoothedThrottle.get()-default_throttle) / (LIMITED_SPEED_MAX - mySpeed), 0, default_throttle/2 ) );
+                                }
+                                else{ //deccelerating -> full power
+                                    mySmoothedThrottle.add(throttleValue);
+                                    updatePpmThrottleOutput(mySmoothedThrottle.get());
+                                }
+                            }else if (mySpeed > LIMITED_SPEED_MAX){ // faster than LIMITED_SPEED_MAX
+                                if (mySpeed >= lastSpeedValue) { //accelerating -> reduce throttle by overspeed^3
+                                    mySmoothedThrottle.add(mySmoothedThrottle.get() - constrain( pow((mySpeed-LIMITED_SPEED_MAX),3), 0, (mySmoothedThrottle.get()-default_throttle)) );
+                                }else if(mySpeed < lastSpeedValue){  //deccelerating -> reduce throttle a tiny bit
+                                    mySmoothedThrottle.add(mySmoothedThrottle.get() - constrain( pow((mySpeed-LIMITED_SPEED_MAX),1), 0, (mySmoothedThrottle.get()-default_throttle)) );
+                                }
                                 updatePpmThrottleOutput(mySmoothedThrottle.get());                            
                             }
-                        }else if (throttleValue < default_throttle){//quick reaction for breaking
-                                updatePpmThrottleOutput(throttleValue);
+                        }else if (throttleValue < default_throttle){// BRAKING -> quick reaction
+                            mySmoothedThrottle.add(throttleValue);
+                            updatePpmThrottleOutput(throttleValue);
                         }
                     }
-
                 #endif
             break;
 
-    //BELOW MODES ARE FOR TEST PURPOSE            
+    //BELOW MODES ARE EXPERIMENTAL           
             //2
             case VTM_CURRENT_UART:  //current with regen brake & handbrake when stopped
- //               inverse_speed_direction = false;
-                //myCurrent = map(throttle, 0, 255, -abs(motor_max_brake_current), motor_max_current);
+                 //myCurrent = map(throttle, 0, 255, -abs(motor_max_brake_current), motor_max_current);
                 mySmoothedThrottle.add(throttleValue);
                 disablePpmThrottleOutput();
                 switch (state){
@@ -1127,7 +1158,6 @@ void setThrottle(uint16_t throttleValue){
             break;
             //3
             case VTM_RPM_UART:
-//                inverse_speed_direction = false;
                 mySmoothedThrottle.add(throttleValue);
                 disablePpmThrottleOutput();
                 myRpm = map(throttleValue, 0, 255, -10000, +10000);
@@ -1136,7 +1166,6 @@ void setThrottle(uint16_t throttleValue){
             break;
             //4
             case VTM_DUTY_UART:
-//                inverse_speed_direction = false;
                 mySmoothedThrottle.add(throttleValue);
                 disablePpmThrottleOutput();
                 myDuty = map(throttleValue, (default_throttle + deadBand), 255, 0, 1);
@@ -1145,7 +1174,6 @@ void setThrottle(uint16_t throttleValue){
             break;
             //5
             case VTM_REGEN_UART:
-//                inverse_speed_direction = false;
                 mySmoothedThrottle.add(throttleValue);
                 disablePpmThrottleOutput();
                 myCurrent = map(throttleValue, 0, 255, -10, +10);
@@ -1158,7 +1186,6 @@ void setThrottle(uint16_t throttleValue){
             break;
             //6
             case VTM_HANDBRAKE_UART:
-//                inverse_speed_direction = false;
                 mySmoothedThrottle.add(throttleValue);
                 disablePpmThrottleOutput();
                 myCurrent = map(throttleValue, 0, 255, -10, +10);
@@ -1171,7 +1198,6 @@ void setThrottle(uint16_t throttleValue){
             break;
             //7
             case VTM_POS_UART:
-//                inverse_speed_direction = false;
                 mySmoothedThrottle.add(throttleValue);
                 disablePpmThrottleOutput();
                 float myPos = map(throttleValue, 0, 255, 1, +359);
@@ -1191,12 +1217,7 @@ void setThrottle(uint16_t throttleValue){
 
     // remember throttle for smooth auto stop
     lastThrottle = throttleValue;
-
-    #ifdef ROADLIGHT_CONNECTED
-      //updateBrakeLight();
-    #endif
-
-
+    lastSpeedValue = mySpeed;
 }
 
 void setCruise(uint8_t speed) {

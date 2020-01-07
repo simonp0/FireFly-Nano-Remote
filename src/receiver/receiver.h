@@ -85,6 +85,7 @@ unsigned long lastBrakeTime = 0;
 
 float lastSpeedValue = 0;
 float currentSpeedValue = 0;
+float lowestSpeedValue = 0;
 
 #ifdef RECEIVER_SCREEN
 const GFXfont* fontDigital = &Segment13pt7b;  // speed, distance, ...
