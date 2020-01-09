@@ -73,8 +73,8 @@ static float AUTO_BRAKE_ABORT_MAXSPEED = 3; // speed under which it's safe to ab
 // UART
 static int UART_SPEED = 115200;
 //const int UART_SPEED = 9600;
-static uint16_t uartPullInterval = 150;
-static int UART_TIMEOUT = 25; // 10ms for 115200 bauds, 100ms for 9600 bauds
+static uint16_t uartPullInterval = 25;
+static int UART_TIMEOUT = 10; // 10ms for 115200 bauds, 100ms for 9600 bauds (-->VescUart::setTimeout())
 static int REMOTE_RX_TIMEOUT = 25; // ms (was 20)
 static int REMOTE_RADIOLOOP_DELAY = 50; //ms sending THROTTLE each xx millisecond to the receiver
 static int REMOTE_LOCK_TIMEOUT = 10; // seconds to lock throttle when idle

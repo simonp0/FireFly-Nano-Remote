@@ -75,8 +75,8 @@ void setup(){ //runs once after powerOn
     motorCurrent.begin(SMOOTHED_AVERAGE, 2);    // 1 sec average
     motorCurrent.add(0);
 
-    mySmoothedSpeed.begin(SMOOTHED_AVERAGE, 5);
-    mySmoothedThrottle.begin(SMOOTHED_AVERAGE, 10);
+    mySmoothedSpeed.begin(SMOOTHED_AVERAGE, 4);
+    mySmoothedThrottle.begin(SMOOTHED_AVERAGE, 12);
 
     UART.setTimeout(UART_TIMEOUT);
 
@@ -970,7 +970,7 @@ void setThrottle(uint16_t throttleValue){
                             if(abs(mySpeed) <= LIMITED_SPEED_MAX){
                                 if (mySpeed > lastSpeedValue) { //accelerating -> reduce throttle while reaching LIMITED_SPEED_MAX
                                     mySmoothedThrottle.add(throttleValue);
-                                    myThrottle = (mySmoothedThrottle.get() - constrain( (mySmoothedThrottle.get()-default_throttle) / (LIMITED_SPEED_MAX - mySpeed), 0, default_throttle/2 ) );
+                                    myThrottle = (mySmoothedThrottle.get() - constrain( (mySmoothedThrottle.get()-default_throttle) / (LIMITED_SPEED_MAX - mySpeed), 0, default_throttle/1.5 ) );
                                 }
                                 else{ //deccelerating -> full power
                                     mySmoothedThrottle.add(throttleValue);
@@ -1011,20 +1011,23 @@ void setThrottle(uint16_t throttleValue){
                         if(throttleValue >= default_throttle){// NOT braking
                             if(abs(mySpeed) <= LIMITED_SPEED_MAX){
                                 if (mySpeed > lastSpeedValue) { //accelerating -> reduce throttle while reaching LIMITED_SPEED_MAX
-                                    mySmoothedThrottle.add(throttleValue);
-                                    updatePpmThrottleOutput(mySmoothedThrottle.get() - constrain( (mySmoothedThrottle.get()-default_throttle) / (LIMITED_SPEED_MAX - mySpeed), 0, default_throttle/2 ) );
+                                    mySmoothedThrottle.add(throttleValue - constrain( (throttleValue-default_throttle) / (1+(LIMITED_SPEED_MAX - mySpeed)) , 0, default_throttle ) );
+                                    updatePpmThrottleOutput(mySmoothedThrottle.get());
                                 }
                                 else{ //deccelerating -> full power
-                                    mySmoothedThrottle.add(throttleValue);
+//                                    mySmoothedThrottle.add(throttleValue);
+                                    mySmoothedThrottle.add(throttleValue - constrain( (throttleValue-default_throttle) / (4+pow((LIMITED_SPEED_MAX - mySpeed),2)) , 0, default_throttle ) );
+
                                     updatePpmThrottleOutput(mySmoothedThrottle.get());
                                 }
                             }else if (mySpeed > LIMITED_SPEED_MAX){ // faster than LIMITED_SPEED_MAX
-                                if (mySpeed >= lastSpeedValue) { //accelerating -> reduce throttle by overspeed^3
-                                    mySmoothedThrottle.add(mySmoothedThrottle.get() - constrain( pow((mySpeed-LIMITED_SPEED_MAX),3), 0, (mySmoothedThrottle.get()-default_throttle)) );
-                                }else if(mySpeed < lastSpeedValue){  //deccelerating -> reduce throttle a tiny bit
-                                    mySmoothedThrottle.add(mySmoothedThrottle.get() - constrain( pow((mySpeed-LIMITED_SPEED_MAX),1), 0, (mySmoothedThrottle.get()-default_throttle)) );
+                                if (mySpeed >= lastSpeedValue) { //accelerating -> reduce throttle
+                                    mySmoothedThrottle.add(throttleValue - constrain( pow(16*(mySpeed-LIMITED_SPEED_MAX),1.1), 0, (throttleValue - default_throttle)) );
+                                    updatePpmThrottleOutput(mySmoothedThrottle.get());                            
+                                }else if(mySpeed < lastSpeedValue){  //deccelerating
+                                    mySmoothedThrottle.add(mySmoothedThrottle.get() + constrain( (throttleValue-default_throttle) / (pow(8*(mySpeed - LIMITED_SPEED_MAX),2)) , 0, default_throttle ));
+                                    updatePpmThrottleOutput(mySmoothedThrottle.get());                            
                                 }
-                                updatePpmThrottleOutput(mySmoothedThrottle.get());                            
                             }
                         }else if (throttleValue < default_throttle){// BRAKING -> quick reaction
                             mySmoothedThrottle.add(throttleValue);
