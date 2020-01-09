@@ -1,4 +1,5 @@
 #include "receiver.h"
+#include "radio.h"
 
 #ifdef ARDUINO_SAMD_FEATHER_M0 // Feather M0 w/Radio
     #include <RH_RF69.h>
@@ -29,8 +30,8 @@ Smoothed <double> motorCurrent;
 Smoothed <double> mySmoothedSpeed;
 Smoothed <double> mySmoothedThrottle;
 
-#include "radio.h"
 
+// Radio.h
 float signalStrength;
 float lastRssi;
 
@@ -77,6 +78,17 @@ void setup(){ //runs once after powerOn
 
     mySmoothedSpeed.begin(SMOOTHED_AVERAGE, 4);
     mySmoothedThrottle.begin(SMOOTHED_AVERAGE, 12);
+
+    //PID
+        // Kp -  proportional gain
+        // Ki -  Integral gain
+        // Kd -  derivative gain
+        // dt -  loop interval time
+        // max - maximum value of manipulated variable
+        // min - minimum value of manipulated variable
+        //PID( double dt, double max, double min, double Kp, double Kd, double Ki );
+    pidThrottle = new PID(PID_dt, PID_max, PID_min, PID_Kp, PID_Kd, PID_Ki);
+
 
     UART.setTimeout(UART_TIMEOUT);
 
@@ -937,6 +949,11 @@ void setThrottle(uint16_t throttleValue){
 
     //mySmoothedThrottle.add(throttleValue);
     mySmoothedSpeed.add(mySpeed);
+
+    //PID regulation for speed limiter
+        // Returns the manipulated variable given a setpoint and current process value
+        //double calculate( double setpoint, double pv );
+    double myPID_throttleFactor = pidThrottle->calculate(LIMITED_SPEED_MAX, mySpeed);
     
     int deadBand = 5;
     float myCurrent;
@@ -957,7 +974,6 @@ void setThrottle(uint16_t throttleValue){
         switch(THROTTLE_MODE){
             //0
             case VTM_NUNCHUCK_UART:
-                mySmoothedThrottle.add(throttleValue);
                 disablePpmThrottleOutput();
                 if (speedLimiterState == false){
                     UART.nunchuck.valueY = throttleValue;
@@ -967,7 +983,7 @@ void setThrottle(uint16_t throttleValue){
                 }
                 else if (speedLimiterState == true){
                     if(throttleValue >= default_throttle){// NOT braking
-                            if(abs(mySpeed) <= LIMITED_SPEED_MAX){
+                           /* if(abs(mySpeed) <= LIMITED_SPEED_MAX){
                                 if (mySpeed > lastSpeedValue) { //accelerating -> reduce throttle while reaching LIMITED_SPEED_MAX
                                     mySmoothedThrottle.add(throttleValue);
                                     myThrottle = (mySmoothedThrottle.get() - constrain( (mySmoothedThrottle.get()-default_throttle) / (LIMITED_SPEED_MAX - mySpeed), 0, default_throttle/1.5 ) );
@@ -985,9 +1001,11 @@ void setThrottle(uint16_t throttleValue){
                                 }
                                 myThrottle = (mySmoothedThrottle.get());                            
                             }
+                            */
+//PID regulation
+                            myThrottle = default_throttle + (throttleValue - default_throttle) * myPID_throttleFactor;
                         }else if (throttleValue < default_throttle){// BRAKING -> quick reaction
-                            mySmoothedThrottle.add(throttleValue);
-                            myThrottle = (throttleValue);
+                           myThrottle = (throttleValue);
                         }
                     if(!setCruise_enabled){
                         UART.nunchuck.valueY = myThrottle;

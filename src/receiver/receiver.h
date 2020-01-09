@@ -6,6 +6,9 @@
 #include "utils.h"
 #include "VescUart.h"
 #include <Preferences.h>
+// PID function for speed regulator
+#include "pid.h"
+#include <stdio.h> 
 
 //#include <analogWrite.h>
 
@@ -20,6 +23,22 @@
   #include <Fonts/FreeSans9pt7b.h>
   #include <Fonts/FreeSans12pt7b.h>
 #endif
+
+//PID pid = new PID(0.1, 100, -100, 0.25, 0, 127);
+PID* pidThrottle;
+    // Kp -  proportional gain
+    // Ki -  Integral gain
+    // Kd -  derivative gain
+    // dt -  loop interval time
+    // max - maximum value of manipulated variable
+    // min - minimum value of manipulated variable
+    double PID_Kp = 0.1;
+    double PID_Ki = 100; //10
+    double PID_Kd = 0;
+    double PID_dt = 25;
+    double PID_max = 1;
+    double PID_min = 0;
+
 
 //Pairing at at sartup:
 unsigned long startupPairingWindowMs = 3000; //startup takes about 1.5sec
