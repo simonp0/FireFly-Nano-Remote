@@ -295,7 +295,7 @@ float batteryPackPercentage( float voltage ) { // Calculate the battery level of
                     display.setFont(fontDesc);  //fontDigital
                     display.setCursor(0, 20);
                     display.println("THR: " + String(map(throttle, 0, 255, -100, 100)) + "%" + "   Avg:" + String(mySmoothedThrottle.get(), 0) );
-                    display.println("SPD: " + String(telemetry.getSpeed(),1) + " k" + "   Avg:" + String(mySmoothedSpeed.get(), 1) );
+                    display.println("SPD: " + String(telemetry.getSpeed(),1) + " k" + "   PID:" + String(myPID_throttleFactor, 1) ); //Avg:" + String(mySmoothedSpeed.get(), 1) );         
                     display.setCursor(0, 45);
                     display.print(">" + String(str_vtm_state) );
                     display.setCursor(90, 45);
@@ -953,7 +953,7 @@ void setThrottle(uint16_t throttleValue){
     //PID regulation for speed limiter
         // Returns the manipulated variable given a setpoint and current process value
         //double calculate( double setpoint, double pv );
-    double myPID_throttleFactor = pidThrottle->calculate(LIMITED_SPEED_MAX, mySpeed);
+    myPID_throttleFactor = pidThrottle->calculate(LIMITED_SPEED_MAX, mySpeed);
     
     int deadBand = 5;
     float myCurrent;
@@ -1002,9 +1002,12 @@ void setThrottle(uint16_t throttleValue){
                                 myThrottle = (mySmoothedThrottle.get());                            
                             }
                             */
+
 //PID regulation
-                            myThrottle = default_throttle + (throttleValue - default_throttle) * myPID_throttleFactor;
+                            myThrottle = default_throttle + ((throttleValue - default_throttle)*myPID_throttleFactor);
+                            mySmoothedThrottle.add(myThrottle);
                         }else if (throttleValue < default_throttle){// BRAKING -> quick reaction
+                           mySmoothedThrottle.add(throttleValue);
                            myThrottle = (throttleValue);
                         }
                     if(!setCruise_enabled){

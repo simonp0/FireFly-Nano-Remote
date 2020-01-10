@@ -32,13 +32,14 @@ PID* pidThrottle;
     // dt -  loop interval time
     // max - maximum value of manipulated variable
     // min - minimum value of manipulated variable
-    double PID_Kp = 0.1;
-    double PID_Ki = 100; //10
-    double PID_Kd = 0;
-    double PID_dt = 25;
+    double PID_Kp = 0.2;    //0.2 is a good starting value
+    double PID_Ki = 0;      //0 is fine, otherwise order of scale is 5E-7;
+    double PID_Kd = 0.4;    //0.4;
+    double PID_dt = 25;     //25ms
     double PID_max = 1;
     double PID_min = 0;
 
+    double myPID_throttleFactor; //output
 
 //Pairing at at sartup:
 unsigned long startupPairingWindowMs = 3000; //startup takes about 1.5sec
