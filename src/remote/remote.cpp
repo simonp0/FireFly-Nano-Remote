@@ -5,6 +5,8 @@ Adafruit_SSD1306 display(DISPLAY_RST);
 Smoothed <double> batterySensor;
 Smoothed <float> smoothedThrottle;
 
+//#include <pthread.h>
+
 //TaskHandle_t TaskHandle1;
 // Adafruit_SSD1306 display(64, 128, &Wire, DISPLAY_RST, 700000, 700000);
 
@@ -140,30 +142,48 @@ void setup() {
 }
 
 #ifdef ESP32
-void coreTask(void * pvParameters){ // core 0
-    while (1) {
-        radioLoop();
-        vTaskDelay(1);
-        //vTaskDelay(10 / portTICK_PERIOD_MS); //delay specified in milliseconds instead of ticks
-        // -- ----- ---------- --
-    }
-}
-
-void vibeTask(void * pvParameters){ // core 1
-    //int myMode = *((int*)pvParameters;
-    while(1){
-        if (vibeMode != 0){
-            if (vibeMode == 1){vibrate(45); delay(5);vibrate(15); delay(5);vibrate(15);}
-            if (vibeMode == 2){vibrate(40); delay(8);vibrate(16);}
-            if (vibeMode == 3){vibrate(35); delay(6);vibrate(15); delay(7);vibrate(15);}
-            if (vibeMode == 4){vibrate(50); delay(25); vibrate(50); delay(25); vibrate(50);}
-            vibeMode=0;
+    void coreTask(void * pvParameters){ // core 0
+        while (1) {
+            radioLoop();
+            vTaskDelay(1);
+            //vTaskDelay(10 / portTICK_PERIOD_MS); //delay specified in milliseconds instead of ticks
+            // -- ----- ---------- --
         }
-        vTaskDelay(250  /portTICK_PERIOD_MS);   //some free time for the main tasks
     }
-    //vTaskDelete( NULL );
-}
+
+    void vibeTask(void * pvParameters){ // core 1
+        //int myMode = *((int*)pvParameters;
+        while(1){
+            if (vibeMode != 0){
+                if (vibeMode == 1){vibrate(45); delay(5); vibrate(15); delay(5); vibrate(15);}
+                if (vibeMode == 2){vibrate(40); delay(8); vibrate(16);}
+                if (vibeMode == 3){vibrate(35); delay(6); vibrate(15); delay(7); vibrate(15);}
+                if (vibeMode == 4){vibrate(50); delay(25); vibrate(50); delay(25); vibrate(50);}
+                vibeMode = 0;
+            }
+            vTaskDelay(250 / portTICK_PERIOD_MS);   //some free time for the main tasks
+        }
+        //vTaskDelete( NULL );
+    }
 #endif
+
+/*
+pthread_t threads[4];
+int pthread_param;
+
+void * vibe_pThread(void * duration) {
+    if (vibeMode != 0){
+        if (vibeMode == 1){vibrate(45); delay(5); vibrate(15); delay(5); vibrate(15);}
+        if (vibeMode == 2){vibrate(40); delay(8); vibrate(16);}
+        if (vibeMode == 3){vibrate(35); delay(6); vibrate(15); delay(7); vibrate(15);}
+        if (vibeMode == 4){vibrate(50); delay(25); vibrate(50); delay(25); vibrate(50);}
+        vibeMode=0;
+    }
+   //vibrate((int)duration);
+}
+*/
+//int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine) (void *), void *arg);
+//pthread_create(&threads_1, NULL, vibe_pThread, (void *)param);
 
 
 
@@ -175,6 +195,8 @@ void loop() { // core 1
     handleButtons();
     if (displayOn) updateMainDisplay();     // Call function to update display
     vTaskDelay(50 / portTICK_PERIOD_MS);    // 50ms free time for other tasks
+
+    //pthread_create(&threads[1], NULL, vibe_pThread);
 }
 
 void radioLoop() {  //Calculate THROTTLE and transmit a packet - every 50ms
