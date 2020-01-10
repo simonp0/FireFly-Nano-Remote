@@ -9,39 +9,36 @@
 #include <Smoothed.h>
 
 #ifdef ARDUINO_SAMD_ZERO
-
-  const int MIN_HALL = 18;
-  const int CENTER_HALL = 305;
-  const int MAX_HALL = 629;
-
+    const int MIN_HALL = 18;
+    const int CENTER_HALL = 305;
+    const int MAX_HALL = 629;
 #elif ESP32
+    #include <LoRa.h>
+    #include <driver/adc.h>
 
-  #include <LoRa.h>
-  #include <driver/adc.h>
+    // brownout
+    #include <driver/rtc_cntl.h>
+    #include <driver/rtc_io.h>
+    #include <soc/rtc_cntl_reg.h>
 
-   // brownout
-  #include <driver/rtc_cntl.h>
-  #include <driver/rtc_io.h>
-  #include <soc/rtc_cntl_reg.h>
+    #include <esp_sleep.h>
+    #include <esp_deep_sleep.h>
 
-  #include <esp_sleep.h>
-  #include <esp_deep_sleep.h>
+    // flash
+    #include <nvs.h>
+    #include <nvs_flash.h>
+    #include <Preferences.h>
 
-  // flash
-  #include <nvs.h>
-  #include <nvs_flash.h>
-  #include <Preferences.h>
-
-  const int MIN_HALL = 0;
-  const int CENTER_HALL = 752;
-  const int MAX_HALL = 1023;
-  // **************************************** LED ROADLIGHTS *****************************
+    const int MIN_HALL = 0;
+    const int CENTER_HALL = 752;
+    const int MAX_HALL = 1023;
+    // **************************************** LED ROADLIGHTS *****************************
     int FRONTLIGHT_BRIGHTNESS = 100;  //TEMP : testing Rx settings update from Tx
     int BACKLIGHT_BRIGHTNESS = 100;  //TEMP : testing Rx settings update from Tx
     int BRAKELIGHT_BRIGHTNESS = 255;  //TEMP : testing Rx settings update from Tx
 
     RoadLightState myRoadLightState = OFF;  //current roadlight mode activated (OFF : default at startup)
-    
+
     bool requestSwitchLight = false; //flag for putting a SET_LIGHT request in the next remotePacket
 
     //bool requestAdjustLightBrightness = false; //flag for putting a SET_LIGHT_BRIGHTNESS request in the next remotePacket
@@ -51,38 +48,31 @@
         ADJUSTING_BACKLIGHT_BRIGHTNESS,
         ADJUSTING_BRAKELIGHT_BRIGHTNESS,
     } myRoadlightSetting_page_stage = ADJUSTING_FRONTLIGHT_BRIGHTNESS; //default mode at startup
+    // **************************************** LED ROADLIGHTS *****************************
 
+    //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
+    bool requestSendOptParamPacket = false; //flag for putting a OPT_PARAM command in the next remotePacket
 
-  // **************************************** LED ROADLIGHTS *****************************
-  
-  //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
-  bool requestSendOptParamPacket = false; //flag for putting a OPT_PARAM command in the next remotePacket
-
-
-  static intr_handle_t s_rtc_isr_handle;
+    static intr_handle_t s_rtc_isr_handle;
 
 #endif
 
 struct RemoteSettings {
-  bool valid;
-  short minHallValue = MIN_HALL;
-  short centerHallValue = CENTER_HALL;
-  short maxHallValue = MAX_HALL;
-  uint32_t boardID = 0;
-  // **************************************** LED ROADLIGHTS *****************************
-  //short frontLightBrightnessValue = FRONTLIGHT_BRIGHTNESS;
-  //short backLightBrightnessValue = BACKLIGHT_BRIGHTNESS;
-  // **************************************** LED ROADLIGHTS *****************************
+    bool valid;
+    short minHallValue = MIN_HALL;
+    short centerHallValue = CENTER_HALL;
+    short maxHallValue = MAX_HALL;
+    uint32_t boardID = 0;
 } settings;
 
 RemoteSettings tempSettings;
 
 // calibration
 enum calibration_stage {
-  CALIBRATE_CENTER,
-  CALIBRATE_MAX,
-  CALIBRATE_MIN,
-  CALIBRATE_STOP
+    CALIBRATE_CENTER,
+    CALIBRATE_MAX,
+    CALIBRATE_MIN,
+    CALIBRATE_STOP
 } calibrationStage;
 
 // Data structures
@@ -100,19 +90,19 @@ float lastRssi;
 
 // Defining struct to hold stats
 struct stats {
-  float maxSpeed;
-  long maxRpm;
-  float minVoltage;
-  float maxVoltage;
+    float maxSpeed;
+    long maxRpm;
+    float minVoltage;
+    float maxVoltage;
 };
 
 enum ui_page {
-  PAGE_MAIN,  // speed, battery, distance
-  PAGE_EXT,   // current / settings
-  PAGE_MENU,
-  PAGE_MAX,
-  PAGE_DEBUG,
-  PAGE_LIGHT_SETTINGS   // **************************************** LED ROADLIGHTS *****************************
+    PAGE_MAIN,  // speed, battery, distance
+    PAGE_EXT,   // current / settings
+    PAGE_MENU,
+    PAGE_MAX,
+    PAGE_DEBUG,
+    PAGE_LIGHT_SETTINGS   // **************************************** LED ROADLIGHTS *****************************
 } page = PAGE_MAIN;
 
 // Battery monitoring
@@ -122,7 +112,6 @@ const float refVoltage = 3.3; // Feather double-100K resistor divider
 const float adjVoltage = 4.1/2.8; // Adjustment factor - Heltec : when battery is full, adjVoltage = 4.1 / displayed value
 //2.8 868  /   4.3 434
 unsigned long lastBatterySample = 0; // smooth remote voltage
-
 
 
 // Hall Effect throttle
@@ -173,9 +162,9 @@ bool requestUpdate = false; //when drawSettingsMenu() sets flag requestUpdate=TR
 
 // menu
 enum menu_page {
-  MENU_MAIN,
-  MENU_SUB,
-  MENU_ITEM,
+    MENU_MAIN,
+    MENU_SUB,
+    MENU_ITEM,
 } menuPage = MENU_MAIN;
 
 
@@ -195,7 +184,7 @@ String MENUS[mainMenus][subMenus] = {
     { "Receiver", "App Mode", "", "", "", "", ""},
     { "A-Cruise", "ON/OFF", "PushSpeed", "PushTime", "Curr.Spike", "CruiseTime", "CurrentLow" }
     // *** LED ROADLIGHTS ***
-  };
+};
 
 enum menu_main { MENU_INFO, MENU_REMOTE, MENU_BOARD, MENU_LIGHT, MENU_RECEIVER, MENU_AUTO_CRUISE };
 enum menu_info { INFO_DEBUG, INFO_2, INFO_3, INFO_4, INFO_5, INFO_SETTINGS };
@@ -236,32 +225,32 @@ const int LONG_HOLD = 4;
 
 // icons
 const unsigned char logo[] PROGMEM = {
- /* 0xff, 0xff, 0xff, 0x80, 0x00, 0x03, 0x80, 0x00, 0x05, 0x80, 0x00, 0x09, 0x80, 0x00, 0x11, 0x80,
-	0x00, 0x21, 0x80, 0x00, 0x41, 0x80, 0x00, 0x81, 0x80, 0x01, 0x01, 0x80, 0x02, 0x01, 0x80, 0x04,
-	0x01, 0xbf, 0xfb, 0xfd, 0x80, 0x00, 0x01, 0x80, 0x00, 0x01, 0x80, 0x00, 0x01, 0x80, 0x00, 0x01,
-	0x80, 0x00, 0x01, 0x80, 0x00, 0x01, 0x80, 0x00, 0x01, 0x80, 0x00, 0x01, 0x80, 0x00, 0x01, 0x80,
-	0x00, 0x01, 0x80, 0x00, 0x01, 0xff, 0xff, 0xff*/
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x7e, 0x00, 0x80, 0x3c, 0x01,
-  0xe0, 0x00, 0x07, 0x70, 0x18, 0x0e, 0x30, 0x18, 0x0c, 0x98, 0x99, 0x19,
-  0x80, 0xff, 0x01, 0x04, 0xc3, 0x20, 0x0c, 0x99, 0x30, 0xec, 0xa5, 0x37,
-  0xec, 0xa5, 0x37, 0x0c, 0x99, 0x30, 0x04, 0xc3, 0x20, 0x80, 0xff, 0x01,
-  0x98, 0x99, 0x19, 0x30, 0x18, 0x0c, 0x70, 0x18, 0x0e, 0xe0, 0x00, 0x07,
-  0x80, 0x3c, 0x01, 0x00, 0x7e, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    /* 0xff, 0xff, 0xff, 0x80, 0x00, 0x03, 0x80, 0x00, 0x05, 0x80, 0x00, 0x09, 0x80, 0x00, 0x11, 0x80,
+        0x00, 0x21, 0x80, 0x00, 0x41, 0x80, 0x00, 0x81, 0x80, 0x01, 0x01, 0x80, 0x02, 0x01, 0x80, 0x04,
+        0x01, 0xbf, 0xfb, 0xfd, 0x80, 0x00, 0x01, 0x80, 0x00, 0x01, 0x80, 0x00, 0x01, 0x80, 0x00, 0x01,
+        0x80, 0x00, 0x01, 0x80, 0x00, 0x01, 0x80, 0x00, 0x01, 0x80, 0x00, 0x01, 0x80, 0x00, 0x01, 0x80,
+        0x00, 0x01, 0x80, 0x00, 0x01, 0xff, 0xff, 0xff*/
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x7e, 0x00, 0x80, 0x3c, 0x01,
+    0xe0, 0x00, 0x07, 0x70, 0x18, 0x0e, 0x30, 0x18, 0x0c, 0x98, 0x99, 0x19,
+    0x80, 0xff, 0x01, 0x04, 0xc3, 0x20, 0x0c, 0x99, 0x30, 0xec, 0xa5, 0x37,
+    0xec, 0xa5, 0x37, 0x0c, 0x99, 0x30, 0x04, 0xc3, 0x20, 0x80, 0xff, 0x01,
+    0x98, 0x99, 0x19, 0x30, 0x18, 0x0c, 0x70, 0x18, 0x0e, 0xe0, 0x00, 0x07,
+    0x80, 0x3c, 0x01, 0x00, 0x7e, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
 const unsigned char transmittingIcon[] PROGMEM = {
-  0x18, 0x00, 0x0c, 0x00, 0xc6, 0x00, 0x66, 0x00, 0x23, 0x06, 0x33, 0x0f,
-  0x33, 0x0f, 0x23, 0x06, 0x66, 0x00, 0xc6, 0x00, 0x0c, 0x00, 0x18, 0x00
+    0x18, 0x00, 0x0c, 0x00, 0xc6, 0x00, 0x66, 0x00, 0x23, 0x06, 0x33, 0x0f,
+    0x33, 0x0f, 0x23, 0x06, 0x66, 0x00, 0xc6, 0x00, 0x0c, 0x00, 0x18, 0x00
 };
 
 const unsigned char connectedIcon[] PROGMEM = {
-  0x18, 0x00, 0x0c, 0x00, 0xc6, 0x00, 0x66, 0x00, 0x23, 0x06, 0x33, 0x09,
-  0x33, 0x09, 0x23, 0x06, 0x66, 0x00, 0xc6, 0x00, 0x0c, 0x00, 0x18, 0x00
+    0x18, 0x00, 0x0c, 0x00, 0xc6, 0x00, 0x66, 0x00, 0x23, 0x06, 0x33, 0x09,
+    0x33, 0x09, 0x23, 0x06, 0x66, 0x00, 0xc6, 0x00, 0x0c, 0x00, 0x18, 0x00
 };
 
 const unsigned char noconnectionIcon[] PROGMEM = {
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x00, 0x09,
-  0x00, 0x09, 0x00, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x00, 0x09,
+    0x00, 0x09, 0x00, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
 // fonts
@@ -325,6 +314,8 @@ bool triggerActiveSafe();
 void updateMainDisplay();
 void vibrate(int ms);
 void vibe(int vibeMode); //vibrations combos
+int vibeMode = 0;
+void vibeTask(void * pvParameters );
 
 //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
 //const uint8_t optionParamArrayLength = 128;
@@ -347,16 +338,16 @@ void drawLightSettingsPage();//test
 //void switchLightOff(); //on receiver side only.
 // **************************************** LED ROADLIGHTS *****************************
 enum paramValueSelector_page_stage{
-  ADJUST_PVS_VALUE,
-  SAVE_PVS_VALUE,
-  CANCEL_PVS_VALUE
+    ADJUST_PVS_VALUE,
+    SAVE_PVS_VALUE,
+    CANCEL_PVS_VALUE
 } myPVSpage = ADJUST_PVS_VALUE;
 
 enum paramSelectorList_page_stage{
-  ADJUST_PSL_VALUE,
-  SAVE_PSL_VALUE,
-  CANCEL_PSL_VALUE,
-  DISPLAY_PVS_PAGE  
+    ADJUST_PSL_VALUE,
+    SAVE_PSL_VALUE,
+    CANCEL_PSL_VALUE,
+    DISPLAY_PVS_PAGE  
 } myPSLpage = ADJUST_PSL_VALUE;
 
 

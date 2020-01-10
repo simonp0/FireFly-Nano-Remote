@@ -983,33 +983,13 @@ void setThrottle(uint16_t throttleValue){
                 }
                 else if (speedLimiterState == true){
                     if(throttleValue >= default_throttle){// NOT braking
-                           /* if(abs(mySpeed) <= LIMITED_SPEED_MAX){
-                                if (mySpeed > lastSpeedValue) { //accelerating -> reduce throttle while reaching LIMITED_SPEED_MAX
-                                    mySmoothedThrottle.add(throttleValue);
-                                    myThrottle = (mySmoothedThrottle.get() - constrain( (mySmoothedThrottle.get()-default_throttle) / (LIMITED_SPEED_MAX - mySpeed), 0, default_throttle/1.5 ) );
-                                }
-                                else{ //deccelerating -> full power
-                                    mySmoothedThrottle.add(throttleValue);
-                                    myThrottle = (mySmoothedThrottle.get());
-                                }
-                            }else if (mySpeed > LIMITED_SPEED_MAX){ // faster than LIMITED_SPEED_MAX
-                                if (mySpeed >= lastSpeedValue) { //accelerating -> reduce throttle by overspeed^3
-                                    mySmoothedThrottle.add(mySmoothedThrottle.get() - constrain( pow((mySpeed-LIMITED_SPEED_MAX),3), 0, (mySmoothedThrottle.get()-default_throttle)) );
-                                }else if(mySpeed < lastSpeedValue){  //deccelerating -> reduce throttle a tiny bit
-                                    mySmoothedThrottle.add(mySmoothedThrottle.get() - constrain( pow((mySpeed-LIMITED_SPEED_MAX),1), 0, (mySmoothedThrottle.get()-default_throttle)) );
-                                    setCruise_enabled = true;
-                                }
-                                myThrottle = (mySmoothedThrottle.get());                            
-                            }
-                            */
-
-//PID regulation
-                            myThrottle = default_throttle + ((throttleValue - default_throttle)*myPID_throttleFactor);
-                            mySmoothedThrottle.add(myThrottle);
-                        }else if (throttleValue < default_throttle){// BRAKING -> quick reaction
-                           mySmoothedThrottle.add(throttleValue);
-                           myThrottle = (throttleValue);
-                        }
+                        //PID regulation
+                        myThrottle = default_throttle + ((throttleValue - default_throttle)*myPID_throttleFactor);
+                        mySmoothedThrottle.add(myThrottle);
+                    }else{// BRAKING -> quick reaction
+                        mySmoothedThrottle.add(throttleValue);
+                        myThrottle = (throttleValue);
+                    }
                     if(!setCruise_enabled){
                         UART.nunchuck.valueY = myThrottle;
                         UART.nunchuck.upperButton = false;
@@ -1023,34 +1003,17 @@ void setThrottle(uint16_t throttleValue){
             break;
             //1
             case VTM_PPM_PIN_OUT:  // ******** PPM THROTTLE OUTPUT ********
-                  //updatePpmThrottleOutput(throttle);
                 #ifdef OUTPUT_PPM_THROTTLE
                     if (speedLimiterState == false){
                         mySmoothedThrottle.add(throttleValue);
                         updatePpmThrottleOutput(throttleValue);
                     }else if (speedLimiterState == true){
                         if(throttleValue >= default_throttle){// NOT braking
-                            if(abs(mySpeed) <= LIMITED_SPEED_MAX){
-                                if (mySpeed > lastSpeedValue) { //accelerating -> reduce throttle while reaching LIMITED_SPEED_MAX
-                                    mySmoothedThrottle.add(throttleValue - constrain( (throttleValue-default_throttle) / (1+(LIMITED_SPEED_MAX - mySpeed)) , 0, default_throttle ) );
-                                    updatePpmThrottleOutput(mySmoothedThrottle.get());
-                                }
-                                else{ //deccelerating -> full power
-//                                    mySmoothedThrottle.add(throttleValue);
-                                    mySmoothedThrottle.add(throttleValue - constrain( (throttleValue-default_throttle) / (4+pow((LIMITED_SPEED_MAX - mySpeed),2)) , 0, default_throttle ) );
-
-                                    updatePpmThrottleOutput(mySmoothedThrottle.get());
-                                }
-                            }else if (mySpeed > LIMITED_SPEED_MAX){ // faster than LIMITED_SPEED_MAX
-                                if (mySpeed >= lastSpeedValue) { //accelerating -> reduce throttle
-                                    mySmoothedThrottle.add(throttleValue - constrain( pow(16*(mySpeed-LIMITED_SPEED_MAX),1.1), 0, (throttleValue - default_throttle)) );
-                                    updatePpmThrottleOutput(mySmoothedThrottle.get());                            
-                                }else if(mySpeed < lastSpeedValue){  //deccelerating
-                                    mySmoothedThrottle.add(mySmoothedThrottle.get() + constrain( (throttleValue-default_throttle) / (pow(8*(mySpeed - LIMITED_SPEED_MAX),2)) , 0, default_throttle ));
-                                    updatePpmThrottleOutput(mySmoothedThrottle.get());                            
-                                }
-                            }
-                        }else if (throttleValue < default_throttle){// BRAKING -> quick reaction
+                            //PID regulation
+                            myThrottle = default_throttle + ((throttleValue - default_throttle)*myPID_throttleFactor);
+                            mySmoothedThrottle.add(myThrottle);
+                            updatePpmThrottleOutput(myThrottle);
+                        }else{// BRAKING -> quick reaction
                             mySmoothedThrottle.add(throttleValue);
                             updatePpmThrottleOutput(throttleValue);
                         }
@@ -1058,7 +1021,7 @@ void setThrottle(uint16_t throttleValue){
                 #endif
             break;
 
-    //BELOW MODES ARE EXPERIMENTAL           
+          #ifdef EXPERIMENTAL //BELOW MODES ARE EXPERIMENTAL           
             //2
             case VTM_CURRENT_UART:  //current with regen brake & handbrake when stopped
                  //myCurrent = map(throttle, 0, 255, -abs(motor_max_brake_current), motor_max_current);
@@ -1234,10 +1197,9 @@ void setThrottle(uint16_t throttleValue){
                 }    
                 UART.setPos(Lpos); // TEST
             break;
-
-
+          #endif // EXPERIMENTAL
         }
-    #endif
+    #endif  //FAKE_UART
 
     // remember throttle for smooth auto stop
     lastThrottle = throttleValue;
@@ -1775,7 +1737,6 @@ bool inRange(int val, int minimum, int maximum){ //checks if value is within MIN
 // ******** PPM THROTTLE OUTPUT ********
 #ifdef OUTPUT_PPM_THROTTLE
     void updatePpmThrottleOutput(int myThrottle){
-//        uint_fast32_t pwm_throttle_dutyCycle_value = map(myThrottle, 0, 255, 3276, 6552); //throttle; //map(throttle, 0, 255, 1ms, 2ms);
         uint_fast32_t pwm_throttle_dutyCycle_value = map(myThrottle, 0, 255, 3276, 6552); //throttle; //map(throttle, 0, 255, 1ms, 2ms);
         ledcWrite(pwm_throttle_channel, pwm_throttle_dutyCycle_value);
     }
@@ -1787,34 +1748,6 @@ void disablePpmThrottleOutput(){
     #endif
 }
 // ******** PPM THROTTLE OUTPUT ********
-
-
-/*
-int smoothValueOverTime(int valueToAdd){
-    int myArraySize = sizeof(arraySmoothValue)/sizeof(arraySmoothValue[0]);
-    int samples = myArraySize;
-    int total;
-    for (uint8_t i = 0; i < samples; i++) {
-
-            if (millisSince(smoothTimestamp) > 15){
-                total = 0;
-                samples = 0;
-                //totalAccumulatedSmoothValues ++;
-                for (i=0; i < (myArraySize-1); i++){
-                    arraySmoothValue[i] = arraySmoothValue[i+1]; 
-                    total = total + arraySmoothValue[i];
-                    samples ++;                               
-                }
-                arraySmoothValue[(myArraySize-1)] = valueToAdd;
-                total = total + valueToAdd;
-                samples++;
-                myAverageValue = (int)(total / samples);
-                smoothTimestamp = millis();
-            }
-    }
-    return myAverageValue;
-}
-*/
 
 /*
 float smoothValue2(float *smoothArray2, float valueToAdd){

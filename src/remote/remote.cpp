@@ -65,7 +65,6 @@ void brownoutInit() {
   REG_WRITE(RTC_CNTL_INT_ENA_REG, 0);
   REG_WRITE(RTC_CNTL_INT_CLR_REG, UINT32_MAX);
   esp_err_t err = esp_intr_alloc(ETS_RTC_CORE_INTR_SOURCE, 0, &rtc_isr, NULL, &s_rtc_isr_handle);
-
   REG_SET_BIT(RTC_CNTL_INT_ENA_REG, RTC_CNTL_BROWN_OUT_INT_ENA_M);
 }
 #endif
@@ -128,11 +127,20 @@ void setup() {
         configMAX_PRIORITIES - 1,  /* Priority of the task. 0 is slower */
         NULL,       /* Task handle. */
         0);  /* Core where the task should run */
+
+        xTaskCreatePinnedToCore(
+        vibeTask,   /* Function to implement the task */
+        "vibeTask", /* Name of the task */
+        10000,      /* Stack size in words */
+        NULL, //(void*)&vibeMode,       /* Task input parameter */
+        configMAX_PRIORITIES - 2,  /* Priority of the task. 0 is slower */
+        NULL,       /* Task handle. */
+        1);  /* Core where the task should run */
     #endif
 }
 
-#ifdef ESP32 // core 0
-void coreTask( void * pvParameters ) {
+#ifdef ESP32
+void coreTask(void * pvParameters){ // core 0
     while (1) {
         radioLoop();
         vTaskDelay(1);
@@ -140,21 +148,33 @@ void coreTask( void * pvParameters ) {
         // -- ----- ---------- --
     }
 }
+
+void vibeTask(void * pvParameters){ // core 1
+    //int myMode = *((int*)pvParameters;
+    while(1){
+        if (vibeMode != 0){
+            if (vibeMode == 1){vibrate(45); delay(5);vibrate(15); delay(5);vibrate(15);}
+            if (vibeMode == 2){vibrate(40); delay(8);vibrate(16);}
+            if (vibeMode == 3){vibrate(35); delay(6);vibrate(15); delay(7);vibrate(15);}
+            if (vibeMode == 4){vibrate(50); delay(25); vibrate(50); delay(25); vibrate(50);}
+            vibeMode=0;
+        }
+        vTaskDelay(250  /portTICK_PERIOD_MS);   //some free time for the main tasks
+    }
+    //vTaskDelete( NULL );
+}
 #endif
 
 
 
 void loop() { // core 1
-
-  #ifdef ARDUINO_SAMD_ZERO
-    radioLoop();
-  #endif
-
-  checkBatteryLevel();
-
-  handleButtons();
-  // Call function to update display
-  if (displayOn) updateMainDisplay();
+    #ifdef ARDUINO_SAMD_ZERO
+        radioLoop();
+    #endif
+    checkBatteryLevel();
+    handleButtons();
+    if (displayOn) updateMainDisplay();     // Call function to update display
+    vTaskDelay(50 / portTICK_PERIOD_MS);    // 50ms free time for other tasks
 }
 
 void radioLoop() {  //Calculate THROTTLE and transmit a packet - every 50ms
@@ -1145,11 +1165,9 @@ void updateMainDisplay(){   //LOOP() task on core 1 runs thins function continuo
                         drawDebugPage();
                     break;
 
-                    //*********** ROADLIGHTS SETTINGS ImPLEMENTATION *****************
                     case PAGE_LIGHT_SETTINGS:   //entering light settings submenu
                         //drawDebugPage(); //TEST
                     break;
-                    //*********** ROADLIGHTS SETTINGS ImPLEMENTATION *****************
 
                   }
         }
@@ -1472,7 +1490,6 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
 
                     case MENU_LIGHT:
                         switch (subMenuItem){
-                            //requestSwitchLight = true; //flag signaling a SET_LIGHT command for the next remotePacket sent
                             case SWITCH_LIGHT_ON:
                                 requestSwitchLight = true;
                                 myRoadLightState = ON;
@@ -1481,7 +1498,6 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                             case SWITCH_LIGHT_OFF:
                                 requestSwitchLight = true;
                                 myRoadLightState = OFF;
-                                //drawDebugPage();
                                 backToMainMenu();
                             break;
                             case SWITCH_LIGHT_BRAKES_ONLY:
@@ -1489,7 +1505,6 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                                 myRoadLightState = BRAKES_ONLY;
                                 backToMainMenu();
                             case ROADLIGHT_SETTINGS:
-                                //backToMainMenu(); //we don't exit yet - we want to display the drawLightSettingsPage()
                                 //download 3 current values from receiver:
                                loadOptParamFromReceiver(IDX_LED_BRIGHTNESS_FRONT);
                                loadOptParamFromReceiver(IDX_LED_BRIGHTNESS_BACK);
@@ -1532,8 +1547,8 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
 
                 }
             } // END if (pressed(PIN_TRIGGER))
-/*
-    //  PWR_BUTTON action specific for each subMenu 
+        /*
+        //  PWR_BUTTON action specific for each subMenu 
             if (PwrButtonState == ButtonState::CLICK) { //what to do when PWRBUTTON is clicked
                 //menuPage = MENU_ITEM;
                 //subMenuItem = round(currentMenu);
@@ -1621,7 +1636,7 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                     break;
                 }
             } // END if (checkButton()==CLICK) ---- PWRBUTTON CLICK -------      
-            */
+        */
         break; //MENU_SUB
 
         case MENU_ITEM: //Here we can display a specific page after handling commands, and stay on it (similar to debugPage)
@@ -1783,8 +1798,8 @@ void drawDebugPage() {
             drawString("Long_Hold", 0, y, fontDesc);
         break;
     }
-//    if (speedLimiterState == 1) {drawString("SL", 45, y, fontDesc);}
-drawString("SL" + String(speedLimiterState, 10), 45, y, fontDesc);
+    //    if (speedLimiterState == 1) {drawString("SL", 45, y, fontDesc);}
+    drawString("SL" + String(speedLimiterState, 10), 45, y, fontDesc);
 
 }
 
@@ -2165,24 +2180,24 @@ void drawBatteryLevel() { // Print the remotes battery level as a battery on the
 }
 
 bool isShuttingDown() {
-  // button held for more than holdTime
-  return (powerButton.buttonValue == LOW) && powerButton.holdEventPast;
+    // button held for more than holdTime
+    return (powerButton.buttonValue == LOW) && powerButton.holdEventPast;
 }
 
 void vibrate(int ms) {
-  #ifdef PIN_VIBRO
-    digitalWrite(PIN_VIBRO, HIGH);
-    delay(ms);
-    digitalWrite(PIN_VIBRO, LOW);
-  #endif
+    #ifdef PIN_VIBRO
+        digitalWrite(PIN_VIBRO, HIGH);
+        delay(ms);
+        digitalWrite(PIN_VIBRO, LOW);
+    #endif
 }
 
-void vibe(int vibeMode){    //vibrate() combos
-    if (vibeMode == 0){vibrate(52);}
-    if (vibeMode == 1){vibrate(45); delay(5);vibrate(15); delay(5);vibrate(15);}
-    if (vibeMode == 2){vibrate(40); delay(8);vibrate(16);}
-    if (vibeMode == 3){vibrate(35); delay(6);vibrate(15); delay(7);vibrate(15);}
-    if (vibeMode == 4){vibrate(50); delay(25); vibrate(50); delay(25); vibrate(50);}
+void vibe(int vMode){    //vibrate() combos
+   // if (vMode == 0){ }
+    if (vMode == 1){vibeMode = 1;}
+    if (vMode == 2){vibeMode = 2;}
+    if (vMode == 3){vibeMode = 3;}
+    if (vMode == 4){vibeMode = 4;}
 }
 
 //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
@@ -2230,13 +2245,13 @@ bool loadOptParamFromReceiver(uint8_t myGlobalSettingIndex){   //returns TRUE if
     remPacket.optParamIndex = arrayIndex;
     remPacket.packOptParamValue(0); //(getOptParamValue(arrayIndex));
     requestSendOptParamPacket = true;    //send the value to the receiver
-
-    for (int i=0; i<20 ; i++){  //waits until the local value has been updated. Abort if delay is more than 100ms.
-      delay(5);
-      if (getOptParamValue(myGlobalSettingIndex) != -1) {
-        return true;
+    for (int i=0; i<20 ; i++){  //waits until the local value has been updated. Abort if delay is more than 200ms.
+        delay(10);
+        if (getOptParamValue(myGlobalSettingIndex) != -1) {
+            return true;
         }
     }
+    requestSendOptParamPacket = true; //try again once if not received
     return false;
 }
 
