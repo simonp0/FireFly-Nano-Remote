@@ -8,11 +8,11 @@
 
 //#define FAKE_UART                         // Comment out after pairing the remote and connecting VESC
 //#define DEBUG                             // Uncomment DEBUG if you need to debug the remote / receiver
-#define EXPERIMENTAL                      // Implements experimental functionalities that might contain some bugs
 //const uint32_t boardAddress = 0xA9BF713C;
 //#include <analogWrite.h>
 #define ROADLIGHT_CONNECTED                 // FRONT LIGHT and BACKLIGHT option. Reconfigure 2 pins on the receiver side for FRONTLIGHT and BACKLIGHT PWM signal
 #define OUTPUT_PPM_THROTTLE               // include receiver functions to be able to output a THROTTLE PPM/PWM signal on PIN_PPM_THROTTLE when THROTTLE_MODE = VTM_PPM_PIN_OUT (1)
+#define EXPERIMENTAL                      // Implements experimental functionalities that might contain some bugs
 
 // ********** * * * * * * * * * ***********************************************
 static bool inverse_speed_direction = false;   //change if speed is negative when going forwards

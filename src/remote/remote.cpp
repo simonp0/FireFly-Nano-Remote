@@ -135,7 +135,7 @@ void setup() {
         "vibeTask", /* Name of the task */
         10000,      /* Stack size in words */
         NULL, //(void*)&vibeMode,       /* Task input parameter */
-        configMAX_PRIORITIES - 2,  /* Priority of the task. 0 is slower */
+        0, //configMAX_PRIORITIES - 2,  /* Priority of the task. 0 is slower */
         NULL,       /* Task handle. */
         1);  /* Core where the task should run */
     #endif
@@ -155,13 +155,17 @@ void setup() {
         //int myMode = *((int*)pvParameters;
         while(1){
             if (vibeMode != 0){
-                if (vibeMode == 1){vibrate(45); delay(5); vibrate(15); delay(5); vibrate(15);}
-                if (vibeMode == 2){vibrate(40); delay(8); vibrate(16);}
-                if (vibeMode == 3){vibrate(35); delay(6); vibrate(15); delay(7); vibrate(15);}
+                if (vibeMode == 1){vibrate(50); delay(25); vibrate(50); delay(25); vibrate(50); delay(25); vibrate(50);}
+                if (vibeMode == 2){vibrate(100); delay(50); vibrate(100);}
+                if (vibeMode == 3){vibrate(80);}
                 if (vibeMode == 4){vibrate(50); delay(25); vibrate(50); delay(25); vibrate(50);}
+                if (vibeMode == 5){vibrate(50);}
+                if (vibeMode == 6){vibrate(100);}
+                if (vibeMode == 7){vibrate(200);}
+                if (vibeMode > 7){vibrate(vibeMode);}
                 vibeMode = 0;
             }
-            vTaskDelay(250 / portTICK_PERIOD_MS);   //some free time for the main tasks
+            vTaskDelay(25 / portTICK_PERIOD_MS);   //some free time for the main tasks
         }
         //vTaskDelete( NULL );
     }
@@ -194,7 +198,7 @@ void loop() { // core 1
     checkBatteryLevel();
     handleButtons();
     if (displayOn) updateMainDisplay();     // Call function to update display
-    vTaskDelay(50 / portTICK_PERIOD_MS);    // 50ms free time for other tasks
+    vTaskDelay(1);    // free time for other tasks
 
     //pthread_create(&threads[1], NULL, vibe_pThread);
 }
@@ -969,7 +973,7 @@ void transmitToReceiver() {
       switch (state) {
         case CONNECTING:
           state = IDLE; // now connected
-          if (secondsSince(startupTime) > 2) vibrate(100);
+          if (secondsSince(startupTime) > 2) vibrate(50);
           break;
       }
       failCount = 0;
@@ -992,7 +996,7 @@ void transmitToReceiver() {
       default: // connected
         debug("Disconnected");
         state = CONNECTING;
-        vibrate(100);
+        vibrate(50);
     }
   }
 
@@ -1404,7 +1408,7 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                 if (currentMenu > 0){currentMenu -= 0.25;}
             }
             nextMenuIndex = round(currentMenu);
-            if (lastMenuIndex != nextMenuIndex){vibe(0);}   //short vibration each time we change the selected menu item
+            if (lastMenuIndex != nextMenuIndex){vibrate(50);}   //short vibration each time we change the selected menu item
             // ----------------------------------------------------------------
 
             //header
@@ -1434,16 +1438,16 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
             // --------- subMenus wheel control navigation---------------------
             if (position < default_throttle - deadBand) {
             if (currentMenu < ARRAYLEN(MENUS[subMenu])-2){currentMenu += 0.25;}
-             //   if (currentMenu < (_countof (*MENUS)) -2){currentMenu += 0.25;}
-// if (currentMenu < (sizeof(MENUS[subMenu])/sizeof(*MENUS[subMenu][0])) -2){currentMenu += 0.25;}
-// if (currentMenu < (sizeof(MENUS[subMenu])/sizeof(*MENUS[subMenu])) -2){currentMenu += 0.25;}
+                //   if (currentMenu < (_countof (*MENUS)) -2){currentMenu += 0.25;}
+            // if (currentMenu < (sizeof(MENUS[subMenu])/sizeof(*MENUS[subMenu][0])) -2){currentMenu += 0.25;}
+            // if (currentMenu < (sizeof(MENUS[subMenu])/sizeof(*MENUS[subMenu])) -2){currentMenu += 0.25;}
                // if (currentMenu < ARRAYLEN(MENUS[subMenu])-2){currentMenu += 0.25;}
             }
             if (position > default_throttle + deadBand) {
                 if (currentMenu > 0) currentMenu -= 0.25;
             }
             nextMenuIndex = round(currentMenu);
-            if (lastMenuIndex != nextMenuIndex){vibe(0);}   //short vibration each time we change the selected menu item
+            if (lastMenuIndex != nextMenuIndex){vibrate(50);}   //short vibration each time we change the selected menu item
             // ----------------------------------------------------------------
 
             // header
@@ -1483,6 +1487,9 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                                 state = PAIRING;
                                 backToMainMenu(); // exit menu
                             break;
+                            case REMOTE_SLEEP_TIMER:
+                                loadOptParamFromReceiver(IDX_REMOTE_SLEEP_TIMEOUT);
+                            break;
                         }
                     break;
 
@@ -1493,19 +1500,20 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                                 backToMainMenu();
                             break;
 
-                            case BOARD_MENU_MOTOR_MIN:
-                                loadOptParamFromReceiver(IDX_MOTOR_MIN);
+                            case BOARD_MENU_BATTERY_CELLS:
+                                loadOptParamFromReceiver(IDX_BATTERY_CELLS);
                             break;
-                            case BOARD_MENU_MOTOR_MAX:
-                                loadOptParamFromReceiver(IDX_MOTOR_MAX);
+                            case BOARD_MENU_MOTOR_POLES:
+                                loadOptParamFromReceiver(IDX_MOTOR_POLES);
                             break; 
-                            case BOARD_MENU_BATTERY_MIN:
-                                loadOptParamFromReceiver(IDX_BATTERY_MIN);
+                            case BOARD_MENU_WHEEL_DIAMETER:
+                                loadOptParamFromReceiver(IDX_WHEEL_DIAMETER);
                             break; 
-                            case BOARD_MENU_BATTERY_MAX:
-                                loadOptParamFromReceiver(IDX_BATTERY_MAX);
+                            case BOARD_MENU_WHEEL_PULLEY:
+                                loadOptParamFromReceiver(IDX_WHEEL_PULLEY);
                             break;
-                            case BOARD_MENU_TEST:
+                            case BOARD_MENU_MOTOR_PULLEY:
+                                loadOptParamFromReceiver(IDX_MOTOR_PULLEY);
                             break;                                 
                         }
                     break;
@@ -1513,16 +1521,19 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                     case MENU_LIGHT:
                         switch (subMenuItem){
                             case SWITCH_LIGHT_ON:
+                                vibe(2);
                                 requestSwitchLight = true;
                                 myRoadLightState = ON;
                                 backToMainMenu();
                             break;
                             case SWITCH_LIGHT_OFF:
+                                vibe(2);
                                 requestSwitchLight = true;
                                 myRoadLightState = OFF;
                                 backToMainMenu();
                             break;
                             case SWITCH_LIGHT_BRAKES_ONLY:
+                                vibe(2);
                                 requestSwitchLight = true;
                                 myRoadLightState = BRAKES_ONLY;
                                 backToMainMenu();
@@ -1541,6 +1552,9 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                                 loadOptParamFromReceiver(IDX_THROTTLE_MODE);
                                 //currentParamAdjValue = getOptParamValue(IDX_AUTO_BRAKE_RELEASE);
                             break;
+                            case SUBM_LIMITED_SPEED_MAX:
+                                loadOptParamFromReceiver(IDX_LIMITED_SPEED_MAX);
+                            break;  
                         }
                     break;
 
@@ -1669,7 +1683,12 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                             drawDebugPage();
                         break;
                         case INFO_SETTINGS:
-                            paramSelectorList(myParamSelectorIndexArray1);
+                            #ifdef EXPERIMENTAL
+                                paramSelectorList(myParamSelectorIndexArray1);
+                            #endif
+                            #ifndef EXPERIMENTAL 
+                                backToMainMenu();
+                            #endif
                         break;                        
                     }
                 break;
@@ -1679,6 +1698,9 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                         case REMOTE_CALIBRATE:
                             calibrateScreen();
                         break;
+                        case REMOTE_SLEEP_TIMER:
+                            paramValueSelector(IDX_REMOTE_SLEEP_TIMEOUT, "Remote\nauto-off\ntimeout", 60, 300, 5, 0, "s");
+                        break;                        
                     }
                 break;
 
@@ -1687,19 +1709,20 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                         case BOARD_UPDATE:
                         break;
 
-                        case BOARD_MENU_MOTOR_MIN:
-                            paramValueSelector(IDX_MOTOR_MIN, "Motor Min\ncurrent", -100,-1,0.5,1,"A");
+                        case BOARD_MENU_BATTERY_CELLS:
+                            paramValueSelector(IDX_BATTERY_CELLS, "Battery\ncells", 1,16,1,0,"S");
                         break;
-                        case BOARD_MENU_MOTOR_MAX:
-                            paramValueSelector(IDX_MOTOR_MAX, "Motor Max\ncurrent", 1,100,0.5,1,"A");
+                        case BOARD_MENU_MOTOR_POLES:
+                            paramValueSelector(IDX_MOTOR_POLES, "Motor\npoles nb", 2,48,2,0,"p");
                         break;
-                        case BOARD_MENU_BATTERY_MIN:
-                            paramValueSelector(IDX_BATTERY_MIN, "Battery\nMin current", -100,-1,0.5,1,"A");
+                        case BOARD_MENU_WHEEL_DIAMETER:
+                            paramValueSelector(IDX_WHEEL_DIAMETER, "Wheel\ndiameter", 40,400,1,0,"mm");
                         break;
-                        case BOARD_MENU_BATTERY_MAX:
-                            paramValueSelector(IDX_BATTERY_MAX, "Battery\nMax current", 1,100,0.5,1,"A");
+                        case BOARD_MENU_WHEEL_PULLEY:
+                            paramValueSelector(IDX_WHEEL_PULLEY, "Wheel\npulley size", 1,100,1,0,"");
                         break;                                                
-                        case BOARD_MENU_TEST:
+                        case BOARD_MENU_MOTOR_PULLEY:
+                            paramValueSelector(IDX_MOTOR_PULLEY, "Motor\npulley size", 1,100,1,0,"");
                         break;                                                   
                     }
                 break;
@@ -1725,7 +1748,15 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                     switch (subMenuItem){
                         case SUBM_THROTTLE_MODE:
                             //drawThrottleModePage();
-                            paramValueSelector(IDX_THROTTLE_MODE, "App mode:", 0,(VTM_ENUM_END-1),1,0, " ", VescThrottleMode_label[(int)currentParamAdjValue]);// 2 : for testing purpose via other VescUART commands
+                            #ifdef EXPERIMENTAL
+                                paramValueSelector(IDX_THROTTLE_MODE, "App mode:", 0,(VTM_ENUM_END-1),1,0, " ", VescThrottleMode_label[(int)currentParamAdjValue]);// 2 : for testing purpose via other VescUART commands
+                            #endif
+                            #ifndef EXPERIMENTAL 
+                                paramValueSelector(IDX_THROTTLE_MODE, "App mode:", 0,1,1,0, " ", VescThrottleMode_label[(int)currentParamAdjValue]);// 2 : for testing purpose via other VescUART commands
+                            #endif                            
+                        break;
+                        case SUBM_LIMITED_SPEED_MAX:
+                            paramValueSelector(IDX_LIMITED_SPEED_MAX, "Max speed\nlimit", 5, 50, 0.5, 1, "kmh");
                         break;
                     }
                 break;
@@ -1818,6 +1849,7 @@ void drawDebugPage() {
         break;
         case LONG_HOLD:
             drawString("Long_Hold", 0, y, fontDesc);
+            vibe(10000);
         break;
     }
     //    if (speedLimiterState == 1) {drawString("SL", 45, y, fontDesc);}
@@ -2209,17 +2241,14 @@ bool isShuttingDown() {
 void vibrate(int ms) {
     #ifdef PIN_VIBRO
         digitalWrite(PIN_VIBRO, HIGH);
-        delay(ms);
+        vTaskDelay(ms/portTICK_PERIOD_MS);
         digitalWrite(PIN_VIBRO, LOW);
     #endif
 }
 
 void vibe(int vMode){    //vibrate() combos
-   // if (vMode == 0){ }
-    if (vMode == 1){vibeMode = 1;}
-    if (vMode == 2){vibeMode = 2;}
-    if (vMode == 3){vibeMode = 3;}
-    if (vMode == 4){vibeMode = 4;}
+    // if (vMode == 0){ }
+    vibeMode = vMode;
 }
 
 //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
@@ -2351,7 +2380,7 @@ void drawLightSettingsPage(){
     }
     nextPositionIndex = myLightSettingValue;
     if (lastPositionIndex != nextPositionIndex){
-      vibe(0); //short vibration each time we change the selected menu item
+      vibrate(50); //short vibration each time we change the selected menu item
       setOptParamValue(myOptIndex, myLightSettingValue);  //store the value locally
       sendOptParamToReceiver(myOptIndex);
       }  
@@ -2515,7 +2544,7 @@ void paramValueSelector(uint8_t myGlobalSettingIndex, String paramName, double m
 
     nextPositionValue = currentParamAdjValue;
     if (lastPositionValue != nextPositionValue){
-      vibe(0); //short vibration each time we change the selected menu item
+      vibrate(50); //short vibration each time we change the selected menu item
       }  
 
     if (triggerButton.getState() == CLICK) {
@@ -2526,7 +2555,7 @@ void paramValueSelector(uint8_t myGlobalSettingIndex, String paramName, double m
                 keepAlive();
             break;
             case SAVE_PVS_VALUE:
-                vibe(0);
+                vibe(2);
                 setOptParamValue(myGlobalSettingIndex, (float)saveParamAdjValue);  //store the value locally
                 sendOptParamToReceiver(myGlobalSettingIndex);
                 myPVSpage = ADJUST_PVS_VALUE;
@@ -2534,6 +2563,7 @@ void paramValueSelector(uint8_t myGlobalSettingIndex, String paramName, double m
                 backToMainMenu();
             break;
             case CANCEL_PVS_VALUE:
+                vibe(5);
                 myPVSpage = ADJUST_PVS_VALUE;
                 initFlag_PVS = 1;
                 backToMainMenu();
@@ -2541,6 +2571,7 @@ void paramValueSelector(uint8_t myGlobalSettingIndex, String paramName, double m
         }
     }
     if (powerButton.getState() == CLICK) {
+        vibe(5);
         waitTimeMs = 0;
         myPVSpage = ADJUST_PVS_VALUE;
         initFlag_PVS = 1;
@@ -2554,7 +2585,6 @@ void paramValueSelector(uint8_t myGlobalSettingIndex, String paramName, double m
 // *********************************************************************************************************************************************************************
 // *********************************************************************************************************************************************************************
 // displays a list of parameters and scrolls with throttle input. Trigger click launch paramValueSelector to adjust currently selected parameter
-
 void paramSelectorList(int *paramSelectorIndexArray){
     //(uint8_t myGlobalSettingIndex, String paramName, double minAdjValue, double maxAdjValue, double adjIncrement, int decimalPlace, String unitStr, String label ){
     int myArraySize = sizeof(paramSelectorIndexArray)/sizeof(paramSelectorIndexArray[0]);
@@ -2663,7 +2693,7 @@ void paramSelectorList(int *paramSelectorIndexArray){
 
     nextPositionValue = currentParamSelectorValue;
     if (lastPositionValue != nextPositionValue){
-      vibe(0); //short vibration each time we change the selected menu item
+      vibrate(50); //short vibration each time we change the selected menu item
       }  
 
     if (triggerButton.getState() == CLICK) {
@@ -2676,10 +2706,11 @@ void paramSelectorList(int *paramSelectorIndexArray){
             break;
             case SAVE_PSL_VALUE:
                 loadOptParamFromReceiver(paramSelectorIndexArray[paramSelector_selected]);
-                vibe(0);
+                vibe(5);
                 myPSLpage = DISPLAY_PVS_PAGE;
             break;
             case CANCEL_PSL_VALUE:
+                vibe(5);
                 myPSLpage = ADJUST_PSL_VALUE;
             break;
             case DISPLAY_PVS_PAGE:
@@ -2687,6 +2718,7 @@ void paramSelectorList(int *paramSelectorIndexArray){
         }
     }
     if (powerButton.getState() == CLICK) {
+        vibe(5);
         waitTimeMs_PSL = 0;
         myPSLpage = ADJUST_PSL_VALUE;
         initFlag_PSL = 1;
@@ -2700,6 +2732,6 @@ void speedLimiter(bool state){  //activate or deactivate the speed limiter
     speedLimiterState = state;
     requestSpeedLimiter = true;
     if (speedLimiterState){
-        vibe(3);
+        vibe(2);
     }
 }

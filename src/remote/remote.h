@@ -109,7 +109,7 @@ enum ui_page {
 const float minVoltage = 3.3; // min voltage with vibro motor
 const float maxVoltage = 4.1; //Heltec_Lora32_v2 stops charging around here..
 const float refVoltage = 3.3; // Feather double-100K resistor divider
-const float adjVoltage = 4.1/2.8; // Adjustment factor - Heltec : when battery is full, adjVoltage = 4.1 / displayed value
+const float adjVoltage = 4.1/4.3; // Adjustment factor - Heltec : when battery is full, adjVoltage = 4.1 / displayed value
 //2.8 868  /   4.3 434
 unsigned long lastBatterySample = 0; // smooth remote voltage
 
@@ -177,11 +177,15 @@ const byte mainMenus = 6;
 
 //String MENUS[mainMenus][subMenus] = {
 String MENUS[mainMenus][subMenus] = {
-    { "Info", "Debug", "TestDebug", "Specs", " ", " ", "Settings"},
+    { "Info", "Debug", " ", " ", " ", " "
+    #ifdef EXPERIMENTAL
+    , "Settings"
+    #endif
+    },
     { "Remote", "Calibrate", "Pair", "Auto off"},
-    { "Board", "WIFIupdate",  "Motor Min", "Motor Max", "BatteryMin", "BatteryMax", "TODO.test"},
+    { "Board", "WIFIupdate",  "Battery", "Motor", "Wheel size", "Whl Pulley", "Mot Pulley"},
     { "Lights", "Switch ON", "Switch OFF", "Brake Only", "Settings"},
-    { "Receiver", "App Mode", "", "", "", "", ""},
+    { "Receiver", "App Mode", "SpeedLimit", "", "", "", ""},
     { "A-Cruise", "ON/OFF", "PushSpeed", "PushTime", "Curr.Spike", "CruiseTime", "CurrentLow" }
     // *** LED ROADLIGHTS ***
 };
@@ -189,9 +193,9 @@ String MENUS[mainMenus][subMenus] = {
 enum menu_main { MENU_INFO, MENU_REMOTE, MENU_BOARD, MENU_LIGHT, MENU_RECEIVER, MENU_AUTO_CRUISE };
 enum menu_info { INFO_DEBUG, INFO_2, INFO_3, INFO_4, INFO_5, INFO_SETTINGS };
 enum menu_remote { REMOTE_CALIBRATE, REMOTE_PAIR, REMOTE_SLEEP_TIMER };
-enum menu_board { BOARD_UPDATE, BOARD_MENU_MOTOR_MIN, BOARD_MENU_MOTOR_MAX, BOARD_MENU_BATTERY_MIN, BOARD_MENU_BATTERY_MAX, BOARD_MENU_TEST };
+enum menu_board { BOARD_UPDATE, BOARD_MENU_BATTERY_CELLS, BOARD_MENU_MOTOR_POLES, BOARD_MENU_WHEEL_DIAMETER, BOARD_MENU_WHEEL_PULLEY, BOARD_MENU_MOTOR_PULLEY };
 enum menu_light { SWITCH_LIGHT_ON, SWITCH_LIGHT_OFF, SWITCH_LIGHT_BRAKES_ONLY, ROADLIGHT_SETTINGS }; // *** LED ROADLIGHTS ***
-enum menu_receiver { SUBM_THROTTLE_MODE };
+enum menu_receiver { SUBM_THROTTLE_MODE, SUBM_LIMITED_SPEED_MAX };
 enum menu_auto_cruise { CRUISE_MENU_AUTO_CRUISE, CRUISE_MENU_PUSHING_SPEED , CRUISE_MENU_PUSHING_TIME, CRUISE_MENU_CRUISE_CURRENT_SPIKE, CRUISE_MENU_AUTO_CRUISE_TIME, CRUISE_MENU_CRUISE_CURRENT_LOW };
 
 float currentMenu = 0;
@@ -389,7 +393,7 @@ int myParamSelectorIndexArray1[] ={
     IDX_MIN_HALL,//remote-CONFIGpacket
     IDX_CENTER_HALL,//remote-CONFIGpacket
     IDX_MAX_HALL,//remote-CONFIGpacket
-    IDX_BOARD_ID,//remote-CONFIGpacket
+    //IDX_BOARD_ID,//remote-CONFIGpacket
     IDX_AUTO_CRUISE_ON,
     IDX_PUSHING_SPEED,
     IDX_PUSHING_TIME,
@@ -400,7 +404,7 @@ int myParamSelectorIndexArray1[] ={
     IDX_AUTO_BRAKE_TIME,
     IDX_AUTO_BRAKE_RELEASE,
     IDX_AUTO_BRAKE_ABORT_MAXSPEED,
-    IDX_UART_SPEED,
+    //IDX_UART_SPEED,
     IDX_uartPullInterval,
     IDX_UART_TIMEOUT,
     IDX_REMOTE_RX_TIMEOUT, //remote

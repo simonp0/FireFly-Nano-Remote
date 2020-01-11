@@ -4,7 +4,7 @@
 // #include <LoRa.h>
 
 // Change to allowed frequency
-#define RF_FREQ 868.1
+#define RF_FREQ 434.1
 //434.1
 //868.1
 
