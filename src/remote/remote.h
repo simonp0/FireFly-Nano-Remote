@@ -102,7 +102,7 @@ enum ui_page {
     PAGE_MENU,
     PAGE_MAX,
     PAGE_DEBUG,
-    PAGE_LIGHT_SETTINGS   // **************************************** LED ROADLIGHTS *****************************
+    PAGE_LIGHT_SETTINGS
 } page = PAGE_MAIN;
 
 // Battery monitoring
@@ -331,16 +331,16 @@ float getOptParamValue(uint8_t myGlobalSettingIndex);
 void sendOptParamToReceiver(uint8_t myGlobalSettingIndex);
 bool loadOptParamFromReceiver(uint8_t myGlobalSettingIndex);
 
-//bool retrieveAllOptParamFromReceiverAtStartup = true;
-//void retrieveAllOptParamFromReceiver();
+bool retrieveAllOptParamFromReceiverAtStartup = true;
+void retrieveAllOptParamFromReceiver();
+//void retrieveAllOptParamFromReceiverTask(void * pvParameters );
+int loadedParamCount = 0;
+u_long loadParamTimestamp = millis();
 //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
 
 
-// **************************************** LED ROADLIGHTS *****************************
-void drawLightSettingsPage();//test
-//void switchLightOn(); //on receiver side only.
-//void switchLightOff(); //on receiver side only.
-// **************************************** LED ROADLIGHTS *****************************
+void drawLightSettingsPage();
+
 enum paramValueSelector_page_stage{
     ADJUST_PVS_VALUE,
     SAVE_PVS_VALUE,
@@ -354,10 +354,6 @@ enum paramSelectorList_page_stage{
     DISPLAY_PVS_PAGE  
 } myPSLpage = ADJUST_PSL_VALUE;
 
-
-/*
-// #void paramValueSelector(uint8_t myGlobalSettingIndex, String paramName, double minValue, double maxValue, double increment, int decimalPlace, String unitStr);
-*/
 
 void paramValueSelector(uint8_t myGlobalSettingIndex, String paramName, double minAdjValue, double maxAdjValue, double adjIncrement, int decimalPlace, String unitStr, String label = " ");
 

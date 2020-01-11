@@ -1,4 +1,5 @@
 #include "remote.h"
+#include <math.h>
 //#include "button.cpp"
 //#include"try.cpp"
 Adafruit_SSD1306 display(DISPLAY_RST);
@@ -122,22 +123,32 @@ void setup() {
 
     #ifdef ESP32
         xTaskCreatePinnedToCore(
-        coreTask,   /* Function to implement the task */
-        "coreTask", /* Name of the task */
-        10000,      /* Stack size in words */
-        NULL,       /* Task input parameter */
-        configMAX_PRIORITIES - 1,  /* Priority of the task. 0 is slower */
-        NULL,       /* Task handle. */
-        0);  /* Core where the task should run */
+            coreTask,   /* Function to implement the task */
+                "coreTask", /* Name of the task */
+                10000,      /* Stack size in words */
+                NULL,       /* Task input parameter */
+                configMAX_PRIORITIES - 1,  /* Priority of the task. 0 is slower */
+                NULL,       /* Task handle. */
+                0);  /* Core where the task should run */
 
         xTaskCreatePinnedToCore(
-        vibeTask,   /* Function to implement the task */
-        "vibeTask", /* Name of the task */
-        10000,      /* Stack size in words */
-        NULL, //(void*)&vibeMode,       /* Task input parameter */
-        0, //configMAX_PRIORITIES - 2,  /* Priority of the task. 0 is slower */
-        NULL,       /* Task handle. */
-        1);  /* Core where the task should run */
+            vibeTask,   /* Function to implement the task */
+                "vibeTask", /* Name of the task */
+                1000,      /* Stack size in words */
+                NULL, //(void*)&vibeMode,       /* Task input parameter */
+                0, //configMAX_PRIORITIES - 2,  /* Priority of the task. 0 is slower */
+                NULL,       /* Task handle. */
+                1);  /* Core where the task should run */
+/*
+        xTaskCreatePinnedToCore(
+            retrieveAllOptParamFromReceiverTask,
+                "retrieveAllOptParamFromReceiverTask",
+                100000,
+                NULL, 
+                1, 
+                NULL,
+                1);
+*/      
     #endif
 }
 
@@ -151,7 +162,7 @@ void setup() {
         }
     }
 
-    void vibeTask(void * pvParameters){ // core 1
+    void vibeTask(void * pvParameters){ // core 1 : low priority task
         //int myMode = *((int*)pvParameters;
         while(1){
             if (vibeMode != 0){
@@ -169,6 +180,36 @@ void setup() {
         }
         //vTaskDelete( NULL );
     }
+
+/*    void retrieveAllOptParamFromReceiverTask(void * pvParameters){ // core 1 : low priority task
+        int myDelay = 10;
+        
+        // we only need to sync these parameters when the remote is powered on : 
+        if (loadOptParamFromReceiver(IDX_REMOTE_RX_TIMEOUT)) REMOTE_RX_TIMEOUT = localOptParamValueArray[IDX_REMOTE_RX_TIMEOUT];
+        vTaskDelay(myDelay / portTICK_PERIOD_MS);
+        if (loadOptParamFromReceiver(IDX_REMOTE_RADIOLOOP_DELAY)) REMOTE_RADIOLOOP_DELAY = localOptParamValueArray[IDX_REMOTE_RADIOLOOP_DELAY];
+        vTaskDelay(myDelay / portTICK_PERIOD_MS);
+        if (loadOptParamFromReceiver(IDX_REMOTE_LOCK_TIMEOUT)) REMOTE_LOCK_TIMEOUT = localOptParamValueArray[IDX_REMOTE_LOCK_TIMEOUT];
+        vTaskDelay(myDelay / portTICK_PERIOD_MS);
+        if (loadOptParamFromReceiver(IDX_REMOTE_SLEEP_TIMEOUT)) REMOTE_SLEEP_TIMEOUT = localOptParamValueArray[IDX_REMOTE_SLEEP_TIMEOUT];
+        vTaskDelay(myDelay / portTICK_PERIOD_MS);
+        if (loadOptParamFromReceiver(IDX_DISPLAY_BATTERY_MIN)) DISPLAY_BATTERY_MIN = localOptParamValueArray[IDX_DISPLAY_BATTERY_MIN];
+        vTaskDelay(myDelay / portTICK_PERIOD_MS);
+        if (loadOptParamFromReceiver(IDX_MOTOR_MIN)) MOTOR_MIN = localOptParamValueArray[IDX_MOTOR_MIN];
+        vTaskDelay(myDelay / portTICK_PERIOD_MS);
+        if (loadOptParamFromReceiver(IDX_MOTOR_MAX)) MOTOR_MAX = localOptParamValueArray[IDX_MOTOR_MAX];
+        vTaskDelay(myDelay / portTICK_PERIOD_MS);
+        if (loadOptParamFromReceiver(IDX_BATTERY_MIN)) BATTERY_MIN = localOptParamValueArray[IDX_BATTERY_MIN];
+        vTaskDelay(myDelay / portTICK_PERIOD_MS);
+        if (loadOptParamFromReceiver(IDX_BATTERY_MAX)) BATTERY_MAX = localOptParamValueArray[IDX_BATTERY_MAX];
+        vTaskDelay(myDelay / portTICK_PERIOD_MS); 
+        if (loadOptParamFromReceiver(IDX_LIMITED_SPEED_MAX)) LIMITED_SPEED_MAX = localOptParamValueArray[IDX_LIMITED_SPEED_MAX];
+        vTaskDelay(myDelay / portTICK_PERIOD_MS);
+        
+        vTaskDelete( NULL );
+    }
+*/
+
 #endif
 
 /*
@@ -199,6 +240,11 @@ void loop() { // core 1
     handleButtons();
     if (displayOn) updateMainDisplay();     // Call function to update display
     vTaskDelay(1);    // free time for other tasks
+
+    if (retrieveAllOptParamFromReceiverAtStartup == true){
+        retrieveAllOptParamFromReceiver();
+    }
+
 
     //pthread_create(&threads[1], NULL, vibe_pThread);
 }
@@ -895,6 +941,12 @@ void preparePacket() {
 
         case IDLE:
         case NORMAL: // Send throttle to the receiver.
+            if (requestSendOptParamPacket){
+                debug("requestSendOptParamPacket");
+                remPacket.command = OPT_PARAM_MODE;
+                requestSendOptParamPacket = false;
+                break;
+            }        
             if (requestSpeedLimiter){   //activate speed limiter while riding
                 debug("requestSpeedLimiter");
                 remPacket.command = SPEED_LIMITER;
@@ -930,7 +982,7 @@ void preparePacket() {
             // **************************************** LED ROADLIGHTS *****************************
 
             //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
-            if (requestSendOptParamPacket){   //only in MENU mode
+            if (requestSendOptParamPacket){   //also in MENU mode
                 debug("requestSendOptParamPacket");
                 remPacket.command = OPT_PARAM_MODE;
                 requestSendOptParamPacket = false;
@@ -2062,10 +2114,10 @@ void drawMainPage() {
                 drawPixel(x + i * 4 + 2, y - h);
                 drawPixel(x + i * 4 + 2, y - 1);
             }
-            if(speedLimiterState == 1 && speedMax/16*i > LIMITED_SPEED_MAX && speedMax/16*i <= LIMITED_SPEED_MAX + 1){
-                if(  (floor(2*millis()/500) % 2 == 0) ){
-                    for(int z = 0; z < h; z++){
-                        drawVLine(x + i * 4 + 2, y - h + 2*z, 1);
+            if(speedLimiterState == 1 && speedMax/16*i > getOptParamValue(IDX_LIMITED_SPEED_MAX) && speedMax/16*i < getOptParamValue(IDX_LIMITED_SPEED_MAX) + 2){
+                if(  remainder(floor(2*millis()/500), 2 ) == 0 ){
+                    for(int z = 0; z < (h/4); z++){
+                        drawVLine(x + i * 4 + 2, (y - h + 4*z), 0.5);
                     }
                 }
             }
@@ -2332,22 +2384,73 @@ if (requestSendOptParamPacket){   //only in MENU mode
     break;
 }
 // ******************* DOWNLOAD RECEIVER SETTINGS AT STARTUP *******************
-
-void retrieveAllOptParamFromReceiver(){   // TAKES TOO MUCH TIME
-    
-    // we only need to sync these parameters when the remote is powered on : 
-    if (loadOptParamFromReceiver(IDX_REMOTE_RX_TIMEOUT)) REMOTE_RX_TIMEOUT = localOptParamValueArray[IDX_REMOTE_RX_TIMEOUT];
-    if (loadOptParamFromReceiver(IDX_REMOTE_RADIOLOOP_DELAY)) REMOTE_RADIOLOOP_DELAY = localOptParamValueArray[IDX_REMOTE_RADIOLOOP_DELAY];
-    if (loadOptParamFromReceiver(IDX_REMOTE_LOCK_TIMEOUT)) REMOTE_LOCK_TIMEOUT = localOptParamValueArray[IDX_REMOTE_LOCK_TIMEOUT];
-    if (loadOptParamFromReceiver(IDX_REMOTE_SLEEP_TIMEOUT)) REMOTE_SLEEP_TIMEOUT = localOptParamValueArray[IDX_REMOTE_SLEEP_TIMEOUT];
-    if (loadOptParamFromReceiver(IDX_DISPLAY_BATTERY_MIN)) DISPLAY_BATTERY_MIN = localOptParamValueArray[IDX_DISPLAY_BATTERY_MIN];
-    if (loadOptParamFromReceiver(IDX_MOTOR_MIN)) MOTOR_MIN = localOptParamValueArray[IDX_MOTOR_MIN];
-    if (loadOptParamFromReceiver(IDX_MOTOR_MAX)) MOTOR_MAX = localOptParamValueArray[IDX_MOTOR_MAX];
-    if (loadOptParamFromReceiver(IDX_BATTERY_MIN)) BATTERY_MIN = localOptParamValueArray[IDX_BATTERY_MIN];
-    if (loadOptParamFromReceiver(IDX_BATTERY_MAX)) BATTERY_MAX = localOptParamValueArray[IDX_BATTERY_MAX];
-
-}
 */
+void retrieveAllOptParamFromReceiver(){
+    if(millisSince(loadParamTimestamp) > 300){ //will retrieve one parameter each 300ms
+        loadParamTimestamp = millis();
+        // we only need to sync these parameters when the remote is powered on : 
+        switch(loadedParamCount){
+            case 0:
+                if (loadOptParamFromReceiver(IDX_REMOTE_RX_TIMEOUT)){
+                    REMOTE_RX_TIMEOUT = localOptParamValueArray[IDX_REMOTE_RX_TIMEOUT];
+                    loadedParamCount ++;}
+            break;
+            case 1:
+                if (loadOptParamFromReceiver(IDX_REMOTE_RADIOLOOP_DELAY)){
+                    REMOTE_RADIOLOOP_DELAY = localOptParamValueArray[IDX_REMOTE_RADIOLOOP_DELAY];
+                    loadedParamCount ++;}
+            break;
+            case 2:
+                if (loadOptParamFromReceiver(IDX_REMOTE_LOCK_TIMEOUT)){
+                    REMOTE_LOCK_TIMEOUT = localOptParamValueArray[IDX_REMOTE_LOCK_TIMEOUT];
+                    loadedParamCount ++;}
+            break;
+            case 3:
+                if (loadOptParamFromReceiver(IDX_REMOTE_SLEEP_TIMEOUT)){
+                    REMOTE_SLEEP_TIMEOUT = localOptParamValueArray[IDX_REMOTE_SLEEP_TIMEOUT];
+                    loadedParamCount ++;}
+            break;
+            case 4:
+                if (loadOptParamFromReceiver(IDX_DISPLAY_BATTERY_MIN)){
+                    DISPLAY_BATTERY_MIN = localOptParamValueArray[IDX_DISPLAY_BATTERY_MIN];
+                    loadedParamCount ++;}
+            break;
+            case 5:
+                if (loadOptParamFromReceiver(IDX_MOTOR_MIN)){
+                    MOTOR_MIN = localOptParamValueArray[IDX_MOTOR_MIN];
+                    loadedParamCount ++;}
+            break;
+            case 6:
+                if (loadOptParamFromReceiver(IDX_MOTOR_MAX)){
+                    MOTOR_MAX = localOptParamValueArray[IDX_MOTOR_MAX];
+                    loadedParamCount ++;}
+            break;
+            case 7:
+                if (loadOptParamFromReceiver(IDX_BATTERY_MIN)){
+                    BATTERY_MIN = localOptParamValueArray[IDX_BATTERY_MIN];
+                    loadedParamCount ++;}
+            break;
+            case 8:
+                if (loadOptParamFromReceiver(IDX_BATTERY_MAX)){
+                    BATTERY_MAX = localOptParamValueArray[IDX_BATTERY_MAX];
+                    loadedParamCount ++;}
+            break;
+            case 9:
+                if (loadOptParamFromReceiver(IDX_LIMITED_SPEED_MAX)){
+                    LIMITED_SPEED_MAX = localOptParamValueArray[IDX_LIMITED_SPEED_MAX];
+                    loadedParamCount ++;}
+            break;
+        }
+        //vibe(3);
+        if(loadedParamCount<10){
+            return;
+        }
+        else{
+            retrieveAllOptParamFromReceiverAtStartup = false;
+        }
+    }
+}
+
 
 //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
 
