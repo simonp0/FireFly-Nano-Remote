@@ -2062,6 +2062,13 @@ void drawMainPage() {
                 drawPixel(x + i * 4 + 2, y - h);
                 drawPixel(x + i * 4 + 2, y - 1);
             }
+            if(speedLimiterState == 1 && speedMax/16*i > LIMITED_SPEED_MAX && speedMax/16*i <= LIMITED_SPEED_MAX + 1){
+                if(  (floor(2*millis()/500) % 2 == 0) ){
+                    for(int z = 0; z < h; z++){
+                        drawVLine(x + i * 4 + 2, y - h + 2*z, 1);
+                    }
+                }
+            }
         }
     }
     else {
@@ -2347,6 +2354,7 @@ void retrieveAllOptParamFromReceiver(){   // TAKES TOO MUCH TIME
 
 // **************************************** LED ROADLIGHTS *****************************
 void drawLightSettingsPage(){
+    int deadBand = 15;
     uint8_t myOptIndex;
     int myLightSettingValue;
     int myFrontLightBrightness = getOptParamValue(IDX_LED_BRIGHTNESS_FRONT);
@@ -2372,10 +2380,10 @@ void drawLightSettingsPage(){
     int lastPositionIndex = myLightSettingValue;
     int nextPositionIndex = lastPositionIndex;
     // --------- wheel control ---------------------
-    if (position > default_throttle + 15) {
+    if (position > default_throttle + deadBand) {
         if (myLightSettingValue < 255){ myLightSettingValue = constrain((myLightSettingValue += 5),0,255);}
     }
-    if (position < default_throttle - 15) {
+    if (position < default_throttle - deadBand) {
         if (myLightSettingValue > 0){ myLightSettingValue = constrain((myLightSettingValue -= 5),0,255);}
     }
     nextPositionIndex = myLightSettingValue;
@@ -2467,7 +2475,7 @@ void paramValueSelector(uint8_t myGlobalSettingIndex, String paramName, double m
         initFlag_PVS = 0;
     }
 
-    int deadBand = 25;
+    int deadBand = 20;
     long timestamp = millis();
     while (millisSince(timestamp) < waitTimeMs){
             /*if (triggerButton.getState() == CLICK) {
@@ -2603,7 +2611,7 @@ void paramSelectorList(int *paramSelectorIndexArray){
     int minAdjValue = 0;
     int maxAdjValue = myArraySize - 1;
 
-    int deadBand = 25;
+    int deadBand = 20;
     long timestamp = millis();
     while (millisSince(timestamp) < waitTimeMs_PSL){
             /*if (triggerButton.getState() == CLICK) {

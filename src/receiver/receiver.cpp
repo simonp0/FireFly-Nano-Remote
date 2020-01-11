@@ -945,7 +945,7 @@ void setThrottle(uint16_t throttleValue){
 
     double mySpeed = telemetry.getSpeed();
     int myThrottle = 0;
-    bool setCruise_enabled = false;
+    //bool setCruise_enabled = false;
 
     //mySmoothedThrottle.add(throttleValue);
     mySmoothedSpeed.add(mySpeed);
@@ -990,15 +990,15 @@ void setThrottle(uint16_t throttleValue){
                         mySmoothedThrottle.add(throttleValue);
                         myThrottle = (throttleValue);
                     }
-                    if(!setCruise_enabled){
+                    //if(!setCruise_enabled){
                         UART.nunchuck.valueY = myThrottle;
                         UART.nunchuck.upperButton = false;
                         UART.nunchuck.lowerButton = false;
                         UART.setNunchuckValues();
-                    }else{
-                        setCruise_enabled = false;
-                        setCruise(LIMITED_SPEED_MAX);
-                    }
+                    //}else{
+                    //    setCruise_enabled = false;
+                    //    setCruise(mySpeed);
+                    //}
                 }
             break;
             //1
@@ -1137,8 +1137,9 @@ void setThrottle(uint16_t throttleValue){
 
                     case STOPPING: // emergency brake when remote has disconnected  -> don't use regen, only active braking.
                         str_vtm_state = "Emergency brake";
-                        myCurrent = map(throttleValue, 0, 255, motor_min_current, motor_max_current);
-                        UART.setCurrent(myCurrent);   
+                        //myCurrent = map(throttleValue, 0, 255, motor_min_current, motor_max_current);
+                        //UART.setCurrent(myCurrent);
+                        setState(STOPPING);   
                     break;
 
                 }
@@ -1210,12 +1211,15 @@ void setCruise(uint8_t speed) {
     // UART
     #ifndef FAKE_UART
         switch(THROTTLE_MODE){
-            case VTM_NUNCHUCK_UART:
+            default:
                 disablePpmThrottleOutput();
                 UART.nunchuck.valueY = 127;
                 UART.nunchuck.upperButton = false;
                 UART.nunchuck.lowerButton = true;
                 UART.setNunchuckValues();
+            break;
+            /*
+            case VTM_NUNCHUCK_UART:
             break;
 
             case VTM_PPM_PIN_OUT:
@@ -1238,6 +1242,7 @@ void setCruise(uint8_t speed) {
 
             case VTM_POS_UART:
             break;
+            */
 
         }
     #endif
