@@ -13,7 +13,7 @@
 //
 
 // Pin definitions
-#define PIN_LED           25   // LED on board
+#define PIN_LED       25   // LED on board
 
 #define PIN_PWRBUTTON 12
 #define PIN_BACKLIGHT 12  //PWRBUTTON PIN is free on the RECEIVER side, we'll use it for PIN_BACKLIGHT
@@ -29,7 +29,7 @@
 
 #define HAS_BUTTON (0) // button "PRG" on board
 
-#define PIN_VIBRO     17
+#define PIN_VIBRO 17
 #define PIN_FRONTLIGHT 17 //VIBRO PIN is free on the RECEIVER side, we'll use it for PIN_FRONTLIGHT
 
 

@@ -1,4 +1,3 @@
-
 #include <Arduino.h>
 #include "CPU.h"
 #include <globals.h>
@@ -169,9 +168,6 @@ enum menu_page {
 
 
 
-//int thisArraySize =0;
-//size_t sizeArray;
-
 const byte subMenus = 7;
 const byte mainMenus = 6;
 
@@ -187,7 +183,6 @@ String MENUS[mainMenus][subMenus] = {
     { "Lights", "Switch ON", "Switch OFF", "Brake Only", "Settings"},
     { "Receiver", "App Mode", "SpeedLimit", "", "", "", ""},
     { "A-Cruise", "ON/OFF", "PushSpeed", "PushTime", "Curr.Spike", "CruiseTime", "CurrentLow" }
-    // *** LED ROADLIGHTS ***
 };
 
 enum menu_main { MENU_INFO, MENU_REMOTE, MENU_BOARD, MENU_LIGHT, MENU_RECEIVER, MENU_AUTO_CRUISE };

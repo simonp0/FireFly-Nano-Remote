@@ -155,10 +155,6 @@ void setup() {
 
     void vibeTask(void * pvParameters){ // core 1 : low priority task
         //int myMode = *((int*)pvParameters;
-        #ifdef DEBUG
-            debugTaskSize = uxTaskGetStackHighWaterMark(NULL);
-        #endif
-
         while(1){
             if (vibeMode != 0){
                 if (vibeMode == 1){vibrate(50); delay(25); vibrate(50); delay(25); vibrate(50); delay(25); vibrate(50);}
@@ -171,6 +167,7 @@ void setup() {
                 if (vibeMode > 7){vibrate(vibeMode);}
                 vibeMode = 0;
             }
+            vTaskDelay(50);
             #ifdef DEBUG
                 debugTaskSize = uxTaskGetStackHighWaterMark(NULL);
             #endif
@@ -1768,10 +1765,10 @@ void drawSettingsMenu() {   //LOOP() task on core 1 runs this function continuou
                         case SUBM_THROTTLE_MODE:
                             //drawThrottleModePage();
                             #ifdef EXPERIMENTAL
-                                paramValueSelector(IDX_THROTTLE_MODE, "App mode:", 0,(VTM_ENUM_END-1),1,0, " ", VescThrottleMode_label[(int)currentParamAdjValue]);// 2 : for testing purpose via other VescUART commands
+                                paramValueSelector(IDX_THROTTLE_MODE, "App mode:", 0,(VTM_ENUM_END-1),1,0, " ", VescThrottleMode_label[(int)currentParamAdjValue]);// 2+ : for testing purpose via other VescUART commands
                             #endif
                             #ifndef EXPERIMENTAL 
-                                paramValueSelector(IDX_THROTTLE_MODE, "App mode:", 0,1,1,0, " ", VescThrottleMode_label[(int)currentParamAdjValue]);// 2 : for testing purpose via other VescUART commands
+                                paramValueSelector(IDX_THROTTLE_MODE, "App mode:", 0,1,1,0, " ", VescThrottleMode_label[(int)currentParamAdjValue]);
                             #endif                            
                         break;
                         case SUBM_LIMITED_SPEED_MAX:
@@ -1817,13 +1814,13 @@ void drawDebugPage() {
     int y = 10;
     drawString(String(settings.boardID, HEX), -1, y, fontDesc);
     y = 20;
-//    drawStringCenter(String(lastDelay), " ms", y);
+    //    drawStringCenter(String(lastDelay), " ms", y);
     drawString(String(lastDelay) + " ms", 0, y, fontMicro);
     y += 10;//25;
-//    drawStringCenter(String(lastRssi, 0), " db", y);
+    //    drawStringCenter(String(lastRssi, 0), " db", y);
     drawString(String(lastRssi) + " db", 0, y, fontMicro);
     y += 10;
-//    drawStringCenter(String(readThrottlePosition()), String(hallValue), y);
+    //    drawStringCenter(String(readThrottlePosition()), String(hallValue), y);
     drawString(String(readThrottlePosition()),0,y,fontMicro); drawString(" / " + String(hallValue), 16, y, fontMicro);
     y += 15;
     if (pressed(PIN_PWRBUTTON)) {
@@ -1863,7 +1860,6 @@ void drawDebugPage() {
         break;
         case DBL_CLICK:
             drawString("Dbl_Click", 0, y, fontMicro);
-    //        speedLimiter(!speedLimiterState);
         break;
         case HOLD:
             drawString("Hold", 0, y, fontMicro);
@@ -1874,17 +1870,11 @@ void drawDebugPage() {
             vibe(10000);
         break;
     }
-    //y += 15;
-    //    if (speedLimiterState == 1) {drawString("SL", 45, y, fontMicro);}
     drawString("SL" + String(speedLimiterState, 10), 45, y, fontMicro);
-
     #ifdef DEBUG
         y += 10;
         drawString("Stack -" + String(debugTaskSize, 10), 0, y, fontMicro);
     #endif
-
-
-
 }
 
 void debugButtons() {   //displays button state on lower right screen corner

@@ -108,16 +108,16 @@ float currentSpeedValue = 0;
 float lowestSpeedValue = 0;
 
 #ifdef RECEIVER_SCREEN
-const GFXfont* fontDigital = &Segment13pt7b;  // speed, distance, ...
-// const GFXfont* fontPico = &Segment6pt7b;      //
-const GFXfont* fontDesc = &Dialog_plain_9;    // km/h
-const GFXfont* fontMicro = &Org_01;         // connection screen
+    const GFXfont* fontDigital = &Segment13pt7b;  // speed, distance, ...
+    // const GFXfont* fontPico = &Segment6pt7b;      //
+    const GFXfont* fontDesc = &Dialog_plain_9;    // km/h
+    const GFXfont* fontMicro = &Org_01;         // connection screen
 
-const GFXfont* fontBig = &FreeSans12pt7b;         // connection screen
-const GFXfont* font = &FreeSans9pt7b;         // connection screen
+    const GFXfont* fontBig = &FreeSans12pt7b;         // connection screen
+    const GFXfont* font = &FreeSans9pt7b;         // connection screen
 
-void updateScreen();
-void drawBattery();
+    void updateScreen();
+    void drawBattery();
 #endif
 
 bool prepareUpdate();
@@ -162,8 +162,6 @@ void saveFlashSetting(uint8_t myGlobalSettingIndex, float value);// Save a setti
 
 void refreshAllSettingsFromFlashData();// SETTINGS INITIALIZATION - copy flash data into local variables & into localOptParamValueArray[] . If nothing saved in flash, GLOBALS.H hardcoded default values are used instead
 
-// motor drive mode tests
-float Lpos=0;//position 
 
 //smart reverse & handbrake
 bool reverseLocked = 0;
@@ -248,3 +246,13 @@ int smoothValueOverTime(int valueToAdd);
 #endif
 void disablePpmThrottleOutput();
 // ******** PPM THROTTLE OUTPUT ********
+
+#ifdef DEBUG
+    int startupDelay=0;
+#endif
+
+#ifdef EXPERIMENTAL
+    // motor drive mode tests
+    float Lpos=0;//position 
+
+#endif

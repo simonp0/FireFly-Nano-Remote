@@ -294,7 +294,7 @@ float batteryPackPercentage( float voltage ) { // Calculate the battery level of
                     display.setTextColor(WHITE);
                     display.setFont(fontDesc);  //fontDigital
                     display.setCursor(0, 20);
-                    display.println("THR: " + String(map(throttle, 0, 255, -100, 100)) + "%" + "   Avg:" + String(mySmoothedThrottle.get(), 0) );
+                    display.println("THR: " + String(map(throttle, 0, 255, -100, 100)) + "%" + "   " + String(throttle, 10) );
                     display.println("SPD: " + String(telemetry.getSpeed(),1) + " k" + "   PID:" + String(myPID_throttleFactor, 1) ); //Avg:" + String(mySmoothedSpeed.get(), 1) );         
                     display.setCursor(0, 45);
                     display.print(">" + String(str_vtm_state) );
@@ -327,11 +327,10 @@ float batteryPackPercentage( float voltage ) { // Calculate the battery level of
             display.setFont();
             display.setCursor(0, 10);
             display.print("No UART data");
-            // ************ LED ROADLIGHTS *****************************
-              display.print(" L:" + String(myRoadLightState) );
-              //display.setCursor(0, 40);
-              //display.print(" AvgT" + String(mySmoothedThrottle) );
-            // ************ LED ROADLIGHTS *****************************
+
+            #ifdef ROADLIGHT_CONNECTED
+                display.print(" L:" + String(myRoadLightState) );
+            #endif
 
             // remote info
             display.setCursor(0, 25);
@@ -947,7 +946,6 @@ void setThrottle(uint16_t throttleValue){
     int myThrottle = 0;
     //bool setCruise_enabled = false;
 
-    //mySmoothedThrottle.add(throttleValue);
     mySmoothedSpeed.add(mySpeed);
 
     //PID regulation for speed limiter
@@ -985,9 +983,7 @@ void setThrottle(uint16_t throttleValue){
                     if(throttleValue >= default_throttle){// NOT braking
                         //PID regulation
                         myThrottle = default_throttle + ((throttleValue - default_throttle)*myPID_throttleFactor);
-                        mySmoothedThrottle.add(myThrottle);
                     }else{// BRAKING -> quick reaction
-                        mySmoothedThrottle.add(throttleValue);
                         myThrottle = (throttleValue);
                     }
                     //if(!setCruise_enabled){
@@ -1005,16 +1001,16 @@ void setThrottle(uint16_t throttleValue){
             case VTM_PPM_PIN_OUT:  // ******** PPM THROTTLE OUTPUT ********
                 #ifdef OUTPUT_PPM_THROTTLE
                     if (speedLimiterState == false){
-                        mySmoothedThrottle.add(throttleValue);
+                        //mySmoothedThrottle.add(throttleValue);
                         updatePpmThrottleOutput(throttleValue);
                     }else if (speedLimiterState == true){
                         if(throttleValue >= default_throttle){// NOT braking
                             //PID regulation
                             myThrottle = default_throttle + ((throttleValue - default_throttle)*myPID_throttleFactor);
-                            mySmoothedThrottle.add(myThrottle);
+                            //mySmoothedThrottle.add(myThrottle);
                             updatePpmThrottleOutput(myThrottle);
                         }else{// BRAKING -> quick reaction
-                            mySmoothedThrottle.add(throttleValue);
+                            //mySmoothedThrottle.add(throttleValue);
                             updatePpmThrottleOutput(throttleValue);
                         }
                     }
