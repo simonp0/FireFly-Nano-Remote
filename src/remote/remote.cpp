@@ -139,16 +139,7 @@ void setup() {
                 0, //configMAX_PRIORITIES - 2,  /* Priority of the task. 0 is slower */
                 NULL,       /* Task handle. */
                 1);  /* Core where the task should run */
-/*
-        xTaskCreatePinnedToCore(
-            retrieveAllOptParamFromReceiverTask,
-                "retrieveAllOptParamFromReceiverTask",
-                100000,
-                NULL, 
-                1, 
-                NULL,
-                1);
-*/      
+
     #endif
 }
 
@@ -164,6 +155,10 @@ void setup() {
 
     void vibeTask(void * pvParameters){ // core 1 : low priority task
         //int myMode = *((int*)pvParameters;
+        #ifdef DEBUG
+            debugTaskSize = uxTaskGetStackHighWaterMark(NULL);
+        #endif
+
         while(1){
             if (vibeMode != 0){
                 if (vibeMode == 1){vibrate(50); delay(25); vibrate(50); delay(25); vibrate(50); delay(25); vibrate(50);}
@@ -176,39 +171,13 @@ void setup() {
                 if (vibeMode > 7){vibrate(vibeMode);}
                 vibeMode = 0;
             }
-            vTaskDelay(25 / portTICK_PERIOD_MS);   //some free time for the main tasks
+            #ifdef DEBUG
+                debugTaskSize = uxTaskGetStackHighWaterMark(NULL);
+            #endif
         }
         //vTaskDelete( NULL );
     }
 
-/*    void retrieveAllOptParamFromReceiverTask(void * pvParameters){ // core 1 : low priority task
-        int myDelay = 10;
-        
-        // we only need to sync these parameters when the remote is powered on : 
-        if (loadOptParamFromReceiver(IDX_REMOTE_RX_TIMEOUT)) REMOTE_RX_TIMEOUT = localOptParamValueArray[IDX_REMOTE_RX_TIMEOUT];
-        vTaskDelay(myDelay / portTICK_PERIOD_MS);
-        if (loadOptParamFromReceiver(IDX_REMOTE_RADIOLOOP_DELAY)) REMOTE_RADIOLOOP_DELAY = localOptParamValueArray[IDX_REMOTE_RADIOLOOP_DELAY];
-        vTaskDelay(myDelay / portTICK_PERIOD_MS);
-        if (loadOptParamFromReceiver(IDX_REMOTE_LOCK_TIMEOUT)) REMOTE_LOCK_TIMEOUT = localOptParamValueArray[IDX_REMOTE_LOCK_TIMEOUT];
-        vTaskDelay(myDelay / portTICK_PERIOD_MS);
-        if (loadOptParamFromReceiver(IDX_REMOTE_SLEEP_TIMEOUT)) REMOTE_SLEEP_TIMEOUT = localOptParamValueArray[IDX_REMOTE_SLEEP_TIMEOUT];
-        vTaskDelay(myDelay / portTICK_PERIOD_MS);
-        if (loadOptParamFromReceiver(IDX_DISPLAY_BATTERY_MIN)) DISPLAY_BATTERY_MIN = localOptParamValueArray[IDX_DISPLAY_BATTERY_MIN];
-        vTaskDelay(myDelay / portTICK_PERIOD_MS);
-        if (loadOptParamFromReceiver(IDX_MOTOR_MIN)) MOTOR_MIN = localOptParamValueArray[IDX_MOTOR_MIN];
-        vTaskDelay(myDelay / portTICK_PERIOD_MS);
-        if (loadOptParamFromReceiver(IDX_MOTOR_MAX)) MOTOR_MAX = localOptParamValueArray[IDX_MOTOR_MAX];
-        vTaskDelay(myDelay / portTICK_PERIOD_MS);
-        if (loadOptParamFromReceiver(IDX_BATTERY_MIN)) BATTERY_MIN = localOptParamValueArray[IDX_BATTERY_MIN];
-        vTaskDelay(myDelay / portTICK_PERIOD_MS);
-        if (loadOptParamFromReceiver(IDX_BATTERY_MAX)) BATTERY_MAX = localOptParamValueArray[IDX_BATTERY_MAX];
-        vTaskDelay(myDelay / portTICK_PERIOD_MS); 
-        if (loadOptParamFromReceiver(IDX_LIMITED_SPEED_MAX)) LIMITED_SPEED_MAX = localOptParamValueArray[IDX_LIMITED_SPEED_MAX];
-        vTaskDelay(myDelay / portTICK_PERIOD_MS);
-        
-        vTaskDelete( NULL );
-    }
-*/
 
 #endif
 
@@ -244,8 +213,6 @@ void loop() { // core 1
     if (retrieveAllOptParamFromReceiverAtStartup == true){
         retrieveAllOptParamFromReceiver();
     }
-
-
     //pthread_create(&threads[1], NULL, vibe_pThread);
 }
 
@@ -1849,63 +1816,74 @@ void drawDebugPage() {
     //  display.drawFrame(0,0,64,128);
     int y = 10;
     drawString(String(settings.boardID, HEX), -1, y, fontDesc);
-    y = 35;
-    drawStringCenter(String(lastDelay), " ms", y);
-    y += 25;
-    drawStringCenter(String(lastRssi, 0), " db", y);
-    y += 25;
-    drawStringCenter(String(readThrottlePosition()), String(hallValue), y);
+    y = 20;
+//    drawStringCenter(String(lastDelay), " ms", y);
+    drawString(String(lastDelay) + " ms", 0, y, fontMicro);
+    y += 10;//25;
+//    drawStringCenter(String(lastRssi, 0), " db", y);
+    drawString(String(lastRssi) + " db", 0, y, fontMicro);
+    y += 10;
+//    drawStringCenter(String(readThrottlePosition()), String(hallValue), y);
+    drawString(String(readThrottlePosition()),0,y,fontMicro); drawString(" / " + String(hallValue), 16, y, fontMicro);
     y += 15;
     if (pressed(PIN_PWRBUTTON)) {
-        drawString("PWRBUTT", 0, y, fontDesc);
+        drawString("PWRBUTT", 0, y, fontMicro);
     }
     if (powerButton.getState() == CLICK) {
-        drawString("PW_CLICK", 0, y, fontDesc);
+        drawString("PW_CLICK", 0, y, fontMicro);
     }
     y += 10;
     switch(powerButton.getState()){
         case RELEASED:
-            drawString("-", 0, y, fontDesc);
+            drawString("-", 0, y, fontMicro);
         break;
         case CLICK:
-            drawString("CLICK", 0, y, fontDesc);
+            drawString("CLICK", 0, y, fontMicro);
         break;
         case DBL_CLICK:
-            drawString("DBL_CLICK", 0, y, fontDesc);
+            drawString("DBL_CLICK", 0, y, fontMicro);
         break;
         case HOLD:
-            drawString("HOLD", 0, y, fontDesc);
+            drawString("HOLD", 0, y, fontMicro);
         break;
         case LONG_HOLD:
-            drawString("LONG_HOLD", 0, y, fontDesc);
+            drawString("LONG_HOLD", 0, y, fontMicro);
         break;
     }
-    y += 14;
+    y += 10;
     if (pressed(PIN_TRIGGER)) {
-        drawString("T", 0, y, fontDesc);
+        drawString("T", 0, y, fontMicro);
     }
     switch (triggerButton.getState()) {
         case RELEASED:
-            drawString(" ", 0, y, fontDesc);
+            drawString(" ", 0, y, fontMicro);
         break;
         case CLICK:
-            drawString("Click", 0, y, fontDesc);
+            drawString("Click", 0, y, fontMicro);
         break;
         case DBL_CLICK:
-            drawString("Dbl_Click", 0, y, fontDesc);
+            drawString("Dbl_Click", 0, y, fontMicro);
     //        speedLimiter(!speedLimiterState);
         break;
         case HOLD:
-            drawString("Hold", 0, y, fontDesc);
+            drawString("Hold", 0, y, fontMicro);
             speedLimiter(!speedLimiterState);
         break;
         case LONG_HOLD:
-            drawString("Long_Hold", 0, y, fontDesc);
+            drawString("Long_Hold", 0, y, fontMicro);
             vibe(10000);
         break;
     }
-    //    if (speedLimiterState == 1) {drawString("SL", 45, y, fontDesc);}
-    drawString("SL" + String(speedLimiterState, 10), 45, y, fontDesc);
+    //y += 15;
+    //    if (speedLimiterState == 1) {drawString("SL", 45, y, fontMicro);}
+    drawString("SL" + String(speedLimiterState, 10), 45, y, fontMicro);
+
+    #ifdef DEBUG
+        y += 10;
+        drawString("Stack -" + String(debugTaskSize, 10), 0, y, fontMicro);
+    #endif
+
+
 
 }
 

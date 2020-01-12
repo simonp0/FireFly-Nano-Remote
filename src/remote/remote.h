@@ -205,12 +205,6 @@ int subMenuItem = 0;//= 99;
 // set idle mode after using menu
 bool menuWasUsed = false;
 bool quitMainMenu = false;
-// const int BATTERY_CELLS = 10;
-// const int BATTERY_TYPE = 0;     // 0: LI-ION | 1: LIPO
-// const int MOTOR_POLES = 22;
-// const int WHEEL_DIAMETER = 90;
-// const int WHEEL_PULLEY = 1;
-// const int MOTOR_PULLEY = 1;
 
 //BUTTONS 
 #include "remotebutton.cpp"
@@ -333,7 +327,6 @@ bool loadOptParamFromReceiver(uint8_t myGlobalSettingIndex);
 
 bool retrieveAllOptParamFromReceiverAtStartup = true;
 void retrieveAllOptParamFromReceiver();
-//void retrieveAllOptParamFromReceiverTask(void * pvParameters );
 int loadedParamCount = 0;
 u_long loadParamTimestamp = millis();
 //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********

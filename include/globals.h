@@ -7,7 +7,7 @@
 // ********** OPTIONAL FEATURES ***********************************************
 
 //#define FAKE_UART                         // Comment out after pairing the remote and connecting VESC
-//#define DEBUG                             // Uncomment DEBUG if you need to debug the remote / receiver
+#define DEBUG                             // Uncomment DEBUG if you need to debug the remote / receiver
 //const uint32_t boardAddress = 0xA9BF713C;
 //#include <analogWrite.h>
 #define ROADLIGHT_CONNECTED                 // FRONT LIGHT and BACKLIGHT option. Reconfigure 2 pins on the receiver side for FRONTLIGHT and BACKLIGHT PWM signal
@@ -390,10 +390,12 @@ struct OptionParamPacket {  //extends ReceiverPacket
 
 const int default_throttle = 127;
 
+
 #ifdef DEBUG
-  #define debug(x) Serial.println (x)
+    static UBaseType_t debugTaskSize = 0;
+    #define debug(x) Serial.println (x)
 #else
-  #define debug(x)
+    #define debug(x)
 #endif
 
-#endif
+#endif //_CONST_H
