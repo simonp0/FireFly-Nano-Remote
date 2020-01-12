@@ -76,12 +76,12 @@ static int UART_SPEED = 115200;
 //const int UART_SPEED = 9600;
 static uint16_t uartPullInterval = 25;
 static int UART_TIMEOUT = 10; // 10ms for 115200 bauds, 100ms for 9600 bauds (-->VescUart::setTimeout())
-static int REMOTE_RX_TIMEOUT = 25; // ms (was 20)
+static int REMOTE_RX_TIMEOUT = 25; //ms (about 10-15ms needed to parse a packet)
 static int REMOTE_RADIOLOOP_DELAY = 50; //ms sending THROTTLE each xx millisecond to the receiver
 static int REMOTE_LOCK_TIMEOUT = 10; // seconds to lock throttle when idle
 static int REMOTE_SLEEP_TIMEOUT = 180; // seconds to go to sleep mode
 // turn off display if battery < 15%
-static int DISPLAY_BATTERY_MIN = 15;// ######### change to 0 if remote screen doesnt turn ON ###########
+static int DISPLAY_BATTERY_MIN = 15;// #### change to 0 if remote screen doesnt turn ON, then calibrate battery voltage reading ####
 // VESC current, for graphs only
 static int MOTOR_MIN = -30;
 static int MOTOR_MAX = 30;
@@ -103,7 +103,7 @@ static int LED_BRIGHTNESS_BRAKE = 255;
 static int LED_BRIGHTNESS_OFF = 0;
 static int LED_ROADLIGHT_MODE = 0;
 //Remote APP
-static int THROTTLE_MODE = VTM_NUNCHUCK_UART;   //Default = UART.Nunchuck / 1=PPM 
+static int THROTTLE_MODE = VTM_NUNCHUCK_UART;   //Default 0=UART.Nunchuck / 1=PPM 
 static double LIMITED_SPEED_MAX = 20.0;   //kmh
 
 
@@ -328,10 +328,8 @@ struct TelemetryPacket{ //extends ReceiverPacket
     float w2fi(int16_t w) { return float(w) / 100; }; // unpack float
 
     float getSpeed() { return w2fi(speed); }
- // float getSpeed() { if(!inverse_speed_direction){return w2fi(speed);}else{return w2fi(-speed);} }
     void setSpeed(float f) { speed = f2wi(f); }
- // void setSpeed(float f) { if(!inverse_speed_direction){speed = f2wi(f);}else{speed = f2wi(f);} }
-
+ 
     float getVoltage() { return w2f(voltage); }
     void setVoltage(float f) { voltage = f2w(f); }
 

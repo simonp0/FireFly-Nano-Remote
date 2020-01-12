@@ -2355,13 +2355,19 @@ bool loadOptParamFromReceiver(uint8_t myGlobalSettingIndex){   //returns TRUE if
     remPacket.optParamIndex = arrayIndex;
     remPacket.packOptParamValue(0); //(getOptParamValue(arrayIndex));
     requestSendOptParamPacket = true;    //send the value to the receiver
-    for (int i=0; i<20 ; i++){  //waits until the local value has been updated. Abort if delay is more than 200ms.
-        delay(10);
+    for (int i=0; i<25 ; i++){  //waits until the local value has been updated. Abort if delay is more than 125ms.
+        delay(5);
         if (getOptParamValue(myGlobalSettingIndex) != -1) {
             return true;
         }
     }
     requestSendOptParamPacket = true; //try again once if not received
+    for (int i=0; i<40 ; i++){  //waits until the local value has been updated. Abort if delay is more than 200ms.
+        delay(5);
+        if (getOptParamValue(myGlobalSettingIndex) != -1) {
+            return true;
+        }
+    }
     return false;
 }
 

@@ -20,7 +20,6 @@ class RemoteButton{
 
     public:
         int inputPin;
-        int privateNumber;  
         int debounce;
         int DCgap;
         int holdTime;

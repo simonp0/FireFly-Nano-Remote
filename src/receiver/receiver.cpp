@@ -1537,10 +1537,6 @@ void loadOptParamFromRemote(uint8_t myGlobalSettingIndex){
 
 // Update all local variables from the localOptParamValueArray[] values
 void updateOptParamVariables(){
-    //LED_BRIGHTNESS_BACK = (int) round(getOptParamValue(IDX_LED_BRIGHTNESS_BACK)); //localOptParamValueArray[1];
-    //LED_BRIGHTNESS_FRONT = getOptParamValue(IDX_LED_BRIGHTNESS_FRONT);
-    //LED_BRIGHTNESS_BACK = getOptParamValue(IDX_LED_BRIGHTNESS_BACK);
-    //LED_BRIGHTNESS_BRAKE = getOptParamValue(IDX_LED_BRIGHTNESS_BRAKE);
     AUTO_CRUISE_ON = getOptParamValue(IDX_AUTO_CRUISE_ON);
     PUSHING_SPEED = getOptParamValue(IDX_PUSHING_SPEED);
     PUSHING_TIME = getOptParamValue(IDX_PUSHING_TIME);
