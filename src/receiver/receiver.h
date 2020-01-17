@@ -5,6 +5,10 @@
 #include "radio.h"
 #include "utils.h"
 #include "VescUart.h"
+#include <Preferences.h>
+// PID function for speed regulator
+#include "pid.h"
+#include <stdio.h> 
 
 //#include <analogWrite.h>
 
@@ -20,6 +24,26 @@
   #include <Fonts/FreeSans12pt7b.h>
 #endif
 
+//PID pid = new PID(0.1, 100, -100, 0.25, 0, 127);
+PID* pidThrottle;
+    // Kp -  proportional gain
+    // Ki -  Integral gain
+    // Kd -  derivative gain
+    // dt -  loop interval time
+    // max - maximum value of manipulated variable
+    // min - minimum value of manipulated variable
+    double PID_Kp = 0.2;    //0.2 is a good starting value
+    double PID_Ki = 0;      //0 is fine, otherwise order of scale is 5E-7;
+    double PID_Kd = 0.4;    //0.4;
+    double PID_dt = 25;     //25ms
+    double PID_max = 1;
+    double PID_min = 0;
+
+    double myPID_throttleFactor; //output
+
+//Pairing at at sartup:
+unsigned long startupPairingWindowMs = 3000; //startup takes about 1.5sec
+
 VescUart UART;
 
 // Data structures
@@ -28,8 +52,10 @@ RemotePacket remPacket;
 TelemetryPacket telemetry;
 ConfigPacket boardConfig;
 InfoPacket boardInfo;
+OptionParamPacket optParamPacket;
 
 AppState state = IDLE;
+
 
 // get MAC address / CPU serial
 uint32_t boardID;
@@ -60,6 +86,9 @@ bool cruising;
 unsigned long lastCruiseControl; //
 unsigned long cruiseControlStart;
 
+//Speed limiter
+bool speedLimiterState = true;
+
 // Endless ride
 unsigned long timeSpeedReached;
 
@@ -72,20 +101,23 @@ uint8_t lastThrottle;
 String wifiStatus;
 String updateStatus;
 
-unsigned long lastBrakeTime;
+unsigned long lastBrakeTime = 0;
 
+float lastSpeedValue = 0;
+float currentSpeedValue = 0;
+float lowestSpeedValue = 0;
 
 #ifdef RECEIVER_SCREEN
-const GFXfont* fontDigital = &Segment13pt7b;  // speed, distance, ...
-// const GFXfont* fontPico = &Segment6pt7b;      //
-const GFXfont* fontDesc = &Dialog_plain_9;    // km/h
-const GFXfont* fontMicro = &Org_01;         // connection screen
+    const GFXfont* fontDigital = &Segment13pt7b;  // speed, distance, ...
+    // const GFXfont* fontPico = &Segment6pt7b;      //
+    const GFXfont* fontDesc = &Dialog_plain_9;    // km/h
+    const GFXfont* fontMicro = &Org_01;         // connection screen
 
-const GFXfont* fontBig = &FreeSans12pt7b;         // connection screen
-const GFXfont* font = &FreeSans9pt7b;         // connection screen
+    const GFXfont* fontBig = &FreeSans12pt7b;         // connection screen
+    const GFXfont* font = &FreeSans9pt7b;         // connection screen
 
-void updateScreen();
-void drawBattery();
+    void updateScreen();
+    void drawBattery();
 #endif
 
 bool prepareUpdate();
@@ -115,8 +147,70 @@ String uint64ToString(uint64_t number);
 void updateEEPROMSettings();
 void updateSetting(uint8_t setting, uint64_t value);
 
+//***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
+void setOptParamValue(uint8_t myGlobalSettingIndex, float value); // Set a value of a specific setting in the localOptParamValueArray[] & updates the flash memory.
+float getOptParamValue(uint8_t myGlobalSettingIndex); // Get a setting value by index from the localOptParamValueArray[]
+void updateOptParamVariables(); // Update all local variables from the localOptParamValueArray[] values
+//***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
 
-// ******************************** LED ROADLIGHTS IMPLEMENTATION - Receiver *****************************
+
+//  ######## Settings Flash Storage - ESP32 ########
+Preferences receiverPreferences;
+
+float loadFlashSetting(uint8_t myGlobalSettingIndex);// Load a setting (index & value)pair from flash memory and update the localOptParamValueArray[] value. Returns the setting (float) value. 
+void saveFlashSetting(uint8_t myGlobalSettingIndex, float value);// Save a setting (index & value)pair into flash memory
+
+void refreshAllSettingsFromFlashData();// SETTINGS INITIALIZATION - copy flash data into local variables & into localOptParamValueArray[] . If nothing saved in flash, GLOBALS.H hardcoded default values are used instead
+
+
+//smart reverse & handbrake
+bool reverseLocked = 0;
+bool handbrakeON = 0;
+
+enum VTM_STATE {
+    VTM_STATE_STOPPED,
+    VTM_STATE_DRIVING,
+    VTM_STATE_HANDBRAKE,
+    VTM_STATE_REVERSE
+};
+VTM_STATE vtmState = VTM_STATE_STOPPED;
+String str_vtm_state;
+
+
+/*
+double smoothTimestamp = 0;
+int arraySmoothValue[] = { default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle };
+int mySmoothedThrottle = default_throttle;
+int myAverageValue;
+int smoothValueOverTime(int valueToAdd);
+*/
+
+//float mySmoothedSpeed = 0;
+//float smoothValue2(float *smoothArray2, float valueToAdd);
+//float throttleSmoothArray[] = { default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle, default_throttle };
+//float speedSmoothArray[] = {0,0,0,0,0,0,0,0,0,0};
+
+
+
+//void saveFSSettings();
+//void loadFSSettings();
+
+//void saveFSSettings(){
+//    receiverPreferences.begin("FireFlyNano", false);
+//    receiverPreferences.putShort("AUTO_CRUISE_ON",  recFSSettings.AUTO_CRUISE_ON);
+//    receiverPreferences.end();
+//}
+//void loadFSSettings(){
+//    receiverPreferences.begin("FireFlyNano", false);
+//    recFSSettings.AUTO_CRUISE_ON = receiverPreferences.getShort("AUTO_CRUISE_ON", ::AUTO_CRUISE_ON);
+//    recFSSettings.PUSHING_SPEED = receiverPreferences.getShort("PUSHING_SPEED", ::
+//    receiverPreferences.end();
+//}
+
+//  ######## Settings Flash Storage - ESP32 ########
+
+
+// ******************************** LED ROADLIGHTS - Receiver *****************************
 // we have PIN_FRONTLIGHT attributed on what is PIN_VIBRO on the remote control side
 // we have PIN_BACKLIGHT attributed on what is PIN_PWRBUTTON on the remote control side
 
@@ -128,12 +222,7 @@ void updateSetting(uint8_t setting, uint64_t value);
     const uint8_t led_pwm_channel_backLight = 1; //GPIO channel to use
     const uint8_t led_pwm_resolution = 8;
 
-    uint_fast32_t dutyCycle_lightOff = 0;
-    uint_fast32_t dutyCycle_frontLightOn = 90;   //TODO : value can be changed via the remote menu
-    uint_fast32_t dutyCycle_backLightOn = 90;    //TODO : value can be changed via the remote menu
-    uint_fast32_t dutyCycle_brakeLight = 255;   //TODO : value can be changed via the remote menu
-
-    unsigned long lastBrakeLightPulse;
+    unsigned long lastBrakeLightPulse = 0;
     unsigned long brakeLightPulseInterval = 100; //ms between each brakeLightPulse initiation
     unsigned long brakeLightPulseDuration = 50; //ms TBD
 
@@ -142,16 +231,28 @@ void updateSetting(uint8_t setting, uint64_t value);
     void switchLightBrakesOnly();
     void updateBrakeLight();
     void emitBrakeLightPulse(uint_fast32_t value);
-#endif  // ******************************** LED ROADLIGHTS IMPLEMENTATION - Receiver *****************************
+#endif  // ******************************** LED ROADLIGHTS - Receiver *****************************
 
-// ******** PWM THROTTLE OUTPUT IMPLEMENTATION ********
-#ifdef OUTPUT_PWM_THROTTLE
-    const double pwm_throttle_frequency = 50; //50Hz standard RC freq - pulse 1 to 2 ms with 1.5ms = neutral
+// ******** PPM THROTTLE OUTPUT ********
+#ifdef OUTPUT_PPM_THROTTLE
+    const double pwm_throttle_frequency = 50;//50; //50Hz standard RC freq - pulse width 1 to 2 ms with 1.5ms = neutral
     const uint8_t pwm_throttle_channel = 2; //GPIO channel to use
     const uint8_t pwm_throttle_resolution = 16;//16bits -> 0 to 65535
-    //20ms (50Hz) = 65535 ---> 1ms = 3276 & 2ms = 6552
+    // 20ms (50Hz) = 65535 ---> 1ms = 3276 & 2ms = 6552
+    //double ppm_throttle_1ms_position = map(1, 0, (1000/pwm_throttle_frequency), 0, 65535);  
     // MAP throttleValue(0 to 255) -> 3276 to 6552
     uint_fast32_t pwm_throttle_dutyCycle_value;
-    void updatePwmThrottleOutput();
+    void updatePpmThrottleOutput(int myThrottle);
 #endif
-// ******** PWM THROTTLE OUTPUT IMPLEMENTATION ********
+void disablePpmThrottleOutput();
+// ******** PPM THROTTLE OUTPUT ********
+
+#ifdef DEBUG
+    int startupDelay=0;
+#endif
+
+#ifdef EXPERIMENTAL
+    // motor drive mode tests
+    float Lpos=0;//position 
+
+#endif

@@ -1,33 +1,37 @@
 #include "receiver.h"
+#include "radio.h"
 
 #ifdef ARDUINO_SAMD_FEATHER_M0 // Feather M0 w/Radio
-  #include <RH_RF69.h>
+    #include <RH_RF69.h>
 
-  // Singleton instance of the radio driver
-  RH_RF69 radio(RF_CS, RF_DI0);
+    // Singleton instance of the radio driver
+    RH_RF69 radio(RF_CS, RF_DI0);
 
 #elif ESP32
-  #include <LoRa.h>
+    #include <LoRa.h>
 
-  // OTA
-  #include <WiFi.h>
-  #include <ESPmDNS.h>
-  #include <WiFiUdp.h>
-  #include <ArduinoOTA.h>
+    // OTA
+    #include <WiFi.h>
+    #include <ESPmDNS.h>
+    #include <WiFiUdp.h>
+    #include <ArduinoOTA.h>
 
     // Uart serial
-  HardwareSerial MySerial(1);
+    HardwareSerial MySerial(1);
 #endif
 
 #ifdef RECEIVER_SCREEN
-  Adafruit_SSD1306 display(DISPLAY_RST);
+    Adafruit_SSD1306 display(DISPLAY_RST);
 #endif
 
 Smoothed <double> batterySensor;
 Smoothed <double> motorCurrent;
 
-#include "radio.h"
+Smoothed <double> mySmoothedSpeed;
+Smoothed <double> mySmoothedThrottle;
 
+
+// Radio.h
 float signalStrength;
 float lastRssi;
 
@@ -45,43 +49,56 @@ void setup(){ //runs once after powerOn
     Serial.begin(115200);//was 9600
     // while (!Serial) {}; // wait for serial port to connect. Needed for native USB port only
     debug("Receiver");
+    refreshAllSettingsFromFlashData();  //loads the settings from flash memory (if any)
     //loadEEPROMSettings();
-    setDefaultEEPROMSettings();
+    setDefaultEEPROMSettings();//Stores board config variables into boardConfig.packet and calls {not implemented}updateEEPROMSettings()
     calculateRatios();
     pinMode(PIN_LED, OUTPUT); //LED onBoard
 
 
-// ******** LED ROADLIGHTS IMPLEMENTATION ********
-#ifdef ROADLIGHT_CONNECTED
-    ledcSetup(led_pwm_channel_frontLight, led_pwm_frequency, led_pwm_resolution); // configure LED PWM functionalitites
-    ledcAttachPin(PIN_FRONTLIGHT, led_pwm_channel_frontLight); // attach the channel to the GPIO to be controlled
-    ledcSetup(led_pwm_channel_backLight, led_pwm_frequency, led_pwm_resolution); // configure LED PWM functionalitites
-    ledcAttachPin(PIN_BACKLIGHT, led_pwm_channel_backLight); // attach the channel to the GPIO to be controlled
-    //myRoadLightState = OFF; //default setting when switching on the board // in header file
-#endif
-// ******** LED ROADLIGHTS IMPLEMENTATION ********
+    #ifdef ROADLIGHT_CONNECTED  // ******** LED ROADLIGHTS ********
+        ledcSetup(led_pwm_channel_frontLight, led_pwm_frequency, led_pwm_resolution); // configure LED PWM functionalitites
+        ledcAttachPin(PIN_FRONTLIGHT, led_pwm_channel_frontLight); // attach the channel to the GPIO to be controlled
+        ledcSetup(led_pwm_channel_backLight, led_pwm_frequency, led_pwm_resolution); // configure LED PWM functionalitites
+        ledcAttachPin(PIN_BACKLIGHT, led_pwm_channel_backLight); // attach the channel to the GPIO to be controlled
+    #endif
 
-// ******** PWM THROTTLE OUTPUT IMPLEMENTATION ********
-#ifdef OUTPUT_PWM_THROTTLE
-    ledcSetup(pwm_throttle_channel, pwm_throttle_frequency, pwm_throttle_resolution); //configure THROTTLE PWM functionalitites
-    ledcAttachPin(PIN_PWM_THROTTLE, pwm_throttle_channel); // attach the channel to the GPIO to be controlled
-#endif
-// ******** PWM THROTTLE OUTPUT IMPLEMENTATION ********
+    #ifdef OUTPUT_PPM_THROTTLE  // ******** PPM THROTTLE OUTPUT ********
+        ledcSetup(pwm_throttle_channel, pwm_throttle_frequency, pwm_throttle_resolution); //configure THROTTLE PWM functionalitites
+        ledcAttachPin(PIN_PPM_THROTTLE, pwm_throttle_channel); // attach the channel to the GPIO to be controlled
+    #endif
+    #ifndef OUTPUT_PPM_THROTTLE
+        pinMode(PIN_PPM_THROTTLE, OUTPUT);
+        digitalWrite(PIN_PPM_THROTTLE, LOW);
+    #endif
 
     batterySensor.begin(SMOOTHED_EXPONENTIAL, 10);     // 10 seconds average
     motorCurrent.begin(SMOOTHED_AVERAGE, 2);    // 1 sec average
     motorCurrent.add(0);
+
+    mySmoothedSpeed.begin(SMOOTHED_AVERAGE, 4);
+    mySmoothedThrottle.begin(SMOOTHED_AVERAGE, 12);
+
+    //PID
+        // Kp -  proportional gain
+        // Ki -  Integral gain
+        // Kd -  derivative gain
+        // dt -  loop interval time
+        // max - maximum value of manipulated variable
+        // min - minimum value of manipulated variable
+        //PID( double dt, double max, double min, double Kp, double Kd, double Ki );
+    pidThrottle = new PID(PID_dt, PID_max, PID_min, PID_Kp, PID_Kd, PID_Ki);
+
 
     UART.setTimeout(UART_TIMEOUT);
 
     #ifdef ARDUINO_SAMD_FEATHER_M0
         #ifndef FAKE_UART
             UART.setSerialPort(&Serial1);
+            Serial1.begin(UART_SPEED);
+        #endif
 
-        Serial1.begin(UART_SPEED);
-    #endif
-
-    initRadio(radio);
+        initRadio(radio);
 
     #elif ESP32
         #ifndef FAKE_UART
@@ -255,7 +272,7 @@ float batteryPackPercentage( float voltage ) { // Calculate the battery level of
 
             case ENDLESS:
                 display.setTextColor(WHITE);
-                display.setFont(fontDigital);
+                display.setFont(fontDesc); //fontDigital
                 display.setCursor(0, 20);
                 display.println("CUR: " + String(telemetry.getMotorCurrent(), 1) + " A");
                 display.println("SPD: " + String(telemetry.getSpeed(),1));
@@ -275,10 +292,14 @@ float batteryPackPercentage( float voltage ) { // Calculate the battery level of
                 }
                 else { // riding
                     display.setTextColor(WHITE);
-                    display.setFont(fontDigital);
+                    display.setFont(fontDesc);  //fontDigital
                     display.setCursor(0, 20);
-                    display.println("THR: " + String(map(throttle, 0, 255, -100, 100)) + "%");
-                    display.println("SPD: " + String(telemetry.getSpeed(),1) + " k");
+                    display.println("THR: " + String(map(throttle, 0, 255, -100, 100)) + "%" + "   " + String(throttle, 10) );
+                    display.println("SPD: " + String(telemetry.getSpeed(),1) + " k" + "   PID:" + String(myPID_throttleFactor, 1) ); //Avg:" + String(mySmoothedSpeed.get(), 1) );         
+                    display.setCursor(0, 45);
+                    display.print(">" + String(str_vtm_state) );
+                    display.setCursor(90, 45);
+                    display.print("SL" + String(speedLimiterState, 10));
                 }
             break;
         }
@@ -306,19 +327,26 @@ float batteryPackPercentage( float voltage ) { // Calculate the battery level of
             display.setFont();
             display.setCursor(0, 10);
             display.print("No UART data");
-// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
-            display.print(" L:" + String(myRoadLightState) );
-            //display.print(" Lp" + String(digitalRead(PIN_BACKLIGHT)) );
-// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
+
+            #ifdef ROADLIGHT_CONNECTED
+                display.print(" L:" + String(myRoadLightState) );
+            #endif
 
             // remote info
             display.setCursor(0, 25);
             if (!connected)
                 display.print("Remote not connected");
-            else
-                display.print("Signal: " + String(lastRssi, 0) + " dB");
+            else{
+                signalStrength = constrain(map(lastRssi, -100, -50, 0, 100), 0, 100);
+                display.print("Signal: " + String(lastRssi, 0) + "dB " + String(signalStrength,0) + "%");
+                }
             //    display.setCursor(0, 40);
             //    display.print("Delay: " + String(lastDelay));
+            #ifdef DEBUG
+                display.setCursor(0, 45);
+                if (startupDelay == 0) {startupDelay = millis();} //(int)(millisSince(startupDelay));}
+                display.print("Sartup Time: " + String(startupDelay, 10) + "ms");
+            #endif
         return;
         }
 
@@ -373,18 +401,24 @@ void loop() { // CORE 1 task launcher - UART data exchange with VESC
             radioExchange();
             stateMachine();
             vTaskDelay(1);//was 1
+            #ifdef ROADLIGHT_CONNECTED
+                updateBrakeLight();
+            #endif
         }
     }
 #endif //endifdef
 
-
 void pairingRequest() { // TODO
-  // safety checks
-  #ifdef FAKE_UART
-    setState(PAIRING);
-    return;
-  #endif
-  // todo: confirm pairing
+    // safety checks
+    if (millis() < startupPairingWindowMs){ //Opens a small window for pairing just after startup
+        setState(PAIRING);
+        return;
+    }
+    #ifdef FAKE_UART
+        setState(PAIRING);
+        return;
+    #endif
+    // todo: confirm pairing
 }
 
 bool receiveData(){ // copies buffer data into remPacket
@@ -392,208 +426,212 @@ bool receiveData(){ // copies buffer data into remPacket
     // Reads the received packet in memory buffer, checks if size & CRC is correct
     // Process packet - copy buffer in "remPacket" - check VERSION and boardAddress
     // returns TRUE if valid remPacket has been made available
-  uint8_t len = sizeof(RemotePacket) + CRC_SIZE; // 9
-  uint8_t buf[len];
+    uint8_t len = sizeof(RemotePacket) + CRC_SIZE; // 9
+    uint8_t buf[len];
+    bool received = false;
 
-  bool received = false;
+    #ifdef ARDUINO_SAMD_ZERO
+        received = radio.recv(buf, &len);
+    #elif ESP32
+        int bytes = 0;
+        for (int i = 0; i < len; i++) {
+            buf[i] = LoRa.read();
+            bytes++;
+        }
+        lastRssi = LoRa.packetRssi();
+        len = bytes;
+        received = true;
+    #endif
 
-  #ifdef ARDUINO_SAMD_ZERO
+    if (!received) return false;
 
-    received = radio.recv(buf, &len);
-
-  #elif ESP32
-
-    int bytes = 0;
-    for (int i = 0; i < len; i++) {
-      buf[i] = LoRa.read();
-      bytes++;
+    // size check
+    if (len != sizeof(RemotePacket) + CRC_SIZE) {
+        debug("Wrong packet size");
+        return false;
     }
-    // lastRssi = LoRa.packetRssi();
-    len = bytes;
-    received = true;
 
-  #endif
-
-  if (!received) return false;
-
-  // size check
-  if (len != sizeof(RemotePacket) + CRC_SIZE) {
-    debug("Wrong packet size");
-    return false;
-  }
-
-  // crc check
-  if (CRC8(buf, sizeof(remPacket)) != buf[sizeof(remPacket)]) {
+    // crc check
+    if (CRC8(buf, sizeof(remPacket)) != buf[sizeof(remPacket)]) {
     debug("CRC mismatch");
     return false;
-  }
-
-  // process packet
-  memcpy(&remPacket, buf, sizeof(remPacket));
-
-  // address check
-  #ifdef FAKE_UART
-    // accept any address ***********************************************************************************************************
-  #else
-    if (remPacket.address != boardID) {
-      // pairing request?
-      if (!isMoving() && remPacket.command == SET_STATE && remPacket.data == PAIRING) {
-        // accept any address
-      } else {
-        Serial.print("Wrong Board ID, please use: 0x");
-        Serial.println(String(boardID, HEX));
-        return false;
-      }
     }
-  #endif
 
-  if (remPacket.version != VERSION) {
-    Serial.print("Version mismatch!");
-  }
+    // process packet
+    memcpy(&remPacket, buf, sizeof(remPacket));
 
-  return true;
+    // address check
+    #ifdef FAKE_UART
+        // accept any address ***********************************************************************************************************
+    #else
+        if (remPacket.address != boardID) {
+            // pairing request?
+            if (!isMoving() && remPacket.command == SET_STATE && remPacket.data == PAIRING) {
+                // accept any address
+            } else {
+                Serial.print("Wrong Board ID, please use: 0x");
+                Serial.println(String(boardID, HEX));
+                return false;
+            }
+        }
+    #endif
 
-  // signalStrength = constrain(map(radio.lastRssi(), -77, -35, 0, 100), 0, 100);
+    if (remPacket.version != VERSION) {
+        Serial.print("Version mismatch!");
+    }
+
+    return true;
+
+    // signalStrength = constrain(map(radio.lastRssi(), -77, -35, 0, 100), 0, 100);
 }
 
 bool sendPacket(const void * packet, uint8_t len) { //sends any data packet passed in parameter to paired device - returns TRUE if sent
 
-  // calc crc
-  uint8_t crc = CRC8(packet, len);
+    // calc crc
+    uint8_t crc = CRC8(packet, len);
 
-  // struct to buffer
-  len += CRC_SIZE;
-  uint8_t buf[len];
-  memcpy (buf, packet, len);
-  buf[len - CRC_SIZE] = crc;
+    // struct to buffer
+    len += CRC_SIZE;
+    uint8_t buf[len];
+    memcpy (buf, packet, len);
+    buf[len - CRC_SIZE] = crc;
 
-  bool sent = false;
+    bool sent = false;
 
-  #ifdef ESP32
+    #ifdef ESP32
+        LoRa.beginPacket(len);
+        int t = LoRa.write(buf, len);
+        LoRa.endPacket();
+        sent = t == len;
+        // LoRa.receive(sizeof(remPacket) + CRC_SIZE);
 
-    LoRa.beginPacket(len);
-    int t = LoRa.write(buf, len);
-    LoRa.endPacket();
+    #elif ARDUINO_SAMD_ZERO
+        sent = radio.send(buf, len);
+        if (sent) radio.waitPacketSent();
 
-    sent = t == len;
-    // LoRa.receive(sizeof(remPacket) + CRC_SIZE);
+    #endif
 
-  #elif ARDUINO_SAMD_ZERO
-
-    sent = radio.send(buf, len);
-
-    if (sent) radio.waitPacketSent();
-
-  #endif
-
-  return sent;
+    return sent;
 }
 
 bool sendData(uint8_t response) { //Answers to (response) type by sending the corresponding data packet ACK_ONLY, TELEMETRY, CONFIG, BOARD_ID
 
-  // send packet
-  switch (response) {
+    // send packet
+    switch (response) {
 
-  case ACK_ONLY: // no extra data to send
-    telemetry.header.type = response;
-    telemetry.header.chain = remPacket.counter;
-    telemetry.header.state = state;
-    return sendPacket(&telemetry, sizeof(telemetry));
+        case ACK_ONLY: // no extra data to send
+            telemetry.header.type = response;
+            telemetry.header.chain = remPacket.counter;
+            telemetry.header.state = state;
+            return sendPacket(&telemetry, sizeof(telemetry));
 
-  case TELEMETRY:
-    telemetry.header.type = response;
-    telemetry.header.chain = remPacket.counter;
-    telemetry.header.state = state;
+        case TELEMETRY:
+            telemetry.header.type = response;
+            telemetry.header.chain = remPacket.counter;
+            telemetry.header.state = state;
 
-    if (sendPacket(&telemetry, sizeof(telemetry))) {
-      telemetryUpdated = false;
-      return true;
+            if (sendPacket(&telemetry, sizeof(telemetry))) {
+                telemetryUpdated = false;
+                return true;
+            }
+        break;
+
+        case CONFIG:
+            debug("Sending board configuration");
+            boardConfig.header.type = response;
+            boardConfig.header.chain = remPacket.counter;
+
+            if (sendPacket(&boardConfig, sizeof(boardConfig))) {
+            justStarted = false; // send config once
+                return true;
+            }
+        break;
+
+        case BOARD_ID:
+            debug("Sending board ID");
+            boardInfo.header.type = response;
+            boardInfo.header.chain = remPacket.counter;
+            boardInfo.id = boardID;
+
+            if (sendPacket(&boardInfo, sizeof(boardInfo))) {
+                return true;
+            }
+        break;
+
+        case OPT_PARAM_RESPONSE:
+            debug("Sending rx->tx OPT PARAM packet");
+            optParamPacket.header.type = response;
+            optParamPacket.header.chain = remPacket.counter;
+
+            if (sendPacket(&optParamPacket, sizeof(optParamPacket))) {
+                return true;
+            }
+        break;
+
     }
-    break;
 
-  case CONFIG:
-    debug("Sending board configuration");
-    boardConfig.header.type = response;
-    boardConfig.header.chain = remPacket.counter;
-
-    if (sendPacket(&boardConfig, sizeof(boardConfig))) {
-      justStarted = false; // send config once
-      return true;
-    }
-    break;
-
-  case BOARD_ID:
-    debug("Sending board ID");
-    boardInfo.header.type = response;
-    boardInfo.header.chain = remPacket.counter;
-    boardInfo.id = boardID;
-
-    if (sendPacket(&boardInfo, sizeof(boardInfo))) {
-      return true;
-    }
-    break;
-  }
-
-  return false;
+    return false;
 }
 
 bool dataAvailable() { //Returns TRUE when a valid packet has been received in buffer
 
-  #ifdef ARDUINO_SAMD_ZERO
+    #ifdef ARDUINO_SAMD_ZERO
+        return radio.available();
 
-    return radio.available();
+    #elif ESP32
+        int packetSize = LoRa.parsePacket(sizeof(remPacket) + CRC_SIZE);
+        return packetSize > 0;
 
-  #elif ESP32
-
-    int packetSize = LoRa.parsePacket(sizeof(remPacket) + CRC_SIZE);
-    return packetSize > 0;
-
-  #endif
+    #endif
 }
 
 void setState(AppState newState) { //called by the stateMachine()
 
-  switch (newState) {
+    switch (newState) {
 
-    case IDLE: break;
+        case IDLE:
+        break;
 
-    case PUSHING:
-      timeSpeedReached = millis();
-      break;
+        case PUSHING:
+            timeSpeedReached = millis();
+        break;
 
-    case ENDLESS:
-      if (isTelemetryLost()) return;
-      cruiseControlStart = millis();
-      break;
-
-    case CONNECTED:
-      switch (state) {
-        case UPDATE: return;
-
-        case PUSHING: // monitor data
-        case STOPPING:
         case ENDLESS:
-        case COASTING:
-          if (remPacket.data == default_throttle) return;
-          break;
-      }
-      // prevent auto-stop
-      timeoutTimer = millis();
-      connected = true;
-      break;
+            if (isTelemetryLost()) return;
+            cruiseControlStart = millis();
+        break;
 
-    case STOPPING:
-    case STOPPED:
-      debug("disconnected");
-      lastBrakeTime = millis();
-      break;
+        case CONNECTED:
+            switch (state) {
+                case UPDATE: 
+                    return;
+                case PUSHING: // monitor data
+                case STOPPING:
+                case ENDLESS:
+                case COASTING:
+                        if (remPacket.data == default_throttle) return;
+                break;
+            }
+            // prevent auto-stop
+            timeoutTimer = millis();
+            connected = true;
+        break;
 
-    case UPDATE: break;
-    case PAIRING: break;
-  }
+        case STOPPING:
+        case STOPPED:
+            debug("disconnected");
+            lastBrakeTime = millis();
+        break;
 
-  // apply state
-  state = newState;
+        case UPDATE: 
+        break;
+
+        case PAIRING:
+        break;
+    }
+
+    // apply state
+    state = newState;
 }
 
 void radioExchange() {   //receive packet, execute SET_ or GET_ request, send answer
@@ -640,25 +678,55 @@ void radioExchange() {   //receive packet, execute SET_ or GET_ request, send an
                     response = CONFIG;
                 break;
 
-            #ifdef ROADLIGHT_CONNECTED  // ************* LED ROADLIGHTS IMPLEMENTATION*********************
+            #ifdef ROADLIGHT_CONNECTED  // ************* LED ROADLIGHTS*********************
                 case SET_LIGHT:
                     // vibrate(2000); TODO : launch via an independant task to avoid introducing any delay here
                     response = ACK_ONLY;
                     // display.clearDisplay();
-                    switch (remPacket.data) {
-                        case 1:
+                    switch (remPacket.data) { //remPacket.data = RoadLightState
+                        case RoadLightState::ON: //1:
                             switchLightOn();
                         break;
-                        case 0:
+                        case RoadLightState::OFF: //0:
                             switchLightOff();
                         break;
-                        case 2:  //brake only mode
+                        case RoadLightState::BRAKES_ONLY: //2:  //brake only mode
                             switchLightBrakesOnly();
                         break;
                     }
                 break;
             #endif
 
+                //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
+                case OPT_PARAM_MODE:
+                    //response = CONFIG;
+                    switch (remPacket.optParamCommand) {
+                        case SET_OPT_PARAM_VALUE:
+                            response = ACK_ONLY;
+                            setOptParamValue(remPacket.optParamIndex, remPacket.unpackOptParamValue()); 
+                            updateOptParamVariables();//reloads new values into local variables
+                        break;
+                        case GET_OPT_PARAM_VALUE:
+                            response = OPT_PARAM_RESPONSE;
+                            optParamPacket.optParamCommand = SET_OPT_PARAM_VALUE;
+                            optParamPacket.optParamIndex = remPacket.optParamIndex;
+                            optParamPacket.packOptParamValue(getOptParamValue(remPacket.optParamIndex));
+                        break;
+                    } // end switch
+                break;
+                //***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
+
+                case SPEED_LIMITER:
+                    response = ACK_ONLY;
+                    switch (remPacket.data) { //remPacket.data = RoadLightState
+                        case 0: 
+                            speedLimiterState = false;
+                        break;
+                        case 1: 
+                            speedLimiterState = true;
+                        break;
+                    }
+                break;
             } // end switch
 
             // send config after power on
@@ -694,145 +762,161 @@ void radioExchange() {   //receive packet, execute SET_ or GET_ request, send an
 
 
 void autoCruise(uint8_t speed) {
-
-  if (millisSince(lastCruiseControl) > 50) {
-    lastCruiseControl = millis();
-
-    setCruise(speed);
-  }
+    if (millisSince(lastCruiseControl) > 50) {
+        lastCruiseControl = millis();
+        setCruise(speed);
+    }
 }
 
 
 void stateMachine() { // handle auto-stop, endless mode, etc...
 
-  switch (state) {
+    switch (state) {
 
-    case IDLE: // no remote connected
+        case IDLE: // no remote connected
+            str_vtm_state = "Idle";
+            setThrottle(default_throttle);
+            if (telemetry.getSpeed() >= PUSHING_SPEED) setState(PUSHING);
+        break;
 
-      setThrottle(default_throttle);
-      if (telemetry.getSpeed() >= PUSHING_SPEED) setState(PUSHING);
-      break;
+        case PUSHING: // pushing with no remote connected
+            str_vtm_state = "Pushing";
+            if (telemetry.getSpeed() < PUSHING_SPEED) { // pushing ended
+                if (AUTO_CRUISE_ON) {
+                    if (secondsSince(timeSpeedReached) > PUSHING_TIME)
+                    setState(ENDLESS); // start cruise control
+                    else
+                    setState(IDLE); // not enough pushing
+                }
+            } else if (telemetry.getSpeed() > MAX_PUSHING_SPEED) { // downhill
+                setState(STOPPING);
+            }
+        break;
 
-    case PUSHING: // pushing with no remote connected
+        case ENDLESS: // cruise without remote at ~12 km/h / 7 mph
+            str_vtm_state = "Endless";
+            autoCruise(PUSHING_SPEED);
+            // detect a foot brake /
+            if (true) {
+                double current = telemetry.getMotorCurrent(); // ~2 amps
+                double smoothed = motorCurrent.get();
 
-      if (telemetry.getSpeed() < PUSHING_SPEED) { // pushing ended
-        if (AUTO_CRUISE_ON) {
-          if (secondsSince(timeSpeedReached) > PUSHING_TIME)
-            setState(ENDLESS); // start cruise control
-          else
-            setState(IDLE); // not enough pushing
-        }
-      } else if (telemetry.getSpeed() > MAX_PUSHING_SPEED) { // downhill
-        setState(STOPPING);
-      }
-      break;
+                // sudden change (> 5 A) after 2 seconds
+                if (abs(current - smoothed) > CRUISE_CURRENT_SPIKE && secondsSince(cruiseControlStart) > 2) {
+                    setState(IDLE);
+                }
 
-    case ENDLESS: // cruise without remote at ~12 km/h / 7 mph
+                // switch to coasting after some time
+                if (secondsSince(cruiseControlStart) > AUTO_CRUISE_TIME) {
+                    // keep cruise control downhill/uphill
+                    if (abs(current) <= CRUISE_CURRENT_LOW) setState(COASTING);
+                }
 
-      autoCruise(PUSHING_SPEED);
+                motorCurrent.add(current);
+            }
+        break;
 
-      // detect a foot brake /
-      if (true) {
-        double current = telemetry.getMotorCurrent(); // ~2 amps
-        double smoothed = motorCurrent.get();
+        case COASTING: // waiting for board to slowdown
+            str_vtm_state = "Coasting";
+            setThrottle(default_throttle);
+            // avoid ENDLESS > IDLE > PUSHING loop
+            if (telemetry.getSpeed() < PUSHING_SPEED) setState(IDLE);
+        break;
 
-        // sudden change (> 5 A) after 2 seconds
-        if (abs(current - smoothed) > CRUISE_CURRENT_SPIKE && secondsSince(cruiseControlStart) > 2) {
-          setState(IDLE);
-        }
+        case CONNECTED: // remote is connected
+            str_vtm_state = "Connected";
+            // timeout handling
+            if (millisSince(timeoutTimer) > timeoutMax) {
+                debug("receiver timeout");
+                // No speed is received within the timeout limit.
+                connected = false;
+                timeoutTimer = millis();
+                lastBrakeTime=millis();
+                //  Set last speed
+                lowestSpeedValue = telemetry.getSpeed();
+                setState(STOPPING);
+                //  Use last throttle in case of reconnection shortly after timeout
+                throttle = lastThrottle;
+            }
+        break;
 
-        // switch to coasting after some time
-        if (secondsSince(cruiseControlStart) > AUTO_CRUISE_TIME) {
-          // keep cruise control downhill/uphill
-          if (abs(current) <= CRUISE_CURRENT_LOW) setState(COASTING);
-        }
+        case STOPPING: // emergency brake when remote has disconnected 
+            str_vtm_state = "Emergency brake";
+            currentSpeedValue = telemetry.getSpeed();
+            // start braking from zero throttle
+            if ((currentSpeedValue > 0) && (throttle > default_throttle)) {  //going forwards
+                throttle = default_throttle;
+            }
+            if ((currentSpeedValue < 0) && (throttle < default_throttle)){  //going backwards
+                throttle = default_throttle;
+            }
 
-        motorCurrent.add(current);
-      }
-      break;
+            if (secondsSince(lastBrakeTime) > AUTO_BRAKE_INTERVAL) {
+                // decrease throttle to brake  127 / 5 * 0.1
+                float brakeForce = constrain(default_throttle / AUTO_BRAKE_TIME * AUTO_BRAKE_INTERVAL, 0, 10);
+                // apply brakes
+                if (currentSpeedValue > 0) {  //going forwards
+                    if (throttle > brakeForce) throttle -= brakeForce; else throttle = 0;
+                    setThrottle(throttle);
+                }
+                if (currentSpeedValue < 0) {  //going backwards
+//                    if (throttle > brakeForce) throttle += brakeForce; else throttle = 10;
+                    if (throttle < (255-brakeForce)) throttle += brakeForce; else throttle = 255;
+                    setThrottle(throttle);
+                }
+                lastBrakeTime = millis();
+            }
 
-    case COASTING: // waiting for board to slowdown
+            // check speed
+            //if (throttle == 0 && !isMoving()) {setState(STOPPED);}
+            //if (throttle == 255 && !isMoving()) {setState(STOPPED);}
+            if (throttle == 0 && (abs(currentSpeedValue) < AUTO_BRAKE_ABORT_MAXSPEED)) {
+                setState(IDLE);
+            }
+            if (throttle == 255 && (abs(currentSpeedValue) < AUTO_BRAKE_ABORT_MAXSPEED)) {
+                setState(IDLE);
+            }
 
-      setThrottle(default_throttle);
-      // avoid ENDLESS > IDLE > PUSHING loop
-      if (telemetry.getSpeed() < PUSHING_SPEED) setState(IDLE);
-      break;
+            //avoids going backwards after stopping if auto-reverse is enabled within VESC app 
+            if (abs(currentSpeedValue) < abs(lowestSpeedValue)){
+                lowestSpeedValue = currentSpeedValue;
+            }
 
-    case CONNECTED: // remote is connected
+            if(abs(currentSpeedValue) > abs(lowestSpeedValue*1.5)){   //absolute speed has increased by 50% --> retry braking or abort if speed low enough
+                setThrottle(default_throttle); //restart break procedure from zero throttle
+                if(abs(currentSpeedValue) < AUTO_BRAKE_ABORT_MAXSPEED){
+                    setState(IDLE);   //If speed is low enough -> abort break procedure
+                }
+            }
+        break;
 
-      // timeout handling
-      if (millisSince(timeoutTimer) > timeoutMax) {
-        debug("receiver timeout");
+        case STOPPED:
+            // release brakes after a few seconds
+            if (secondsSince(lastBrakeTime) > AUTO_BRAKE_RELEASE) setState(IDLE);
+        break;
 
-        // No speed is received within the timeout limit.
-        connected = false;
-        timeoutTimer = millis();
-
-        setState(STOPPING);
-
-        // use last throttle
-        throttle = lastThrottle;
-      }
-
-      break;
-
-    case STOPPING: // emergency brake when remote has disconnected
-
-      // start braking from zero throttle
-      if (throttle > default_throttle) {
-        throttle = default_throttle;
-      }
-
-      if (secondsSince(lastBrakeTime) > AUTO_BRAKE_INTERVAL) {
-
-        // decrease throttle to brake  127 / 5 * 0.1
-        float brakeForce = constrain(default_throttle / AUTO_BRAKE_TIME * AUTO_BRAKE_INTERVAL, 0, 10);
-
-        // apply brakes
-        if (throttle > brakeForce) throttle -= brakeForce; else throttle = 0;
-        setThrottle(throttle);
-
-        lastBrakeTime = millis();
-      }
-
-      // check speed
-      if (throttle == 0 && !isMoving()) {
-        setState(STOPPED);
-      }
-
-      break;
-
-    case STOPPED:
-
-      // release brakes after a few seconds
-      if (secondsSince(lastBrakeTime) > AUTO_BRAKE_RELEASE) setState(IDLE);
-
-
-      break;
-
-    case UPDATE:
-      break;
-
-  }
+        case UPDATE:
+        break;
+    }
 }
 
 
 void setStatus(uint8_t code){ //TODO
 
-  short cycle = 0;
+    short cycle = 0;
 
-  // switch(code){
-  //   case COMPLETE:  cycle = 500;    break;
-  //   case FAILED:    cycle = 1400;   break;
-  // }
-  //
-  // currentMillis = millis();
-  //
-  // if(currentMillis - startCycleMillis >= statusCycleTime){
-  //   statusCode = code;
-  //   statusCycleTime = cycle;
-  //   startCycleMillis = currentMillis;
-  // }
+    // switch(code){
+    //   case COMPLETE:  cycle = 500;    break;
+    //   case FAILED:    cycle = 1400;   break;
+    // }
+    //
+    // currentMillis = millis();
+    //
+    // if(currentMillis - startCycleMillis >= statusCycleTime){
+    //   statusCode = code;
+    //   statusCycleTime = cycle;
+    //   startCycleMillis = currentMillis;
+    // }
 }
 
 
@@ -850,6 +934,314 @@ void updateSetting( uint8_t setting, uint64_t value){  // Update a single settin
     if(setting == 2) {
         // initRadio(radio);
     }
+}
+
+
+
+void setThrottle(uint16_t throttleValue){
+    // update display
+    throttle = throttleValue;   //update global variable (see setThrottle(rempacket.data) call)
+
+    double mySpeed = telemetry.getSpeed();
+    int myThrottle = 0;
+    //bool setCruise_enabled = false;
+
+    mySmoothedSpeed.add(mySpeed);
+
+    //PID regulation for speed limiter
+        // Returns the manipulated variable given a setpoint and current process value
+        //double calculate( double setpoint, double pv );
+    myPID_throttleFactor = pidThrottle->calculate(LIMITED_SPEED_MAX, mySpeed);
+    
+    int deadBand = 5;
+    float myCurrent;
+    float myRpm;
+    float myDuty;
+    float myHandbrakeCurrent = 5;
+    float motor_max_current = MOTOR_MAX;    //max current
+    float motor_min_current = MOTOR_MIN;    //max negative current for active braking or cruising backwards
+    float motor_max_brake_current = 10;  //max absolute current for regenerative braking
+    float regen_brake_min_speed = 1;    // switch to active braking under this speed
+    float handbrakeMaxSpeed = 0.2;      // use handbrake under this speed when braking
+    float stoppedStateMaxSpeed = 4;     // consider the board stopped up to this speed
+
+    //TODO: test if regen braking value has to be signed and opposite to current direction - UART.setBrakeCurrent()
+
+    // UART
+    #ifndef FAKE_UART
+        switch(THROTTLE_MODE){
+            //0
+            case VTM_NUNCHUCK_UART:
+                disablePpmThrottleOutput();
+                if (speedLimiterState == false){
+                    UART.nunchuck.valueY = throttleValue;
+                    UART.nunchuck.upperButton = false;
+                    UART.nunchuck.lowerButton = false;
+                    UART.setNunchuckValues();
+                }
+                else if (speedLimiterState == true){
+                    if(throttleValue >= default_throttle){// NOT braking
+                        //PID regulation
+                        myThrottle = default_throttle + ((throttleValue - default_throttle)*myPID_throttleFactor);
+                    }else{// BRAKING -> quick reaction
+                        myThrottle = (throttleValue);
+                    }
+                    //if(!setCruise_enabled){
+                        UART.nunchuck.valueY = myThrottle;
+                        UART.nunchuck.upperButton = false;
+                        UART.nunchuck.lowerButton = false;
+                        UART.setNunchuckValues();
+                    //}else{
+                    //    setCruise_enabled = false;
+                    //    setCruise(mySpeed);
+                    //}
+                }
+            break;
+            //1
+            case VTM_PPM_PIN_OUT:  // ******** PPM THROTTLE OUTPUT ********
+                #ifdef OUTPUT_PPM_THROTTLE
+                    if (speedLimiterState == false){
+                        //mySmoothedThrottle.add(throttleValue);
+                        updatePpmThrottleOutput(throttleValue);
+                    }else if (speedLimiterState == true){
+                        if(throttleValue >= default_throttle){// NOT braking
+                            //PID regulation
+                            myThrottle = default_throttle + ((throttleValue - default_throttle)*myPID_throttleFactor);
+                            //mySmoothedThrottle.add(myThrottle);
+                            updatePpmThrottleOutput(myThrottle);
+                        }else{// BRAKING -> quick reaction
+                            //mySmoothedThrottle.add(throttleValue);
+                            updatePpmThrottleOutput(throttleValue);
+                        }
+                    }
+                #endif
+            break;
+
+          #ifdef EXPERIMENTAL //BELOW MODES ARE EXPERIMENTAL           
+            //2
+            case VTM_CURRENT_UART:  //current with regen brake & handbrake when stopped
+                 //myCurrent = map(throttle, 0, 255, -abs(motor_max_brake_current), motor_max_current);
+                mySmoothedThrottle.add(throttleValue);
+                disablePpmThrottleOutput();
+                switch (state){
+                    case CONNECTED:
+                        switch (vtmState){
+
+                            case VTM_STATE_STOPPED:
+                                str_vtm_state = "Stopped";
+                                //Idle
+                                if (throttleValue > (default_throttle - deadBand) && throttleValue < (default_throttle + deadBand)){ //IDLE - remote centered
+                                    myCurrent = 0;
+                                    UART.setCurrent(myCurrent);
+                                } 
+
+                                //Start going forward from stop                        
+                                if ((mySpeed >= (-stoppedStateMaxSpeed)) && (throttleValue > (default_throttle + deadBand) )) {  //moving forwards, cruising
+                                    myCurrent = map(throttleValue, default_throttle, 255, 0, motor_max_current);
+                                    UART.setCurrent(myCurrent);
+                                    vtmState = VTM_STATE_DRIVING;               
+                                }
+                                // Start rolling forward without throttle input
+                                if (mySpeed > stoppedStateMaxSpeed ){ vtmState = VTM_STATE_DRIVING;}
+
+                                //Start going backwards from stop
+                                if ( (mySpeed <= stoppedStateMaxSpeed) && (throttleValue < (default_throttle - deadBand)) ){   //moving backwards
+                                    myCurrent = map (throttleValue, 0, default_throttle, motor_min_current, 0);
+                                    UART.setCurrent(myCurrent);
+                                    vtmState = VTM_STATE_REVERSE;  
+                                }
+                                // Start rolling backward without throttle input
+                                if (mySpeed < (-stoppedStateMaxSpeed) ){ vtmState = VTM_STATE_REVERSE;}
+
+                            break;
+
+                            case VTM_STATE_DRIVING:
+                                
+                                //Keep driving, update motor throttle.
+                                if ( (mySpeed >= (-handbrakeMaxSpeed)) && (throttleValue > default_throttle) ) {  //moving forwards, cruising
+                                    myCurrent = map(throttleValue, default_throttle, 255, 0, motor_max_current);
+                                    UART.setCurrent(myCurrent);
+                                    str_vtm_state = "Driving";
+                                }                                
+                                //Braking while moving forwards
+                                if ((mySpeed >= regen_brake_min_speed) && (throttleValue < default_throttle)) {  //moving forwards, regen braking
+                                    myCurrent = map(throttleValue, 0, default_throttle, -abs(motor_max_brake_current), 0);
+                                    UART.setBrakeCurrent(myCurrent);
+                                    str_vtm_state = "Drv: regen. braking";
+                                } else if ((mySpeed > 0) && (mySpeed < regen_brake_min_speed) && (throttleValue < default_throttle)) {  //moving forwards, slow, active braking
+                                    myCurrent = map(throttleValue, 0, default_throttle, motor_min_current, 0); 
+                                    str_vtm_state = "Drv: active braking";                                 
+                                    //UART.setCurrent(myCurrent); //+ pow(mySpeed+1,2));   // 
+                                } 
+                                //We just stopped -> activate Handbrake
+                                if ( (abs(mySpeed) < handbrakeMaxSpeed) && (throttleValue < default_throttle) ){ 
+                                    myCurrent = myHandbrakeCurrent;
+                                    UART.setHandbrake(myCurrent);
+                                    vtmState = VTM_STATE_HANDBRAKE;
+                                }
+                                //Exit
+                                if (mySpeed < (-handbrakeMaxSpeed)) {
+                                    vtmState = VTM_STATE_STOPPED;
+                                }
+                            break;
+
+                            case VTM_STATE_HANDBRAKE:
+                                str_vtm_state = "Handbrake";
+                                //keepalive handbrake if not moving
+                                if ( (abs(mySpeed) < handbrakeMaxSpeed) && (throttleValue < default_throttle) ){
+                                    myCurrent = myHandbrakeCurrent;
+                                    UART.setHandbrake(myCurrent);
+                                }
+                                //too steep, handbrake slips -> active braking
+                                if ( (abs(mySpeed) >= handbrakeMaxSpeed) && (throttleValue < default_throttle) ){
+                                    myCurrent = mySpeed/abs(mySpeed) * (myHandbrakeCurrent/2 + pow(mySpeed+1,2));
+                                    UART.setCurrent(myCurrent);
+                                }
+                                // Release handbrake when throttle goes back to neutral
+                                if (throttleValue >= default_throttle){
+                                    vtmState = VTM_STATE_STOPPED;
+                                }
+                            break;
+
+                            case VTM_STATE_REVERSE:
+                                //str_vtm_state = "Reverse";
+                                if ( (mySpeed <= 0) ){   //moving backwards //&& (throttleValue < (default_throttle - deadBand))
+                                    myCurrent = map (throttleValue, 0, default_throttle, motor_min_current, 0);
+                                    UART.setCurrent(myCurrent);
+                                }
+                                //Stopping
+                                if ((mySpeed >= 0) && (throttleValue > default_throttle)){ vtmState = VTM_STATE_STOPPED; }
+                            break;
+
+                                /*
+                                //Braking while moving backwards
+                                if ( (mySpeed < -regen_brake_min_speed) && (throttleValue > default_throttle) ) {    //moving backwards, regen braking
+                                    myCurrent = map (throttleValue, default_throttle, 255, 0, abs(motor_max_brake_current));
+                                    UART.setBrakeCurrent(myCurrent);
+                                } else if ((mySpeed < 0) && (mySpeed > -regen_brake_min_speed) && (throttleValue > default_throttle)) {  //moving backwards, slow, active braking
+                                    myCurrent = map(throttleValue, default_throttle, 255, 0, motor_max_current);
+                                    UART.setCurrent(myCurrent);   // 
+                                }
+                                */
+                            
+                                //deal with STOPPING state transition? timer?
+                                //if (throttleValue == 0 && !isMoving()) { setState(STOPPED);}
+                                //if (throttleValue == 255 && !isMoving()) { setState(STOPPED);}
+
+                        }
+                    break;
+
+                    case STOPPING: // emergency brake when remote has disconnected  -> don't use regen, only active braking.
+                        str_vtm_state = "Emergency brake";
+                        //myCurrent = map(throttleValue, 0, 255, motor_min_current, motor_max_current);
+                        //UART.setCurrent(myCurrent);
+                        setState(STOPPING);   
+                    break;
+
+                }
+            break;
+            //3
+            case VTM_RPM_UART:
+                mySmoothedThrottle.add(throttleValue);
+                disablePpmThrottleOutput();
+                myRpm = map(throttleValue, 0, 255, -10000, +10000);
+                if (throttleValue > (default_throttle - deadBand) && throttleValue < (default_throttle + deadBand)) myRpm = 0;
+                UART.setRPM(myRpm);
+            break;
+            //4
+            case VTM_DUTY_UART:
+                mySmoothedThrottle.add(throttleValue);
+                disablePpmThrottleOutput();
+                myDuty = map(throttleValue, (default_throttle + deadBand), 255, 0, 1);
+                if (throttleValue > (default_throttle - deadBand) && throttleValue < (default_throttle + deadBand)) myDuty = 0;
+                UART.setDuty(myDuty);
+            break;
+            //5
+            case VTM_REGEN_UART:
+                mySmoothedThrottle.add(throttleValue);
+                disablePpmThrottleOutput();
+                myCurrent = map(throttleValue, 0, 255, -10, +10);
+                if ( (mySpeed >= 0) && (throttleValue > (default_throttle + deadBand)) ) {  //going forwards
+                    UART.setCurrent(myCurrent);               
+                }
+                else if ( (mySpeed > 0.5) && (throttleValue < (default_throttle - deadBand)) ) {  //going forwards, braking
+                    UART.setBrakeCurrent(myCurrent);
+                }                
+            break;
+            //6
+            case VTM_HANDBRAKE_UART:
+                mySmoothedThrottle.add(throttleValue);
+                disablePpmThrottleOutput();
+                myCurrent = map(throttleValue, 0, 255, -10, +10);
+                if ( (mySpeed >= 0) && (throttleValue > (default_throttle + deadBand)) ) {  //going forwards
+                    UART.setCurrent(myCurrent);               
+                }
+                else if ( (mySpeed < 0.1) && (throttleValue < (default_throttle - deadBand)) ) {  //going forwards, braking
+                    UART.setHandbrake(myHandbrakeCurrent);   // TEST
+                }                
+            break;
+            //7
+            case VTM_POS_UART:
+                mySmoothedThrottle.add(throttleValue);
+                disablePpmThrottleOutput();
+                float myPos = map(throttleValue, 0, 255, 1, +359);
+                //if (throttleValue > (default_throttle - deadBand) && throttleValue < (default_throttle + deadBand)) myPos = 0;
+                if ( throttleValue > (default_throttle + deadBand) ) {  //going forwards
+                    Lpos = pow( Lpos + 1 , 1.2);              
+                }
+                else if ( throttleValue < (default_throttle - deadBand) ) {  //going forwards, braking
+                    Lpos = pow(Lpos , -1.2);   // DOESNT WORK 
+                }    
+                UART.setPos(Lpos); // TEST
+            break;
+          #endif // EXPERIMENTAL
+        }
+    #endif  //FAKE_UART
+
+    // remember throttle for smooth auto stop
+    lastThrottle = throttleValue;
+    lastSpeedValue = mySpeed;
+}
+
+void setCruise(uint8_t speed) {
+    // UART
+    #ifndef FAKE_UART
+        switch(THROTTLE_MODE){
+            default:
+                disablePpmThrottleOutput();
+                UART.nunchuck.valueY = 127;
+                UART.nunchuck.upperButton = false;
+                UART.nunchuck.lowerButton = true;
+                UART.setNunchuckValues();
+            break;
+            /*
+            case VTM_NUNCHUCK_UART:
+            break;
+
+            case VTM_PPM_PIN_OUT:
+            break;
+
+            case VTM_CURRENT_UART:
+            break;
+
+            case VTM_RPM_UART:
+            break;
+
+            case VTM_DUTY_UART:
+            break;
+
+            case VTM_REGEN_UART:
+            break;
+
+            case VTM_HANDBRAKE_UART:
+            break; 
+
+            case VTM_POS_UART:
+            break;
+            */
+
+        }
+    #endif
 }
 
 /*TODO setCruise
@@ -885,48 +1277,6 @@ void setCruise ( bool cruise, uint16_t setPoint ){
     // }
   }
 } */
-
-void setThrottle(uint16_t value){
-    // update display
-    throttle = value;
-
-    // UART
-    #ifndef FAKE_UART
-    UART.nunchuck.valueY = value;
-    UART.nunchuck.upperButton = false;
-    UART.nunchuck.lowerButton = false;
-    UART.setNunchuckValues();
-    #endif
-    // PPM
-    //    digitalWrite(throttlePin, HIGH);
-    //    delayMicroseconds(map(throttle, 0, 255, 1000, 2000) );
-    //    digitalWrite(throttlePin, LOW);
-    
-    // ******** PWM THROTTLE OUTPUT IMPLEMENTATION ********
-    #ifdef OUTPUT_PWM_THROTTLE
-            updatePwmThrottleOutput();
-    #endif
-    // ******** PWM THROTTLE OUTPUT IMPLEMENTATION ********
-
-    // remember throttle for smooth auto stop
-    lastThrottle = throttle;
-
-    #ifdef ROADLIGHT_CONNECTED
-            updateBrakeLight();
-    #endif
-
-
-}
-
-void setCruise(uint8_t speed) {
-    // UART
-    #ifndef FAKE_UART
-    UART.nunchuck.valueY = 127;
-    UART.nunchuck.upperButton = false;
-    UART.nunchuck.lowerButton = true;
-    UART.setNunchuckValues();
-    #endif
-}
 
 /* void speedControl( uint16_t throttle , bool trigger ){ TODO
    // Kill switch
@@ -969,7 +1319,8 @@ void calculateRatios() { //   Update values used to calculate speed and distance
 }
 
 float rpm2speed(long rpm) { // rpm to km/h
-  return abs(ratioRpmSpeed * rpm);
+  //return abs(ratioRpmSpeed * rpm);
+  return (ratioRpmSpeed * rpm);
 }
 
 // rpm to km/h
@@ -1005,7 +1356,7 @@ void getUartData(){ //reads VESC data via UART and stores values in telemetry pa
 
     // Only get what we need
     if ( UART.getVescValues(VESC_COMMAND) ) {
-      // float dutyCycleNow;
+      //float dutyCycleNow;
       // float ampHours;
       // float ampHoursCharged;
 
@@ -1132,7 +1483,7 @@ void setSettingValue(int index, uint64_t value){ //TODO     // Set a value of a 
   // }
 }
 
-int getSettingValue(uint8_t index){//TODO     // Get settings value by index (usefull when iterating through settings).
+int getSettingValue(uint8_t index){//TODO     // Get settings value by index (useful when iterating through settings).
   // int value;
   // switch (index) {
   //   case 0: value = rxSettings.triggerMode; break;
@@ -1143,30 +1494,197 @@ int getSettingValue(uint8_t index){//TODO     // Get settings value by index (us
   // return value;
 }
 
+
+//***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
+
+// Set a value of a specific setting in the localOptParamValueArray[] & updates the flash memory.
+void setOptParamValue(uint8_t myGlobalSettingIndex, float value){ 
+    localOptParamValueArray[myGlobalSettingIndex] = value;
+    saveFlashSetting(myGlobalSettingIndex, value);//save to flash memory
+}
+
+ // Get a setting value by index from the localOptParamValueArray[]
+float getOptParamValue(uint8_t myGlobalSettingIndex){
+    float value = localOptParamValueArray[myGlobalSettingIndex];
+    return value;
+}
+
+/*
+void sendOptParamToRemote(uint8_t myGlobalSettingIndex){
+    uint8_t arrayIndex = myGlobalSettingIndex;
+    //setOptParamValue(myOptIndex, myLightSettingValue);  //store the value locally
+    remPacket.command = OPT_PARAM_MODE; //prepare the next packet to update receiver's value
+    remPacket.optParamCommand = SET_OPT_PARAM_VALUE;
+    remPacket.optParamIndex = arrayIndex;
+    remPacket.packOptParamValue(getOptParamValue(arrayIndex));
+    requestSendOptParamPacket = true;    //send the value to the receiver
+}
+
+void loadOptParamFromRemote(uint8_t myGlobalSettingIndex){
+    uint8_t arrayIndex = myGlobalSettingIndex;
+    //setOptParamValue(myOptIndex, myLightSettingValue);  //store the value locally
+    remPacket.command = OPT_PARAM_MODE; //prepare the next packet to update receiver's value
+    remPacket.optParamCommand = GET_OPT_PARAM_VALUE;
+    remPacket.optParamIndex = arrayIndex;
+    remPacket.packOptParamValue(0); //(getOptParamValue(arrayIndex));
+    requestSendOptParamPacket = true;    //send the value to the receiver
+}
+*/
+
+// Update all local variables from the localOptParamValueArray[] values
+void updateOptParamVariables(){
+    AUTO_CRUISE_ON = getOptParamValue(IDX_AUTO_CRUISE_ON);
+    PUSHING_SPEED = getOptParamValue(IDX_PUSHING_SPEED);
+    PUSHING_TIME = getOptParamValue(IDX_PUSHING_TIME);
+    CRUISE_CURRENT_SPIKE = getOptParamValue(IDX_CRUISE_CURRENT_SPIKE);
+    AUTO_CRUISE_TIME = getOptParamValue(IDX_AUTO_CRUISE_TIME);
+    CRUISE_CURRENT_LOW = getOptParamValue(IDX_CRUISE_CURRENT_LOW);
+    MAX_PUSHING_SPEED = getOptParamValue(IDX_MAX_PUSHING_SPEED);
+    AUTO_BRAKE_TIME = getOptParamValue(IDX_AUTO_BRAKE_TIME);
+    AUTO_BRAKE_RELEASE = getOptParamValue(IDX_AUTO_BRAKE_RELEASE);
+    AUTO_BRAKE_ABORT_MAXSPEED = getOptParamValue(IDX_AUTO_BRAKE_ABORT_MAXSPEED);
+    UART_SPEED = getOptParamValue(IDX_UART_SPEED);
+    uartPullInterval = getOptParamValue(IDX_uartPullInterval);
+    UART_TIMEOUT = getOptParamValue(IDX_UART_TIMEOUT);
+    REMOTE_RX_TIMEOUT = getOptParamValue(IDX_REMOTE_RX_TIMEOUT);
+    REMOTE_RADIOLOOP_DELAY = getOptParamValue(IDX_REMOTE_RADIOLOOP_DELAY);
+    REMOTE_LOCK_TIMEOUT = getOptParamValue(IDX_REMOTE_LOCK_TIMEOUT);
+    REMOTE_SLEEP_TIMEOUT = getOptParamValue(IDX_REMOTE_SLEEP_TIMEOUT);
+    DISPLAY_BATTERY_MIN = getOptParamValue(IDX_DISPLAY_BATTERY_MIN);
+    MOTOR_MIN = getOptParamValue(IDX_MOTOR_MIN);
+    MOTOR_MAX = getOptParamValue(IDX_MOTOR_MAX);
+    BATTERY_MIN = getOptParamValue(IDX_BATTERY_MIN);
+    BATTERY_MAX = getOptParamValue(IDX_BATTERY_MAX);
+    MAX_SPEED = getOptParamValue(IDX_MAX_SPEED);
+    MAX_RANGE = getOptParamValue(IDX_MAX_RANGE);
+    BATTERY_CELLS = getOptParamValue(IDX_BATTERY_CELLS);
+    BATTERY_TYPE = getOptParamValue(IDX_BATTERY_TYPE);
+    MOTOR_POLES = getOptParamValue(IDX_MOTOR_POLES);
+    WHEEL_DIAMETER = getOptParamValue(IDX_WHEEL_DIAMETER);
+    WHEEL_PULLEY = getOptParamValue(IDX_WHEEL_PULLEY);
+    MOTOR_PULLEY = getOptParamValue(IDX_MOTOR_PULLEY);
+    LED_BRIGHTNESS_FRONT = getOptParamValue(IDX_LED_BRIGHTNESS_FRONT);
+    LED_BRIGHTNESS_BACK = getOptParamValue(IDX_LED_BRIGHTNESS_BACK);
+    LED_BRIGHTNESS_BRAKE = getOptParamValue(IDX_LED_BRIGHTNESS_BRAKE);
+    LED_BRIGHTNESS_OFF = getOptParamValue(IDX_LED_BRIGHTNESS_OFF);
+    LED_ROADLIGHT_MODE = getOptParamValue(IDX_LED_ROADLIGHT_MODE);
+    THROTTLE_MODE = getOptParamValue(IDX_THROTTLE_MODE);
+    LIMITED_SPEED_MAX = getOptParamValue(IDX_LIMITED_SPEED_MAX);
+}
+
+    //random thought : keep an array of pointers to parameters addresses ( --> iteration )
+    /*
+    float* localVarAddresses[] //array of pointers
+    localVarAddresses[IDX_LED_BRIGHTNESS_FRONT] = &LED_BRIGHTNESS_FRONT     //store local variable addresses in an array
+    *localValAddresses[IDX_LED_BRIGHTNESS_FRONT] = (dereference) value stored at contained address      
+    */
+//***********  VERSION 3 : OPT_PARAM Tx <-> Rx  ***********
+
+//  ######## Settings Flash Storage - ESP32 ########
+
+#include <sstream>
+#include <string.h>
+//using namespace std;
+
+// Load a setting (index & value)pair from flash memory and update the localOptParamValueArray[] value. Returns the setting (float) value. 
+float loadFlashSetting(uint8_t myGlobalSettingIndex, float defaultValue){
+    float value;
+    stringstream strs;       //convert an int into a char[]
+    strs << myGlobalSettingIndex;
+    string temp_str = strs.str();
+    char const* pchar = temp_str.c_str(); //dont use cast
+    receiverPreferences.begin("FireFlyNano", false);
+    localOptParamValueArray[myGlobalSettingIndex] = receiverPreferences.getFloat(pchar, defaultValue);
+    value = receiverPreferences.getFloat(pchar, defaultValue);
+    receiverPreferences.end();
+    return value;
+}
+
+// Save a setting (index & value)pair into flash memory
+void saveFlashSetting(uint8_t myGlobalSettingIndex, float value){
+    stringstream strs;       //convert an int into a char[]
+    strs << myGlobalSettingIndex;
+    string temp_str = strs.str();
+    char const* pchar = temp_str.c_str(); //dont use cast
+    receiverPreferences.begin("FireFlyNano", false);
+    receiverPreferences.putFloat(pchar, localOptParamValueArray[myGlobalSettingIndex]);
+    receiverPreferences.end();
+}
+
+// SETTINGS INITIALIZATION - copy flash data into local variables & into localOptParamValueArray[] . If nothing saved in flash, GLOBALS.H hardcoded default values are used instead
+void refreshAllSettingsFromFlashData(){
+  /*    --> these settings are updated via setDefaultEEPROMSettings(){} , stored into boardConfig. packet & changed by remote's calibration page
+    MIN_HALL = loadFlashSetting(IDX_MIN_HALL, (float) MIN_HALL);
+    CENTER_HALL = loadFlashSetting(IDX_CENTER_HALL, (float) CENTER_HALL);
+    MAX_HALL = loadFlashSetting(IDX_MAX_HALL, (float) MAX_HALL);
+    BOARD_ID = loadFlashSetting(IDX_BOARD_ID, (float) BOARD_ID);
+  */
+    AUTO_CRUISE_ON = loadFlashSetting(IDX_AUTO_CRUISE_ON, (float) AUTO_CRUISE_ON);
+    PUSHING_SPEED = loadFlashSetting(IDX_PUSHING_SPEED, (float) PUSHING_SPEED);
+    PUSHING_TIME = loadFlashSetting(IDX_PUSHING_TIME, (float) PUSHING_TIME);
+    CRUISE_CURRENT_SPIKE = loadFlashSetting(IDX_CRUISE_CURRENT_SPIKE, (float) CRUISE_CURRENT_SPIKE);
+    AUTO_CRUISE_TIME = loadFlashSetting(IDX_AUTO_CRUISE_TIME, (float) AUTO_CRUISE_TIME);
+    CRUISE_CURRENT_LOW = loadFlashSetting(IDX_CRUISE_CURRENT_LOW, (float) CRUISE_CURRENT_LOW);
+    MAX_PUSHING_SPEED = loadFlashSetting(IDX_MAX_PUSHING_SPEED, (float) MAX_PUSHING_SPEED);
+    AUTO_BRAKE_TIME = loadFlashSetting(IDX_AUTO_BRAKE_TIME, (float) AUTO_BRAKE_TIME);
+    AUTO_BRAKE_RELEASE = loadFlashSetting(IDX_AUTO_BRAKE_RELEASE, (float) AUTO_BRAKE_RELEASE);
+    AUTO_BRAKE_ABORT_MAXSPEED = loadFlashSetting(IDX_AUTO_BRAKE_ABORT_MAXSPEED, (float) AUTO_BRAKE_ABORT_MAXSPEED);
+    UART_SPEED = loadFlashSetting(IDX_UART_SPEED, (float) UART_SPEED);
+    uartPullInterval = loadFlashSetting(IDX_uartPullInterval, (float) uartPullInterval);
+    UART_TIMEOUT = loadFlashSetting(IDX_UART_TIMEOUT, (float) UART_TIMEOUT);
+    REMOTE_RX_TIMEOUT = loadFlashSetting(IDX_REMOTE_RX_TIMEOUT, (float) REMOTE_RX_TIMEOUT);
+    REMOTE_RADIOLOOP_DELAY = loadFlashSetting(IDX_REMOTE_RADIOLOOP_DELAY, (float) REMOTE_RADIOLOOP_DELAY);
+    REMOTE_LOCK_TIMEOUT = loadFlashSetting(IDX_REMOTE_LOCK_TIMEOUT, (float) REMOTE_LOCK_TIMEOUT);
+    REMOTE_SLEEP_TIMEOUT = loadFlashSetting(IDX_REMOTE_SLEEP_TIMEOUT, (float) REMOTE_SLEEP_TIMEOUT);
+    DISPLAY_BATTERY_MIN = loadFlashSetting(IDX_DISPLAY_BATTERY_MIN, (float) DISPLAY_BATTERY_MIN);
+    MOTOR_MIN = loadFlashSetting(IDX_MOTOR_MIN, (float) MOTOR_MIN);
+    MOTOR_MAX = loadFlashSetting(IDX_MOTOR_MAX, (float) MOTOR_MAX);
+    BATTERY_MIN = loadFlashSetting(IDX_BATTERY_MIN, (float) BATTERY_MIN);
+    BATTERY_MAX = loadFlashSetting(IDX_BATTERY_MAX, (float) BATTERY_MAX);
+    MAX_SPEED = loadFlashSetting(IDX_MAX_SPEED, (float) MAX_SPEED);
+    MAX_RANGE = loadFlashSetting(IDX_MAX_RANGE, (float) MAX_RANGE);
+    BATTERY_CELLS = loadFlashSetting(IDX_BATTERY_CELLS, (float) BATTERY_CELLS);
+    BATTERY_TYPE = loadFlashSetting(IDX_BATTERY_TYPE, (float) BATTERY_TYPE);
+    MOTOR_POLES = loadFlashSetting(IDX_MOTOR_POLES, (float) MOTOR_POLES);
+    WHEEL_DIAMETER = loadFlashSetting(IDX_WHEEL_DIAMETER, (float) WHEEL_DIAMETER);
+    WHEEL_PULLEY = loadFlashSetting(IDX_WHEEL_PULLEY, (float) WHEEL_PULLEY);
+    MOTOR_PULLEY = loadFlashSetting(IDX_MOTOR_PULLEY, (float) MOTOR_PULLEY);
+    LED_BRIGHTNESS_FRONT = loadFlashSetting(IDX_LED_BRIGHTNESS_FRONT, (float) LED_BRIGHTNESS_FRONT);
+    LED_BRIGHTNESS_BACK = loadFlashSetting(IDX_LED_BRIGHTNESS_BACK, (float) LED_BRIGHTNESS_BACK);
+    LED_BRIGHTNESS_BRAKE = loadFlashSetting(IDX_LED_BRIGHTNESS_BRAKE, (float) LED_BRIGHTNESS_BRAKE);
+    LED_BRIGHTNESS_OFF = loadFlashSetting(IDX_LED_BRIGHTNESS_OFF, (float) LED_BRIGHTNESS_OFF);
+    LED_ROADLIGHT_MODE = loadFlashSetting(IDX_LED_ROADLIGHT_MODE, (float) LED_ROADLIGHT_MODE);
+    THROTTLE_MODE = loadFlashSetting(IDX_THROTTLE_MODE, (float) THROTTLE_MODE);
+    LIMITED_SPEED_MAX = loadFlashSetting(IDX_LIMITED_SPEED_MAX, (float) LIMITED_SPEED_MAX);
+//     = loadFlashSetting(IDX_, (float) );
+}
+//  ######## Settings Flash Storage - ESP32 ########
+
+
+
 bool inRange(int val, int minimum, int maximum){ //checks if value is within MIN - MAX range
   return ((minimum <= val) && (val <= maximum));
 }
 
-// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
+// **************************************** LED ROADLIGHTS *****************************
 //void drawLightPage(); // uint8_t lightBrightnessValue
-
 
 #ifdef ROADLIGHT_CONNECTED
     void switchLightOn(){
-        ledcWrite(led_pwm_channel_frontLight, dutyCycle_frontLightOn);
-        ledcWrite(led_pwm_channel_backLight, dutyCycle_backLightOn);
+        ledcWrite(led_pwm_channel_frontLight, LED_BRIGHTNESS_FRONT);
+        ledcWrite(led_pwm_channel_backLight, LED_BRIGHTNESS_BACK);
         myRoadLightState = ON;
     }
 
     void switchLightOff(){
-        ledcWrite(led_pwm_channel_frontLight, dutyCycle_lightOff);
-        ledcWrite(led_pwm_channel_backLight, dutyCycle_lightOff);
+        ledcWrite(led_pwm_channel_frontLight, LED_BRIGHTNESS_OFF);
+        ledcWrite(led_pwm_channel_backLight, LED_BRIGHTNESS_OFF);
         myRoadLightState = OFF;
     }
 
     void switchLightBrakesOnly(){
-        ledcWrite(led_pwm_channel_frontLight, dutyCycle_lightOff);
-        ledcWrite(led_pwm_channel_backLight, dutyCycle_lightOff);
+        ledcWrite(led_pwm_channel_frontLight, LED_BRIGHTNESS_OFF);
+        ledcWrite(led_pwm_channel_backLight, LED_BRIGHTNESS_OFF);
         myRoadLightState = BRAKES_ONLY;
     }
 
@@ -1175,18 +1693,14 @@ bool inRange(int val, int minimum, int maximum){ //checks if value is within MIN
         switch(myRoadLightState){
             case OFF:
                 // do nothing
-                //delay(1);
-                //vTaskDelay(10 / portTICK_PERIOD_MS); //delay specified in milliseconds instead of ticks
-
-                //emitBrakeLightPulse(dutyCycle_lightOff); //activate brakeLight flashes while OFF in between
             break;
 
             case ON:
-                emitBrakeLightPulse(dutyCycle_backLightOn); //activate brakeLight flashes while ON (normal brightness) in between
+                emitBrakeLightPulse(LED_BRIGHTNESS_BACK); //activate brakeLight flashes while ON (normal brightness) in between
             break;
 
             case BRAKES_ONLY:
-                emitBrakeLightPulse(dutyCycle_lightOff); //activate brakeLight flashes while OFF in between
+                emitBrakeLightPulse(LED_BRIGHTNESS_OFF); //activate brakeLight flashes while OFF in between
             break;
         }
     }
@@ -1194,7 +1708,7 @@ bool inRange(int val, int minimum, int maximum){ //checks if value is within MIN
     void emitBrakeLightPulse(uint_fast32_t dutyCycle_returnToNormal){    //emits a brakeLight flash and go back to the previous state
         uint8_t pwm_channel = led_pwm_channel_backLight;
         uint_fast32_t returnDutyCycle = dutyCycle_returnToNormal;
-        uint_fast32_t flashDutyCycle = dutyCycle_brakeLight;
+        uint_fast32_t flashDutyCycle = LED_BRIGHTNESS_BRAKE;
 
             if (millisSince(lastBrakeLightPulse) >= brakeLightPulseInterval) {    // check when was the last brake flash triggered
                 if(lastThrottle<(default_throttle*0.75)){
@@ -1215,13 +1729,52 @@ bool inRange(int val, int minimum, int maximum){ //checks if value is within MIN
     }
 
 #endif
-// **************************************** LED ROADLIGHTS IMPLEMENTATION *****************************
+// **************************************** LED ROADLIGHTS *****************************
 
-// ******** PWM THROTTLE OUTPUT IMPLEMENTATION ********
-#ifdef OUTPUT_PWM_THROTTLE
-        void updatePwmThrottleOutput(){
-            uint_fast32_t pwm_throttle_dutyCycle_value = map(throttle, 0, 255, 3276, 6552); //throttle; //map(throttle, 0, 255, 1ms, 2ms);
-            ledcWrite(pwm_throttle_channel, pwm_throttle_dutyCycle_value);
-        }
+// ******** PPM THROTTLE OUTPUT ********
+#ifdef OUTPUT_PPM_THROTTLE
+    void updatePpmThrottleOutput(int myThrottle){
+        uint_fast32_t pwm_throttle_dutyCycle_value = map(myThrottle, 0, 255, 3276, 6552); //throttle; //map(throttle, 0, 255, 1ms, 2ms);
+        ledcWrite(pwm_throttle_channel, pwm_throttle_dutyCycle_value);
+    }
 #endif
-// ******** PWM THROTTLE OUTPUT IMPLEMENTATION ********
+
+void disablePpmThrottleOutput(){
+    #ifdef OUTPUT_PPM_THROTTLE
+        ledcWrite(pwm_throttle_channel, 0);
+    #endif
+}
+// ******** PPM THROTTLE OUTPUT ********
+
+/*
+float smoothValue2(float *smoothArray2, float valueToAdd){
+    int myArraySize = sizeof(smoothArray2)/sizeof(smoothArray2[0]);
+    int samples = myArraySize;
+    float total;
+    float myAverageValue;
+    for (uint8_t i = 0; i < samples; i++) {
+            if (millisSince(smoothTimestamp2) > 15){
+                total = 0;
+                samples = 0;
+                for (i=0; i < (myArraySize-1); i++){
+                    smoothArray2[i] = smoothArray2[i+1]; 
+                    total = total + smoothArray2[i];
+                    samples ++;                               
+                }
+                smoothArray2[(myArraySize-1)] = valueToAdd;
+                total = total + valueToAdd;
+                samples++;
+                myAverageValue = (float)(total / samples);
+                smoothTimestamp2 = millis();
+            }
+            else {
+                total = 0;
+                for (i=0; i < (myArraySize); i++){
+                    total = total + smoothArray2[i];                            
+                }
+                myAverageValue = (float)total/myArraySize;
+                
+            }
+    }
+    return myAverageValue;
+}*/

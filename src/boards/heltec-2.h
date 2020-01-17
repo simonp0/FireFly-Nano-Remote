@@ -13,12 +13,13 @@
 //
 
 // Pin definitions
-#define PIN_LED           25   // LED on board
+#define PIN_LED       25   // LED on board
 
 #define PIN_PWRBUTTON 12
 #define PIN_BACKLIGHT 12  //PWRBUTTON PIN is free on the RECEIVER side, we'll use it for PIN_BACKLIGHT
 
-#define PIN_PWM_THROTTLE 32 //PWM throttle output on RECEIVER side
+#define PIN_PPM_THROTTLE 32 //PPM/PWM throttle output on RECEIVER side
+
 
 #define PIN_TRIGGER   32
 #define ADC_THROTTLE  ADC1_GPIO38_CHANNEL // ADC1_CHANNEL_2
@@ -28,7 +29,7 @@
 
 #define HAS_BUTTON (0) // button "PRG" on board
 
-#define PIN_VIBRO     17
+#define PIN_VIBRO 17
 #define PIN_FRONTLIGHT 17 //VIBRO PIN is free on the RECEIVER side, we'll use it for PIN_FRONTLIGHT
 
 
